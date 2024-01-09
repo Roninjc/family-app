@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { MallocNanoZone } from '$env/static/private'
   import type { FamilyMember, FamilyNode } from '$lib/types/familyTypes'
   import { familyData } from '../stores/family'
 
@@ -140,8 +139,16 @@
       adjList.get(w)?.set(v, weight === 1 ? 2 : weight === 2 ? 1 : weight)
     }
 
-    function getParents() {
-      return Map.groupBy(adjList, ({}) => {})
+    function getNodeParents(node) {
+      const parents: string[] = []
+
+      console.log('P----', adjList)
+      adjList.forEach((relationships, node) => {
+        relationships.forEach
+        console.log('pppp', relationship, node)
+      })
+
+      return parents
     }
 
     function getList() {
@@ -160,15 +167,16 @@
         if (node && !visitedNodes.has(node)) {
           yield node
           visitedNodes.add(node)
-          const fNode = familyNodes.get(node)
-          console.log('second', fNode)
-          if (fNode) {
-            fNode.getParents().forEach((adj: string) => stack.push(adj))
-            fNode.getChildren().forEach((adj: string) => stack.push(adj))
-            fNode.getSiblings().forEach((adj: string) => stack.push(adj))
-            fNode.getPartner().forEach((adj: string) => stack.push(adj))
-            fNode.getPreviousPartners().forEach((adj: string) => stack.push(adj))
-          }
+          console.log('nnn', node)
+          // const fNode = familyNodes.get(node)
+          // console.log('second', fNode)
+          // if (fNode) {
+          //   fNode.getParents().forEach((adj: string) => stack.push(adj))
+          //   fNode.getChildren().forEach((adj: string) => stack.push(adj))
+          //   fNode.getSiblings().forEach((adj: string) => stack.push(adj))
+          //   fNode.getPartner().forEach((adj: string) => stack.push(adj))
+          //   fNode.getPreviousPartners().forEach((adj: string) => stack.push(adj))
+          // }
         }
       }
     }
@@ -177,6 +185,7 @@
       addVertex,
       addEdge,
       getList,
+      // getParents,
       dfs
     }
   }
@@ -229,9 +238,11 @@
     })
   })
 
-  const conections = familyTree.getList().get('4')
-  const node = familyNodes.get('1')
-  console.log('---', familyTree)
+  familyTree.dfs(familyTree.getList().get('4'))
+
+  const conections = familyTree.getList()
+  // const node = familyNodes.get('1')
+  console.log('---', conections)
 
   const iterator = familyTree.dfs(conections)
 
