@@ -139,54 +139,83 @@
       adjList.get(w)?.set(v, weight === 1 ? 2 : weight === 2 ? 1 : weight)
     }
 
-    function getNodeParents(node) {
-      const parents: string[] = []
-
-      console.log('P----', adjList)
-      adjList.forEach((relationships, node) => {
-        relationships.forEach
-        console.log('pppp', relationship, node)
-      })
-
-      return parents
-    }
-
     function getList() {
       return adjList
     }
 
-    function* dfs(initialNode: any) {
-      const visitedNodes = new Set()
-      const stack = []
+    function getNodeRelationships(nodeId: string): { nodeId: string; weight: number }[] {
+      const relationships: { weight: number; nodeId: string }[] = []
+      const adjacentNodes = adjList.get(nodeId)
 
-      stack.push(initialNode.id)
+      adjacentNodes?.forEach((weight: number, nodeId: string) => {
+        relationships.push({ nodeId, weight })
+      })
+
+      return relationships
+    }
+
+    function* dfsLevels(initialNodeId: string) {
+      const visitedNodes = new Set<string>()
+      const stack: { nodeId: string; level: number }[] = []
+      const levels = new Map<string, number>()
+
+      stack.push({ nodeId: initialNodeId, level: 0 })
 
       while (stack.length > 0) {
-        console.log('first', stack, visitedNodes)
-        const node = stack.pop()
-        if (node && !visitedNodes.has(node)) {
-          yield node
-          visitedNodes.add(node)
-          console.log('nnn', node)
-          // const fNode = familyNodes.get(node)
-          // console.log('second', fNode)
-          // if (fNode) {
-          //   fNode.getParents().forEach((adj: string) => stack.push(adj))
-          //   fNode.getChildren().forEach((adj: string) => stack.push(adj))
-          //   fNode.getSiblings().forEach((adj: string) => stack.push(adj))
-          //   fNode.getPartner().forEach((adj: string) => stack.push(adj))
-          //   fNode.getPreviousPartners().forEach((adj: string) => stack.push(adj))
-          // }
+        const { nodeId, level } = stack.pop()!
+
+        if (nodeId && !visitedNodes.has(nodeId)) {
+          yield { nodeId, level }
+
+          visitedNodes.add(nodeId)
+          levels.set(nodeId, level)
+
+          const relationships = getNodeRelationships(nodeId)
+          relationships.forEach(({ nodeId, weight }) => {
+            let nextLevel = level
+
+            if (weight === 1) ++nextLevel
+            if (weight === 2) --nextLevel
+
+            stack.push({ nodeId, level: nextLevel })
+          })
         }
       }
+    }
+
+    function getAnyNodeId(): string | undefined {
+      const nodes = adjList.keys()
+      const firstNode = nodes.next()
+
+      if (!firstNode.done) {
+        return firstNode.value
+      }
+
+      return undefined
+    }
+
+    function getNodesGeneration() {
+      const initialNode = familyTree.getAnyNodeId()
+
+      if (!initialNode) return 'No available family nodes'
+
+      const rawGenerations = [...familyTree.dfsLevels(initialNode)]
+      const genNormalizer = 1 - Math.min(...rawGenerations.map((node) => node.level))
+      const generations = rawGenerations.map(({ nodeId, level }) => {
+        return { nodeId, generation: level + genNormalizer }
+      })
+
+      return generations
     }
 
     return {
       addVertex,
       addEdge,
       getList,
-      // getParents,
-      dfs
+      getNodeRelationships,
+      dfsLevels,
+      getAnyNodeId,
+      getNodesGeneration
     }
   }
 
@@ -238,17 +267,9 @@
     })
   })
 
-  familyTree.dfs(familyTree.getList().get('4'))
+  const roots2 = familyTree.getNodesGeneration()
 
-  const conections = familyTree.getList()
-  // const node = familyNodes.get('1')
-  console.log('---', conections)
-
-  const iterator = familyTree.dfs(conections)
-
-  for (const value of iterator) {
-    console.log(value)
-  }
+  console.log('---', roots2)
 </script>
 
 <h1>Familia Castaño</h1>
