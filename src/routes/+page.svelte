@@ -10,119 +10,6 @@
     PreviousPartner
   }
 
-  const initFamilyNode = (familiyMember: FamilyMember) => {
-    const {
-      id,
-      name,
-      firstFamilyName,
-      secondFamilyName,
-      parents,
-      children,
-      siblings,
-      partner,
-      previousPartners
-    } = familiyMember
-
-    return {
-      id,
-      name,
-      firstFamilyName,
-      secondFamilyName,
-      parents: parents || [],
-      children: children || [],
-      siblings: siblings || [],
-      partner: partner || [],
-      previousPartners: previousPartners || [],
-
-      updateName(newName: string) {
-        this.name = newName
-      },
-
-      updateFisrtFamilyName(newName: string) {
-        this.firstFamilyName = newName
-      },
-
-      updateSecondFamilyName(newName: string) {
-        this.secondFamilyName = newName
-      },
-
-      addParent(m: string) {
-        this.parents.push(m)
-      },
-
-      removeParent(m: string) {
-        const index = this.parents.indexOf(m)
-        if (index > -1) {
-          this.parents.splice(index, 1)
-        }
-      },
-
-      getParents() {
-        return this.parents
-      },
-
-      addChild(m: string) {
-        this.children.push(m)
-      },
-
-      removeChild(m: string) {
-        const index = this.children.indexOf(m)
-        if (index > -1) {
-          this.children.splice(index, 1)
-        }
-      },
-
-      getChildren() {
-        return this.children
-      },
-
-      addSibling(m: string) {
-        this.siblings.push(m)
-      },
-
-      removeSibling(m: string) {
-        const index = this.siblings.indexOf(m)
-        if (index > -1) {
-          this.siblings.splice(index, 1)
-        }
-      },
-
-      getSiblings() {
-        return this.siblings
-      },
-
-      addPartner(m: string) {
-        this.partner.push(m)
-      },
-
-      removePartner(m: string) {
-        const index = this.partner.indexOf(m)
-        if (index > -1) {
-          this.partner.splice(index, 1)
-        }
-      },
-
-      getPartner() {
-        return this.partner
-      },
-
-      addPreviousPartner(m: string) {
-        this.previousPartners.push(m)
-      },
-
-      removePreviousPartner(m: string) {
-        const index = this.previousPartners.indexOf(m)
-        if (index > -1) {
-          this.previousPartners.splice(index, 1)
-        }
-      },
-
-      getPreviousPartners() {
-        return this.previousPartners
-      }
-    }
-  }
-
   const initFamilyTree = () => {
     const adjList = new Map()
 
@@ -219,50 +106,44 @@
     }
   }
 
-  const familyNodes: Map<string, FamilyNode> = new Map()
   const familyTree = initFamilyTree()
 
   familyData?.members?.forEach((member: FamilyMember) => {
-    const node = initFamilyNode(member)
-    familyNodes.set(node.id, node)
-  })
+    familyTree.addVertex(member.id)
 
-  familyNodes?.forEach((node: FamilyNode) => {
-    familyTree.addVertex(node.id)
-
-    node.children?.forEach((childId: string) => {
-      const child = familyNodes.get(childId)
+    member.children?.forEach((childId: string) => {
+      const child = familyData.members.find((member) => member.id === childId)
       if (child) {
-        familyTree.addEdge(node.id, child.id, Relation.Child)
+        familyTree.addEdge(member.id, child.id, Relation.Child)
       }
     })
 
-    node.parents?.forEach((parentId: string) => {
-      const parent = familyNodes.get(parentId)
+    member.parents?.forEach((parentId: string) => {
+      const parent = familyData.members.find((member) => member.id === parentId)
       if (parent) {
-        familyTree.addEdge(node.id, parent.id, Relation.Parent)
+        familyTree.addEdge(member.id, parent.id, Relation.Parent)
       }
       // TODO: comporbar si hay hermanos de los mismos padres para actualizarlos en el momento.
     })
 
-    node.siblings?.forEach((siblingId: string) => {
-      const sibling = familyNodes.get(siblingId)
+    member.siblings?.forEach((siblingId: string) => {
+      const sibling = familyData.members.find((member) => member.id === siblingId)
       if (sibling) {
-        familyTree.addEdge(node.id, sibling.id, Relation.Sibling)
+        familyTree.addEdge(member.id, sibling.id, Relation.Sibling)
       }
     })
 
-    node.partner?.forEach((partnerId: string) => {
-      const partner = familyNodes.get(partnerId)
+    member.partner?.forEach((partnerId: string) => {
+      const partner = familyData.members.find((member) => member.id === partnerId)
       if (partner) {
-        familyTree.addEdge(node.id, partner.id, Relation.Partner)
+        familyTree.addEdge(member.id, partner.id, Relation.Partner)
       }
     })
 
-    node.previousPartners?.forEach((previousPartnerId: string) => {
-      const previousPartner = familyNodes.get(previousPartnerId)
+    member.previousPartners?.forEach((previousPartnerId: string) => {
+      const previousPartner = familyData.members.find((member) => member.id === previousPartnerId)
       if (previousPartner) {
-        familyTree.addEdge(node.id, previousPartner.id, Relation.PreviousPartner)
+        familyTree.addEdge(member.id, previousPartner.id, Relation.PreviousPartner)
       }
     })
   })
@@ -272,7 +153,12 @@
   let initialMember: string
   if (firstGenreation && firstGenreation.length > 0) {
     initialMember = firstGenreation[0].nodeId
-    console.log('---', familyTree.getNodeRelationships(initialMember), firstGenreation)
+    console.log(
+      '---',
+      familyTree.getList(),
+      familyTree.getNodeRelationships(initialMember),
+      firstGenreation
+    )
   }
 </script>
 
