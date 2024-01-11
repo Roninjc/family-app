@@ -194,10 +194,10 @@
       return undefined
     }
 
-    function getNodesGeneration() {
+    function getNodesGeneration(): { nodeId: string; generation: number }[] | undefined {
       const initialNode = familyTree.getAnyNodeId()
 
-      if (!initialNode) return 'No available family nodes'
+      if (!initialNode) return undefined
 
       const rawGenerations = [...familyTree.dfsLevels(initialNode)]
       const genNormalizer = 1 - Math.min(...rawGenerations.map((node) => node.level))
@@ -267,26 +267,59 @@
     })
   })
 
-  const roots2 = familyTree.getNodesGeneration()
-
-  console.log('---', roots2)
+  const generations = familyTree.getNodesGeneration()
+  const firstGenreation = generations?.filter((member) => member.generation === 1)
+  let initialMember: string
+  if (firstGenreation && firstGenreation.length > 0) {
+    initialMember = firstGenreation[0].nodeId
+    console.log('---', familyTree.getNodeRelationships(initialMember), firstGenreation)
+  }
 </script>
 
 <h1>Familia Castaño</h1>
 <div id="family-tree-wrapper">
-  <!-- {#each Object.entries(generationsObject) as [generation, members]}
-    {#if Number(generation) === firstGeneration}
-      <p>
-        {generation}
-      </p>
-      {#each members as member}
-        <p>{member.name}</p>
-        {#if member.partner}
-          <p>{familyData.members.find((m) => m.id === Number(member.partner))?.name}</p>
+  {#if initialMember}
+    <div class="family-node-row">
+      <div class="family-node-row">
+        <div class="member-node">
+          {initialMember} - {JSON.stringify(familyTree.getNodeRelationships(initialMember))}
+        </div>
+
+        <!-- Partner ramification -->
+        {#each familyTree.getNodeRelationships(initialMember) as related (related.nodeId)}
+          {#if related.weight === 4}
+            <div class="family-node-row">
+              <div class="member-node" data-member-id={related.nodeId}>
+                {related.nodeId}
+              </div>
+            </div>
+          {/if}
+        {/each}
+
+        <!-- Previous partners ramification -->
+        {#each familyTree.getNodeRelationships(initialMember) as related (related.nodeId)}
+          {#if related.weight === 5}
+            <div class="family-node-row">
+              <div class="member-node" data-member-id={related.nodeId}>
+                {related.nodeId}
+              </div>
+            </div>
+          {/if}
+        {/each}
+      </div>
+
+      <!-- Siblings ramification -->
+      {#each familyTree.getNodeRelationships(initialMember) as related (related.nodeId)}
+        {#if related.weight === 3}
+          <div class="family-node-row">
+            <div class="member-node" data-member-id={related.nodeId}>
+              {related.nodeId}
+            </div>
+          </div>
         {/if}
       {/each}
-    {/if}
-  {/each} -->
+    </div>
+  {/if}
 </div>
 
 <style lang="scss">
@@ -294,5 +327,15 @@
     display: flex;
     flex-direction: row;
     background-color: aquamarine;
+
+    .family-node-row {
+      display: flex;
+      flex-direction: row;
+    }
+
+    .family-node-column {
+      display: flex;
+      flex-direction: column;
+    }
   }
 </style>
