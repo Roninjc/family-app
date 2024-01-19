@@ -21,3 +21,8 @@ export interface FamilyNode extends FamilyMember {
 export interface FamilyData {
   members: FamilyMember[]
 }
+
+export interface Relationship {
+  nodeId: string
+  weight: number
+}
