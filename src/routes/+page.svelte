@@ -27,15 +27,5 @@
     display: flex;
     flex-direction: row;
     background-color: aquamarine;
-
-    .family-node-row {
-      display: flex;
-      flex-direction: row;
-    }
-
-    .family-node-column {
-      display: flex;
-      flex-direction: column;
-    }
   }
 </style>
