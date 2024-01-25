@@ -22,9 +22,15 @@
 </div>
 
 <style lang="scss">
+  :global(body) {
+    margin: 0;
+  }
+
   #family-tree-wrapper {
     display: flex;
     flex-direction: row;
-    background-color: aquamarine;
+    background-color: #e0e0e0;
+    overflow: scroll;
+    padding: 20px;
   }
 </style>

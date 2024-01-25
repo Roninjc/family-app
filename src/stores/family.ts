@@ -50,7 +50,7 @@ export const familyData: FamilyData = {
       id: '7',
       name: 'María Elena',
       firstFamilyName: 'Costa',
-      secondFamilyName: 'Bosch',
+      secondFamilyName: 'Jurado',
       parents: [],
       children: [],
       siblings: [],
