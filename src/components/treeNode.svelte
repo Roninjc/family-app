@@ -59,6 +59,11 @@
 {#if memberToDisplay}
   <div class="family-node-column">
     <div class="family-node-row">
+      {#if previousPartners.length > 0}
+        {#each previousPartners as pPartner}
+          <svelte:self memberId={pPartner.nodeId} />
+        {/each}
+      {/if}
       <div class="couple-wrapper family-node-row">
         <div class="member-node">
           <MemberBadge {memberId} />
@@ -67,11 +72,6 @@
           <svelte:self memberId={actualPartner[0].nodeId} />
         {/if}
       </div>
-      {#if previousPartners.length > 0}
-        {#each previousPartners as pPartner}
-          <svelte:self memberId={pPartner.nodeId} />
-        {/each}
-      {/if}
       {#if siblings.length > 0}
         {#each siblings as sibling}
           <svelte:self memberId={sibling.nodeId} />
@@ -92,17 +92,17 @@
   .family-node-column {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 50px;
   }
 
   .family-node-row {
     display: flex;
     flex-direction: row;
     justify-content: center;
-    gap: 10px;
+    gap: 30px;
   }
 
   .couple-wrapper {
-    gap: 5px;
+    gap: 20px;
   }
 </style>
