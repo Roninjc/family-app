@@ -10,12 +10,14 @@ export interface FamilyMember {
   previousPartners: string[]
 }
 
-export interface FamilyNode extends FamilyMember {
-  getParents(): string[]
-  getChildren(): string[]
-  getSiblings(): string[]
-  getPartner(): string[]
-  getPreviousPartners(): string[]
+export interface MemberInfo {
+  name: string
+  firstFamilyName: string
+  secondFamilyName: string
+}
+export interface FamilyNode {
+  relations: Map
+  memberInfo: MemberInfo
 }
 
 export interface FamilyData {

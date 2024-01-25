@@ -13,17 +13,29 @@ enum Relation {
 const initFamilyTree = () => {
   const adjList = new Map()
 
-  function addVertex(v: string) {
-    if (!adjList.has(v)) {
-      adjList.set(v, new Map())
+  function addVertex(m: FamilyMember) {
+    const id = m.id
+    const name = m.name
+    const firstFamilyName = m.firstFamilyName
+    const secondFamilyName = m.secondFamilyName
+
+    if (id && !adjList.has(id)) {
+      adjList.set(id, {
+        relations: new Map(),
+        memberInfo: {
+          name,
+          firstFamilyName,
+          secondFamilyName
+        }
+      })
     }
   }
 
-  function addEdge(v: string, w: string, weight: number) {
+  function addEdge(v: FamilyMember, w: FamilyMember, weight: number) {
     addVertex(v)
     addVertex(w)
-    adjList.get(v)?.set(w, weight)
-    adjList.get(w)?.set(v, weight === 1 ? 2 : weight === 2 ? 1 : weight)
+    adjList.get(v.id)?.relations?.set(w.id, weight)
+    adjList.get(w.id)?.relations?.set(v.id, weight === 1 ? 2 : weight === 2 ? 1 : weight)
   }
 
   function getList() {
@@ -32,7 +44,7 @@ const initFamilyTree = () => {
 
   function getNodeRelationships(nodeId: string): { nodeId: string; weight: number }[] {
     const relationships: { weight: number; nodeId: string }[] = []
-    const adjacentNodes = adjList.get(nodeId)
+    const adjacentNodes = adjList.get(nodeId).relations
 
     adjacentNodes?.forEach((weight: number, nodeId: string) => {
       relationships.push({ nodeId, weight })
@@ -58,6 +70,7 @@ const initFamilyTree = () => {
         levels.set(nodeId, level)
 
         const relationships = getNodeRelationships(nodeId)
+
         relationships.forEach(({ nodeId, weight }) => {
           let nextLevel = level
 
@@ -110,19 +123,19 @@ const initFamilyTree = () => {
 export const familyTree = initFamilyTree()
 
 familyData?.members?.forEach((member: FamilyMember) => {
-  familyTree.addVertex(member.id)
+  familyTree.addVertex(member)
 
   member.children?.forEach((childId: string) => {
     const child = familyData.members.find((member) => member.id === childId)
     if (child) {
-      familyTree.addEdge(member.id, child.id, Relation.Child)
+      familyTree.addEdge(member, child, Relation.Child)
     }
   })
 
   member.parents?.forEach((parentId: string) => {
     const parent = familyData.members.find((member) => member.id === parentId)
     if (parent) {
-      familyTree.addEdge(member.id, parent.id, Relation.Parent)
+      familyTree.addEdge(member, parent, Relation.Parent)
     }
     // TODO: comporbar si hay hermanos de los mismos padres para actualizarlos en el momento.
   })
@@ -130,21 +143,21 @@ familyData?.members?.forEach((member: FamilyMember) => {
   member.siblings?.forEach((siblingId: string) => {
     const sibling = familyData.members.find((member) => member.id === siblingId)
     if (sibling) {
-      familyTree.addEdge(member.id, sibling.id, Relation.Sibling)
+      familyTree.addEdge(member, sibling, Relation.Sibling)
     }
   })
 
   member.partner?.forEach((partnerId: string) => {
     const partner = familyData.members.find((member) => member.id === partnerId)
     if (partner) {
-      familyTree.addEdge(member.id, partner.id, Relation.Partner)
+      familyTree.addEdge(member, partner, Relation.Partner)
     }
   })
 
   member.previousPartners?.forEach((previousPartnerId: string) => {
     const previousPartner = familyData.members.find((member) => member.id === previousPartnerId)
     if (previousPartner) {
-      familyTree.addEdge(member.id, previousPartner.id, Relation.PreviousPartner)
+      familyTree.addEdge(member, previousPartner, Relation.PreviousPartner)
     }
   })
 })

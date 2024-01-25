@@ -2,21 +2,26 @@
   import TreeNode from '../components/treeNode.svelte'
   import { familyTree, firstGenreation, stack } from '../stores/tree'
 
-  let initialMember: string
+  let initialMemberId: string
   if (firstGenreation && firstGenreation.length > 0) {
-    initialMember = firstGenreation[0].nodeId
-    console.log('---', familyTree, familyTree.getNodeRelationships(initialMember), firstGenreation)
+    initialMemberId = firstGenreation[0].nodeId
+    console.log(
+      '---',
+      familyTree,
+      familyTree.getNodeRelationships(initialMemberId),
+      firstGenreation
+    )
 
-    if (initialMember) {
-      stack.set([initialMember])
+    if (initialMemberId) {
+      stack.set([initialMemberId])
     }
   }
 </script>
 
 <h1>Familia Castaño</h1>
 <div id="family-tree-wrapper">
-  {#if initialMember}
-    <TreeNode member={initialMember} />
+  {#if initialMemberId}
+    <TreeNode memberId={initialMemberId} />
   {:else}
     No initial member
   {/if}

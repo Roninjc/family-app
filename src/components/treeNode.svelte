@@ -2,8 +2,9 @@
   import type { Relationship } from '$lib/types/familyTypes'
   import { get } from 'svelte/store'
   import { familyTree, stack, visitedMembers } from '../stores/tree'
+  import MemberBadge from './memberBadge.svelte'
 
-  export let member: string
+  export let memberId: string
 
   const actualVisitedMembers = get(visitedMembers)
   const actualStack = get(stack)
@@ -16,16 +17,16 @@
   let actualPartner: Relationship[] = []
   let previousPartners: Relationship[] = []
 
-  if (member && !actualVisitedMembers.includes(member)) {
-    const stackIndex = actualStack.findIndex((id) => id === member)
+  if (memberId && !actualVisitedMembers.includes(memberId)) {
+    const stackIndex = actualStack.findIndex((id) => id === memberId)
     actualStack.splice(stackIndex, 1)
     memberToDisplay = true
 
     // Add actual member to visitedMembers store
-    actualVisitedMembers.push(member)
+    actualVisitedMembers.push(memberId)
     visitedMembers.set(actualVisitedMembers)
 
-    const relationships: Relationship[] = familyTree.getNodeRelationships(member)
+    const relationships: Relationship[] = familyTree.getNodeRelationships(memberId)
 
     children = relationships.filter(
       ({ nodeId, weight }) =>
@@ -61,27 +62,27 @@
     <div class="family-node-row">
       <div class="couple-wrapper family-node-row">
         <div class="member-node">
-          {member}
+          <MemberBadge {memberId} />
         </div>
         {#if actualPartner.length > 0}
-          <svelte:self member={actualPartner[0].nodeId} />
+          <svelte:self memberId={actualPartner[0].nodeId} />
         {/if}
       </div>
       {#if previousPartners.length > 0}
         {#each previousPartners as pPartner}
-          <svelte:self member={pPartner.nodeId} />
+          <svelte:self memberId={pPartner.nodeId} />
         {/each}
       {/if}
       {#if siblings.length > 0}
         {#each siblings as sibling}
-          <svelte:self member={sibling.nodeId} />
+          <svelte:self memberId={sibling.nodeId} />
         {/each}
       {/if}
     </div>
     {#if children.length > 0}
       <div class="children-wrapper family-node-row">
         {#each children as child}
-          <svelte:self member={child.nodeId} />
+          <svelte:self memberId={child.nodeId} />
         {/each}
       </div>
     {/if}
