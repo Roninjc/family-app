@@ -8,7 +8,6 @@
 
   const actualVisitedMembers = get(visitedMembers)
   const actualStack = get(stack)
-  console.log(actualVisitedMembers)
 
   let memberToDisplay = false
   let children: Relationship[] = []
