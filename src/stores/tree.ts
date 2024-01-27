@@ -1,4 +1,4 @@
-import type { Couple, FamilyMember } from '$lib/types/familyTypes'
+import type { ParentsChildren, FamilyMember } from '$lib/types/familyTypes'
 import { writable } from 'svelte/store'
 import { familyData } from './family'
 
@@ -117,10 +117,10 @@ const initFamilyTree = () => {
     return generations
   }
 
-  function* dfsCouples() {
+  function* dfsParentsChildren() {
     const visitedNodes = new Set<string>()
     const stack: string[] = []
-    const couples: Couple[] = []
+    const couples: ParentsChildren[] = []
     const initialNodeId = familyTree.getAnyNodeId()
 
     if (!initialNodeId) return
@@ -138,8 +138,8 @@ const initFamilyTree = () => {
           if (nodeChildren.length > 0) {
             if (weight === Relation.Partner || weight === Relation.PreviousPartner) {
               const coupleExists = couples.find(
-                ({ nodeId, coupleNodeId }) =>
-                  nodeId === incomingCoupleNodeId && coupleNodeId === incomingNodeId
+                ({ parent1, parent2 }) =>
+                  parent1 === incomingCoupleNodeId && parent2 === incomingNodeId
               )
               if (!coupleExists) {
                 const coupleRelationships = getNodeRelationships(incomingCoupleNodeId)
@@ -152,8 +152,8 @@ const initFamilyTree = () => {
 
                 if (commonChildren.length > 0) {
                   const incomingCouple = {
-                    nodeId: incomingNodeId,
-                    coupleNodeId: incomingCoupleNodeId,
+                    parent1: incomingNodeId,
+                    parent2: incomingCoupleNodeId,
                     children: commonChildren
                   }
                   couples.push(incomingCouple)
@@ -172,7 +172,7 @@ const initFamilyTree = () => {
   }
 
   function getAllCouplesWithChildren() {
-    const couplesWithChildren = [...familyTree.dfsCouples()]
+    const couplesWithChildren = [...familyTree.dfsParentsChildren()]
     return couplesWithChildren
   }
 
@@ -185,7 +185,7 @@ const initFamilyTree = () => {
     dfsLevels,
     getAnyNodeId,
     getNodesGeneration,
-    dfsCouples,
+    dfsParentsChildren,
     getAllCouplesWithChildren
   }
 }

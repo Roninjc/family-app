@@ -29,8 +29,8 @@ export interface Relationship {
   weight: number
 }
 
-export interface Couple {
-  nodeId: string
-  coupleNodeId: string
+export interface ParentsChildren {
+  parent1: string
+  parent2?: string
   children: Relationship[]
 }
