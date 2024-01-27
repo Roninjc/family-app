@@ -28,3 +28,8 @@ export interface Relationship {
   nodeId: string
   weight: number
 }
+
+export interface Couple {
+  nodeId: string
+  coupleNodeId: string
+}
