@@ -30,7 +30,7 @@
     gap: 5px;
     // width: 90px;
     min-width: 90px;
-    min-height: 81px;
+    min-height: 111px;
     padding: 5px;
     overflow: hidden;
     border-radius: 10px;
@@ -41,8 +41,8 @@
   }
 
   .picture-wrapper {
-    width: 30px;
-    height: 30px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     background: #e0e0e0;
     box-shadow:
@@ -52,14 +52,18 @@
 
   .name-wrapper {
     border-radius: 10px;
-    text-wrap: nowrap;
+    white-space: nowrap;
     overflow: hidden;
     width: 100%;
+    padding: 3px;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     align-items: center;
-
-    .name-container {
-    }
+    flex-grow: 1;
+    background: #e0e0e0;
+    box-shadow:
+      inset 3px 3px 6px #bebebe,
+      inset -3px -3px 6px #ffffff;
   }
 </style>
