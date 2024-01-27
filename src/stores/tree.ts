@@ -1,4 +1,4 @@
-import type { FamilyMember } from '$lib/types/familyTypes'
+import type { Couple, FamilyMember } from '$lib/types/familyTypes'
 import { writable } from 'svelte/store'
 import { familyData } from './family'
 
@@ -35,7 +35,16 @@ const initFamilyTree = () => {
     addVertex(v)
     addVertex(w)
     adjList.get(v.id)?.relations?.set(w.id, weight)
-    adjList.get(w.id)?.relations?.set(v.id, weight === 1 ? 2 : weight === 2 ? 1 : weight)
+    adjList
+      .get(w.id)
+      ?.relations?.set(
+        v.id,
+        weight === Relation.Child
+          ? Relation.Parent
+          : weight === Relation.Parent
+            ? Relation.Child
+            : weight
+      )
   }
 
   function getList() {
@@ -56,7 +65,7 @@ const initFamilyTree = () => {
   function* dfsLevels(initialNodeId: string) {
     const visitedNodes = new Set<string>()
     const stack: { nodeId: string; level: number }[] = []
-    const levels = new Map<string, number>()
+    // const levels = new Map<string, number>()
 
     stack.push({ nodeId: initialNodeId, level: 0 })
 
@@ -67,15 +76,15 @@ const initFamilyTree = () => {
         yield { nodeId, level }
 
         visitedNodes.add(nodeId)
-        levels.set(nodeId, level)
+        // levels.set(nodeId, level)
 
         const relationships = getNodeRelationships(nodeId)
 
         relationships.forEach(({ nodeId, weight }) => {
           let nextLevel = level
 
-          if (weight === 1) ++nextLevel
-          if (weight === 2) --nextLevel
+          if (weight === Relation.Child) ++nextLevel
+          if (weight === Relation.Parent) --nextLevel
 
           stack.push({ nodeId, level: nextLevel })
         })
@@ -108,6 +117,65 @@ const initFamilyTree = () => {
     return generations
   }
 
+  function* dfsCouples() {
+    const visitedNodes = new Set<string>()
+    const stack: string[] = []
+    const couples: Couple[] = []
+    const initialNodeId = familyTree.getAnyNodeId()
+
+    if (!initialNodeId) return
+
+    stack.push(initialNodeId)
+
+    while (stack.length > 0) {
+      const incomingNodeId = stack.pop()
+
+      if (incomingNodeId && !visitedNodes.has(incomingNodeId)) {
+        const relationships = getNodeRelationships(incomingNodeId)
+        const nodeChildren = relationships.filter((relative) => relative.weight === Relation.Child)
+
+        for (const { nodeId: incomingCoupleNodeId, weight } of relationships) {
+          if (nodeChildren.length > 0) {
+            if (weight === Relation.Partner || weight === Relation.PreviousPartner) {
+              const coupleExists = couples.find(
+                ({ nodeId, coupleNodeId }) =>
+                  nodeId === incomingCoupleNodeId && coupleNodeId === incomingNodeId
+              )
+              if (!coupleExists) {
+                const coupleRelationships = getNodeRelationships(incomingCoupleNodeId)
+                const coupleChildren = coupleRelationships.filter(
+                  (relative) => relative.weight === Relation.Child
+                )
+                const commonChildren = nodeChildren.filter((child) =>
+                  coupleChildren.some(({ nodeId }) => child.nodeId === nodeId)
+                )
+
+                if (commonChildren.length > 0) {
+                  const incomingCouple = {
+                    nodeId: incomingNodeId,
+                    coupleNodeId: incomingCoupleNodeId,
+                    children: commonChildren
+                  }
+                  couples.push(incomingCouple)
+                  yield incomingCouple
+                }
+              }
+            }
+          }
+
+          stack.push(incomingCoupleNodeId)
+        }
+
+        visitedNodes.add(incomingNodeId)
+      }
+    }
+  }
+
+  function getAllCouplesWithChildren() {
+    const couplesWithChildren = [...familyTree.dfsCouples()]
+    return couplesWithChildren
+  }
+
   return {
     adjList,
     addVertex,
@@ -116,7 +184,9 @@ const initFamilyTree = () => {
     getNodeRelationships,
     dfsLevels,
     getAnyNodeId,
-    getNodesGeneration
+    getNodesGeneration,
+    dfsCouples,
+    getAllCouplesWithChildren
   }
 }
 

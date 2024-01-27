@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import TreeNode from '../components/treeNode.svelte'
-  import { firstGenreation, stack } from '../stores/tree'
+  import { familyTree, firstGenreation, stack } from '../stores/tree'
 
   let initialMemberId: string
   let treeWrapper: HTMLElement
@@ -17,6 +17,7 @@
   onMount(() => {
     setTimeout(() => {
       centerTree()
+      familyTree.getAllCouplesWithChildren()
     }, 400)
   })
 

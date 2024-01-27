@@ -32,4 +32,5 @@ export interface Relationship {
 export interface Couple {
   nodeId: string
   coupleNodeId: string
+  children: Relationship[]
 }
