@@ -1,3 +1,11 @@
+export enum Relation {
+  Child = 1,
+  Parent,
+  Sibling,
+  Partner,
+  PreviousPartner
+}
+
 export interface FamilyMember {
   id: string
   name: string
@@ -26,7 +34,7 @@ export interface FamilyData {
 
 export interface Relationship {
   nodeId: string
-  weight: number
+  weight: Relation
 }
 
 export interface ParentsChildren {
