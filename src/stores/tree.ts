@@ -51,13 +51,22 @@ const initFamilyTree = () => {
     return adjList
   }
 
-  function getNodeRelationships(nodeId: string): { nodeId: string; weight: number }[] {
+  function getNodeRelationships(
+    nodeId: string,
+    relation = 0
+  ): { nodeId: string; weight: number }[] {
     const relationships: { weight: number; nodeId: string }[] = []
     const adjacentNodes = adjList.get(nodeId).relations
 
     adjacentNodes?.forEach((weight: number, nodeId: string) => {
       relationships.push({ nodeId, weight })
     })
+
+    if (relation > 0) {
+      const fileterdRelationships = relationships.filter((r) => r.weight === relation)
+
+      return fileterdRelationships
+    }
 
     return relationships
   }
@@ -151,13 +160,13 @@ const initFamilyTree = () => {
                 )
 
                 if (commonChildren.length > 0) {
-                  const incomingCouple = {
+                  const incomingParentsChildren = {
                     parent1: incomingNodeId,
                     parent2: incomingCoupleNodeId,
                     children: commonChildren
                   }
-                  couples.push(incomingCouple)
-                  yield incomingCouple
+                  couples.push(incomingParentsChildren)
+                  yield incomingParentsChildren
                 }
               }
             }
