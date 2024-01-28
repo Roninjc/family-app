@@ -129,7 +129,7 @@ const initFamilyTree = () => {
   function* dfsParentsChildren() {
     const visitedNodes = new Set<string>()
     const stack: string[] = []
-    const couples: ParentsChildren[] = []
+    const parentsChildren: ParentsChildren[] = []
     const initialNodeId = familyTree.getAnyNodeId()
 
     if (!initialNodeId) return
@@ -143,15 +143,15 @@ const initFamilyTree = () => {
         const relationships = getNodeRelationships(incomingNodeId)
         const nodeChildren = relationships.filter((relative) => relative.weight === Relation.Child)
 
-        for (const { nodeId: incomingCoupleNodeId, weight } of relationships) {
+        for (const { nodeId: incomingRelativeNodeId, weight } of relationships) {
           if (nodeChildren.length > 0) {
             if (weight === Relation.Partner || weight === Relation.PreviousPartner) {
-              const coupleExists = couples.find(
+              const coupleExists = parentsChildren.find(
                 ({ parent1, parent2 }) =>
-                  parent1 === incomingCoupleNodeId && parent2 === incomingNodeId
+                  parent1 === incomingRelativeNodeId && parent2 === incomingNodeId
               )
               if (!coupleExists) {
-                const coupleRelationships = getNodeRelationships(incomingCoupleNodeId)
+                const coupleRelationships = getNodeRelationships(incomingRelativeNodeId)
                 const coupleChildren = coupleRelationships.filter(
                   (relative) => relative.weight === Relation.Child
                 )
@@ -162,17 +162,33 @@ const initFamilyTree = () => {
                 if (commonChildren.length > 0) {
                   const incomingParentsChildren = {
                     parent1: incomingNodeId,
-                    parent2: incomingCoupleNodeId,
+                    parent2: incomingRelativeNodeId,
                     children: commonChildren
                   }
-                  couples.push(incomingParentsChildren)
+
+                  parentsChildren.push(incomingParentsChildren)
                   yield incomingParentsChildren
                 }
+              }
+            } else if (weight === Relation.Child) {
+              const childParents = familyTree.getNodeRelationships(
+                incomingRelativeNodeId,
+                Relation.Parent
+              )
+
+              if (childParents.length === 1 && childParents[0].nodeId === incomingNodeId) {
+                const incomingParentChildren = {
+                  parent1: incomingNodeId,
+                  children: [{ nodeId: incomingRelativeNodeId, weight }]
+                }
+
+                parentsChildren.push(incomingParentChildren)
+                yield incomingParentChildren
               }
             }
           }
 
-          stack.push(incomingCoupleNodeId)
+          stack.push(incomingRelativeNodeId)
         }
 
         visitedNodes.add(incomingNodeId)
@@ -180,9 +196,11 @@ const initFamilyTree = () => {
     }
   }
 
-  function getAllCouplesWithChildren() {
-    const couplesWithChildren = [...familyTree.dfsParentsChildren()]
-    return couplesWithChildren
+  function getParentsChildren() {
+    const parentsChildren = [...familyTree.dfsParentsChildren()]
+    // TODO: unir los children con el mismo parent1 que no tienen parent2
+
+    return parentsChildren
   }
 
   return {
@@ -195,7 +213,7 @@ const initFamilyTree = () => {
     getAnyNodeId,
     getNodesGeneration,
     dfsParentsChildren,
-    getAllCouplesWithChildren
+    getParentsChildren
   }
 }
 
