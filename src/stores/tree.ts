@@ -202,13 +202,11 @@ const initFamilyTree = () => {
 
     rawParentsChildren.forEach((parentChildren) => {
       if (parentChildren.parent1 && 'parent2' in parentChildren) {
-        console.log('...', parentChildren)
         parentsChildren.push(parentChildren)
       } else {
         const existingItem = parentsChildren.find(
           (pc) => pc.parent1 === parentChildren.parent1 && !pc.parent2
         )
-        console.log('---pc', existingItem)
 
         if (existingItem) {
           existingItem.children = existingItem.children.concat(parentChildren.children)
