@@ -17,7 +17,7 @@
   onMount(() => {
     setTimeout(() => {
       centerTree()
-      familyTree.getAllCouplesWithChildren()
+      familyTree.getParentsChildren()
     }, 400)
   })
 
