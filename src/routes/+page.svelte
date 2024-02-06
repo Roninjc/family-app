@@ -18,6 +18,7 @@
     setTimeout(() => {
       centerTree()
       familyTree.getParentsChildren()
+      // TODO(WIP): draw parentChildren limes
     }, 400)
   })
 
@@ -35,7 +36,7 @@
   {#if initialMemberId}
     <TreeNode memberId={initialMemberId} />
   {:else}
-    No initial member
+    It seem as you still have not added any member of this family.
   {/if}
 </div>
 
