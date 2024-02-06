@@ -3,6 +3,7 @@
   import { get } from 'svelte/store'
   import { familyTree, stack, visitedMembers } from '../stores/tree'
   import MemberBadge from './memberBadge.svelte'
+  import ConnectionLines from './connectionLines.svelte'
 
   export let memberId: string
 
@@ -10,6 +11,7 @@
   const actualStack = get(stack)
 
   let memberToDisplay = false
+  let renderConnectionLine = false
   let children: Relationship[] = []
   let parent: Relationship[] = []
   let siblings: Relationship[] = []
@@ -48,6 +50,10 @@
         weight === 5 && !actualVisitedMembers.includes(nodeId) && !actualStack.includes(nodeId)
     )
 
+    if (actualPartner.length > 0 || children.length > 0) {
+      renderConnectionLine = true
+    }
+
     for (const i in relationships) {
       // Add member's relatives to stack for next loop
       actualStack.push(relationships[i].nodeId)
@@ -58,6 +64,9 @@
 
 {#if memberToDisplay}
   <div class="family-node-column">
+    {#if renderConnectionLine}
+      <ConnectionLines {actualPartner} {children} />
+    {/if}
     <div class="family-node-row">
       {#if previousPartners.length > 0}
         {#each previousPartners as pPartner}
@@ -65,7 +74,7 @@
         {/each}
       {/if}
       <div class="couple-wrapper family-node-row">
-        <div class="member-node">
+        <div id={memberId} class="member-node">
           <MemberBadge {memberId} />
         </div>
         {#if actualPartner.length > 0}
