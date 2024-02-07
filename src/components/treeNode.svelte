@@ -64,9 +64,6 @@
 
 {#if memberToDisplay}
   <div class="family-node-column">
-    {#if renderConnectionLine}
-      <ConnectionLines {actualPartner} {children} />
-    {/if}
     <div class="family-node-row">
       {#if previousPartners.length > 0}
         {#each previousPartners as pPartner}
@@ -74,6 +71,9 @@
         {/each}
       {/if}
       <div class="couple-wrapper family-node-row">
+        {#if renderConnectionLine}
+          <ConnectionLines {memberId} {actualPartner} {children} />
+        {/if}
         <div id={memberId} class="member-node">
           <MemberBadge {memberId} />
         </div>
@@ -112,6 +112,7 @@
   }
 
   .couple-wrapper {
+    position: relative;
     gap: 20px;
   }
 </style>

@@ -23,6 +23,7 @@
 
 <style lang="scss">
   .member-badge {
+    position: relative;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -38,6 +39,7 @@
     box-shadow:
       6px 6px 12px #bebebe,
       -6px -6px 12px #ffffff;
+    z-index: 1;
   }
 
   .picture-wrapper {
