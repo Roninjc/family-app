@@ -90,10 +90,20 @@
       style={`transform: translate(${svgLeft}px, ${svgTop - 100}px)`}
     >
       <path
-        d="M{memberCenter.x - svgLeft} 0 L{actualPartnerCenter.x - svgLeft} 0 Z"
+        d="M{Math.abs(memberCenter.x - svgLeft)} 0 L{Math.abs(actualPartnerCenter.x - svgLeft)} 0 Z"
         stroke="#555555"
         stroke-width="5"
       />
+      <path
+        d="M{Math.abs(
+          memberCenter.x - svgLeft + Math.abs(memberCenter.x - actualPartnerCenter.x) / 2
+        )} 0 L{Math.abs(
+          memberCenter.x - svgLeft + Math.abs(memberCenter.x - actualPartnerCenter.x) / 2
+        )} 105 Z"
+        stroke="#555555"
+        stroke-width="3"
+      />
+      <path d="M0 105 L{Math.abs(svgLeft - svgRight)} 105 Z" stroke="#555555" stroke-width="3" />
     </svg>
   {:else}
     <svg

@@ -29,9 +29,8 @@
     justify-content: center;
     align-items: center;
     gap: 5px;
-    // width: 90px;
-    min-width: 90px;
-    min-height: 110px;
+    width: 140px;
+    height: 110px;
     padding: 5px;
     overflow: hidden;
     border-radius: 10px;
