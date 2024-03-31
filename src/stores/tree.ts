@@ -277,6 +277,7 @@ familyData?.members?.forEach((member: FamilyMember) => {
 
 export const generations = familyTree.getNodesGeneration()
 export const firstGenreation = generations?.filter((member) => member.generation === 1)
+export const parentsChildrenArray = familyTree.getParentsChildren()
 
 export const visitedMembers = writable<string[]>([])
 export const stack = writable<string[]>([])

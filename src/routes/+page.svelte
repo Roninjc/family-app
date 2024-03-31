@@ -17,7 +17,8 @@
   onMount(() => {
     setTimeout(() => {
       centerTree()
-      familyTree.getParentsChildren()
+      // familyTree.getParentsChildren()
+      console.log(familyTree.getParentsChildren())
       // TODO(WIP): draw parentChildren limes
     }, 400)
   })
@@ -31,7 +32,9 @@
   }
 </script>
 
-<h1>Familia Castaño</h1>
+<header>
+  <h1>Familia Castaño</h1>
+</header>
 <div id="family-tree-wrapper" bind:this={treeWrapper}>
   {#if initialMemberId}
     <TreeNode memberId={initialMemberId} />
@@ -45,6 +48,11 @@
     margin: 0;
   }
 
+  header {
+    height: 80px;
+    overflow: hidden;
+  }
+
   #family-tree-wrapper {
     display: flex;
     flex-direction: row;
@@ -52,5 +60,6 @@
     overflow: scroll;
     padding: 20px;
     scroll-behavior: smooth;
+    position: relative;
   }
 </style>

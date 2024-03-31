@@ -1,32 +1,62 @@
 <script lang="ts">
-  import type { Relationship } from '$lib/types/familyTypes'
+  import type { ParentsChildren, Relationship } from '$lib/types/familyTypes'
   import { onMount } from 'svelte'
 
   export let memberId: string
   export let actualPartner: Relationship[] = []
-  export let children: Relationship[] = []
+  // export let previousPartner: Relationship[] = []
+  export let SPCChildren: Relationship[] = []
+  export let APCChildren: Relationship[] = []
+  export let previousPartnersChildren: ParentsChildren[][] = []
 
-  let memberPosition: { x: number; y: number } | undefined
-  let partnerPosition: { x: number; y: number } | undefined
-  children = []
+  let memberCenter: { x: number; y: number } | undefined
+  let actualPartnerCenter: { x: number; y: number } | undefined
+  let actualPartnerChildrenCenter: { x: number; y: number }[] = []
+  let svgLeft: number
+  let svgRight: number
+  let svgTop: number
+  let svgBottom: number
 
   onMount(() => {
-    memberPosition = getMemberPosition(memberId)
+    memberCenter = getMemberCenter(memberId)
 
     if (actualPartner.length > 0) {
-      partnerPosition = getMemberPosition(actualPartner[0]?.nodeId)
+      actualPartnerCenter = getMemberCenter(actualPartner[0]?.nodeId)
     }
 
-    // if (children.length > 0) {
-    //   children.forEach((child) => {
-    //     console.log(getMemberPosition(child?.nodeId))
-    //   })
+    // if (previousPartner.length > 0) {
+    //   partnerCenter = getMemberCenter(actualPartner[0]?.nodeId)
     // }
+
+    if (APCChildren.length > 0) {
+      APCChildren.forEach((child) => {
+        const childCenter = getMemberCenter(child?.nodeId)
+
+        if (childCenter) {
+          actualPartnerChildrenCenter.push(childCenter)
+        }
+      })
+    }
+
+    if (memberCenter && actualPartnerCenter) {
+      const childrenX = actualPartnerChildrenCenter.map((child) => child.x)
+      const childrenY = actualPartnerChildrenCenter.map((child) => child.y)
+
+      svgLeft = Math.min(memberCenter?.x, actualPartnerCenter?.x, ...childrenX)
+      svgRight = Math.max(memberCenter?.x, actualPartnerCenter?.x, ...childrenX)
+      svgTop = Math.min(memberCenter?.y, actualPartnerCenter?.y, ...childrenY)
+      svgBottom = Math.max(memberCenter?.y, actualPartnerCenter?.y, ...childrenY)
+      console.log(
+        memberId,
+        `left: ${Math.abs((actualPartnerCenter.x - memberCenter.x) / 2)} +
+          ${Math.min(memberCenter.x, actualPartnerCenter.x)}px`
+      )
+    }
   })
 
-  const getMemberPosition = (memberId: string) => {
+  const getMemberCenter = (memberId: string) => {
     const elemPos = document.getElementById(memberId)?.getBoundingClientRect()
-    let position = undefined
+    let center = undefined
 
     if (elemPos) {
       const { left, width, top, height } = elemPos
@@ -36,43 +66,73 @@
       }
 
       if (!isNaN(elemCenter.x) && !isNaN(elemCenter.y)) {
-        position = elemCenter
+        center = elemCenter
       }
     }
 
-    return position
+    return center
   }
 
-  $: hasChildren = children.length > 0
+  $: actualPartnerCommonChildren = APCChildren.length > 0
+  // $: previousPartnerCommonChildren = previousPartnersChildren.length > 0
   $: {
-    console.log(memberPosition, partnerPosition)
+    console.log(memberId, svgLeft, svgRight, svgTop, svgBottom)
   }
 </script>
 
-{#if memberPosition && partnerPosition}
-  {#if !hasChildren}
+{#if memberCenter && actualPartnerCenter}
+  {#if actualPartnerCommonChildren}
     <svg
-      viewBox="{memberPosition.x} {memberPosition.y} {Math.abs(
-        memberPosition.x - partnerPosition.x
-      )} 6"
       xmlns="http://www.w3.org/2000/svg"
+      class="children-couple-svg"
+      width={`${Math.abs(svgLeft - svgRight)}px`}
+      height={`${Math.abs(svgTop - svgBottom)}px`}
+      style={`transform: translate(${svgLeft}px, ${svgTop - 100}px)`}
     >
       <path
-        d="M{memberPosition.x} {memberPosition.y} L{partnerPosition.x} {partnerPosition.y} Z"
+        d="M{memberCenter.x - svgLeft} 0 L{actualPartnerCenter.x - svgLeft} 0 Z"
         stroke="#555555"
-        stroke-width="6"
+        stroke-width="5"
       />
     </svg>
   {:else}
-    <svg></svg>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="no-children-couple-svg"
+      width={`${Math.abs(memberCenter.x - actualPartnerCenter.x)}px`}
+      height="3px"
+      style={`transform: translate(${svgLeft}px, ${svgTop - 100}px)`}
+    >
+      <path
+        d="M0 0 L{Math.abs(memberCenter.x - actualPartnerCenter.x)} 0 Z"
+        stroke="#555555"
+        stroke-width="7"
+      />
+    </svg>
   {/if}
 {/if}
+
+<!-- {#if memberCenter && previousPartnerCenter}
+{/if} -->
 
 <style lang="scss">
   svg {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    translate: -50% -50%;
+    top: 0;
+    left: 0;
   }
+
+  // .children-svg {
+  //   width: 100%;
+  //   height: auto;
+  // }
+
+  // .children-couple-svg {
+  //   top: 0;
+  //   left: 0;
+  // }
+
+  // .no-children-couple-svg {
+  //   top: 60px;
+  // }
 </style>

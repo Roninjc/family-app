@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { Relationship } from '$lib/types/familyTypes'
+  import type { ParentsChildren, Relationship } from '$lib/types/familyTypes'
   import { get } from 'svelte/store'
-  import { familyTree, stack, visitedMembers } from '../stores/tree'
+  import { familyTree, parentsChildrenArray, stack, visitedMembers } from '../stores/tree'
   import MemberBadge from './memberBadge.svelte'
   import ConnectionLines from './connectionLines.svelte'
 
@@ -9,6 +9,10 @@
 
   const actualVisitedMembers = get(visitedMembers)
   const actualStack = get(stack)
+
+  let singleParentChildren: ParentsChildren | undefined
+  let actualPartnerChildren: ParentsChildren | undefined
+  const previousPartnersChildren: ParentsChildren[][] = []
 
   let memberToDisplay = false
   let renderConnectionLine = false
@@ -52,6 +56,27 @@
 
     if (actualPartner.length > 0 || children.length > 0) {
       renderConnectionLine = true
+
+      if (children.length > 0) {
+        singleParentChildren = parentsChildrenArray.find(
+          ({ parent1, parent2 }) => parent1 === memberId && !parent2
+        )
+        actualPartnerChildren = parentsChildrenArray.find(({ parent1, parent2 }) => {
+          return (
+            (parent1 === memberId && parent2 === actualPartner[0].nodeId) ||
+            (parent2 === memberId && parent1 === actualPartner[0].nodeId)
+          )
+        })
+        previousPartners.forEach((pPartner) => {
+          const pPartnerChildren = parentsChildrenArray.filter(({ parent1, parent2 }) => {
+            return (
+              (parent1 === memberId && parent2 === pPartner.nodeId) ||
+              (parent2 === memberId && parent1 === pPartner.nodeId)
+            )
+          })
+          previousPartnersChildren.push(pPartnerChildren)
+        })
+      }
     }
 
     for (const i in relationships) {
@@ -60,6 +85,9 @@
       stack.set(actualStack)
     }
   }
+
+  $: SPCChildren = singleParentChildren?.children
+  $: APCChildren = actualPartnerChildren?.children
 </script>
 
 {#if memberToDisplay}
@@ -72,7 +100,13 @@
       {/if}
       <div class="couple-wrapper family-node-row">
         {#if renderConnectionLine}
-          <ConnectionLines {memberId} {actualPartner} {children} />
+          <ConnectionLines
+            {memberId}
+            {actualPartner}
+            {SPCChildren}
+            {APCChildren}
+            {previousPartnersChildren}
+          />
         {/if}
         <div id={memberId} class="member-node">
           <MemberBadge {memberId} />
@@ -112,7 +146,6 @@
   }
 
   .couple-wrapper {
-    position: relative;
     gap: 20px;
   }
 </style>

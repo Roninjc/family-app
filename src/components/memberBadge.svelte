@@ -31,7 +31,7 @@
     gap: 5px;
     // width: 90px;
     min-width: 90px;
-    min-height: 111px;
+    min-height: 110px;
     padding: 5px;
     overflow: hidden;
     border-radius: 10px;
