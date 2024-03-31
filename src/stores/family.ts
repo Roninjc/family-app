@@ -129,7 +129,7 @@ export const familyData: FamilyData = {
       firstFamilyName: 'Castaño',
       secondFamilyName: 'Aguado',
       parents: ['1', '2'],
-      children: ['21, 22, 23, 24'],
+      children: ['21', '22', '23', '24'],
       siblings: ['3', '4', '11'],
       partner: ['20'],
       previousPartners: []
@@ -217,7 +217,7 @@ export const familyData: FamilyData = {
       firstFamilyName: 'Del Castillo',
       secondFamilyName: '',
       parents: [],
-      children: ['21, 22, 23, 24'],
+      children: ['21', '22', '23', '24'],
       siblings: [],
       partner: ['12'],
       previousPartners: []
@@ -227,9 +227,9 @@ export const familyData: FamilyData = {
       name: 'Daniel',
       firstFamilyName: 'Castaño',
       secondFamilyName: 'Del Castillo',
-      parents: ['12, 20'],
+      parents: ['12', '20'],
       children: [],
-      siblings: ['22, 23, 24'],
+      siblings: ['22', '23', '24'],
       partner: [],
       previousPartners: []
     },
@@ -238,9 +238,9 @@ export const familyData: FamilyData = {
       name: 'Alejandro',
       firstFamilyName: 'Castaño',
       secondFamilyName: 'Del Castillo',
-      parents: ['12, 20'],
+      parents: ['12', '20'],
       children: [],
-      siblings: ['21, 23, 24'],
+      siblings: ['21', '23', '24'],
       partner: [],
       previousPartners: []
     },
@@ -249,9 +249,9 @@ export const familyData: FamilyData = {
       name: 'Carlos',
       firstFamilyName: 'Castaño',
       secondFamilyName: 'Del Castillo',
-      parents: ['12, 20'],
+      parents: ['12', '20'],
       children: [],
-      siblings: ['21, 22, 24'],
+      siblings: ['21', '22', '24'],
       partner: [],
       previousPartners: []
     },
@@ -260,9 +260,9 @@ export const familyData: FamilyData = {
       name: 'Elvira',
       firstFamilyName: 'Castaño',
       secondFamilyName: 'Del Castillo',
-      parents: ['12, 20'],
+      parents: ['12', '20'],
       children: [],
-      siblings: ['21, 22, 23'],
+      siblings: ['21', '22', '23'],
       partner: [],
       previousPartners: []
     }
