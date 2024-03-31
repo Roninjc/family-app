@@ -129,9 +129,9 @@ export const familyData: FamilyData = {
       firstFamilyName: 'Castaño',
       secondFamilyName: 'Aguado',
       parents: ['1', '2'],
-      children: [],
+      children: ['21, 22, 23, 24'],
       siblings: ['3', '4', '11'],
-      partner: [],
+      partner: ['20'],
       previousPartners: []
     },
     {
@@ -208,6 +208,61 @@ export const familyData: FamilyData = {
       parents: ['4'],
       children: [],
       siblings: ['16'],
+      partner: [],
+      previousPartners: []
+    },
+    {
+      id: '20',
+      name: 'Elvira',
+      firstFamilyName: 'Del Castillo',
+      secondFamilyName: '',
+      parents: [],
+      children: ['21, 22, 23, 24'],
+      siblings: [],
+      partner: ['12'],
+      previousPartners: []
+    },
+    {
+      id: '21',
+      name: 'Daniel',
+      firstFamilyName: 'Castaño',
+      secondFamilyName: 'Del Castillo',
+      parents: ['12, 20'],
+      children: [],
+      siblings: ['22, 23, 24'],
+      partner: [],
+      previousPartners: []
+    },
+    {
+      id: '22',
+      name: 'Alejandro',
+      firstFamilyName: 'Castaño',
+      secondFamilyName: 'Del Castillo',
+      parents: ['12, 20'],
+      children: [],
+      siblings: ['21, 23, 24'],
+      partner: [],
+      previousPartners: []
+    },
+    {
+      id: '23',
+      name: 'Carlos',
+      firstFamilyName: 'Castaño',
+      secondFamilyName: 'Del Castillo',
+      parents: ['12, 20'],
+      children: [],
+      siblings: ['21, 22, 24'],
+      partner: [],
+      previousPartners: []
+    },
+    {
+      id: '24',
+      name: 'Elvira',
+      firstFamilyName: 'Castaño',
+      secondFamilyName: 'Del Castillo',
+      parents: ['12, 20'],
+      children: [],
+      siblings: ['21, 22, 23'],
       partner: [],
       previousPartners: []
     }
