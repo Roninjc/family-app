@@ -46,11 +46,6 @@
       svgRight = Math.max(memberCenter?.x, actualPartnerCenter?.x, ...childrenX)
       svgTop = Math.min(memberCenter?.y, actualPartnerCenter?.y, ...childrenY)
       svgBottom = Math.max(memberCenter?.y, actualPartnerCenter?.y, ...childrenY)
-      console.log(
-        memberId,
-        `left: ${Math.abs((actualPartnerCenter.x - memberCenter.x) / 2)} +
-          ${Math.min(memberCenter.x, actualPartnerCenter.x)}px`
-      )
     }
   })
 
@@ -76,7 +71,7 @@
   $: actualPartnerCommonChildren = APCChildren.length > 0
   // $: previousPartnerCommonChildren = previousPartnersChildren.length > 0
   $: {
-    console.log(memberId, svgLeft, svgRight, svgTop, svgBottom)
+    console.log(memberId, svgLeft, svgRight, svgTop, svgBottom, actualPartnerChildrenCenter)
   }
 </script>
 
@@ -90,34 +85,29 @@
       style={`transform: translate(${svgLeft}px, ${svgTop - 100}px)`}
     >
       <path
-        d="M{Math.abs(memberCenter.x - svgLeft)} 0 L{Math.abs(actualPartnerCenter.x - svgLeft)} 0 Z"
-        stroke="#555555"
-        stroke-width="5"
-      />
-      <path
-        d="M{Math.abs(
+        d="M{Math.abs(memberCenter.x - svgLeft)} 0 L{Math.abs(
+          actualPartnerCenter.x - svgLeft
+        )} 0 M{Math.abs(
           memberCenter.x - svgLeft + Math.abs(memberCenter.x - actualPartnerCenter.x) / 2
         )} 0 L{Math.abs(
           memberCenter.x - svgLeft + Math.abs(memberCenter.x - actualPartnerCenter.x) / 2
-        )} 105 Z"
-        stroke="#555555"
-        stroke-width="3"
+        )} 105 M0 105 L{Math.abs(svgLeft - svgRight)} 105 Z"
       />
-      <path d="M0 105 L{Math.abs(svgLeft - svgRight)} 105 Z" stroke="#555555" stroke-width="3" />
+      {#each actualPartnerChildrenCenter as childCenter}
+        <path
+          d="M{Math.abs(childCenter.x - svgLeft)} 105 L{Math.abs(childCenter.x - svgLeft)} 140 Z"
+        />
+      {/each}
     </svg>
   {:else}
     <svg
       xmlns="http://www.w3.org/2000/svg"
       class="no-children-couple-svg"
       width={`${Math.abs(memberCenter.x - actualPartnerCenter.x)}px`}
-      height="3px"
+      height="2px"
       style={`transform: translate(${svgLeft}px, ${svgTop - 100}px)`}
     >
-      <path
-        d="M0 0 L{Math.abs(memberCenter.x - actualPartnerCenter.x)} 0 Z"
-        stroke="#555555"
-        stroke-width="7"
-      />
+      <path d="M0 0 L{Math.abs(memberCenter.x - actualPartnerCenter.x)} 0 Z" />
     </svg>
   {/if}
 {/if}
@@ -130,19 +120,10 @@
     position: absolute;
     top: 0;
     left: 0;
+    overflow: visible;
+    stroke: #555555;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
-
-  // .children-svg {
-  //   width: 100%;
-  //   height: auto;
-  // }
-
-  // .children-couple-svg {
-  //   top: 0;
-  //   left: 0;
-  // }
-
-  // .no-children-couple-svg {
-  //   top: 60px;
-  // }
 </style>
