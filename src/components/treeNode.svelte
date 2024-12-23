@@ -80,8 +80,6 @@
       }
 
       if (previousPartners.length > 0) {
-        console.log('previousPartners', previousPartners)
-        console.log('=========', parentsChildrenArray)
         previousPartnersNoChildren = previousPartners.filter((pPartner) => {
           return !parentsChildrenArray.some(({ parent1, parent2 }) => {
             return (
@@ -90,7 +88,6 @@
             )
           })
         })
-        console.log('previousPartnersNoChildren', previousPartnersNoChildren)
       }
     }
 
