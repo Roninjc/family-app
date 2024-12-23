@@ -12,6 +12,7 @@
 
   let singleParentChildren: ParentsChildren | undefined
   let actualPartnerChildren: ParentsChildren | undefined
+  let previousPartnersNoChildren: Relationship[] = []
   const previousPartnersChildren: ParentsChildren[][] = []
 
   let memberToDisplay = false
@@ -54,7 +55,7 @@
         weight === 5 && !actualVisitedMembers.includes(nodeId) && !actualStack.includes(nodeId)
     )
 
-    if (actualPartner.length > 0 || children.length > 0) {
+    if (actualPartner.length > 0 || children.length > 0 || previousPartners.length > 0) {
       renderConnectionLine = true
 
       if (children.length > 0) {
@@ -76,6 +77,20 @@
           })
           previousPartnersChildren.push(pPartnerChildren)
         })
+      }
+
+      if (previousPartners.length > 0) {
+        console.log('previousPartners', previousPartners)
+        console.log('=========', parentsChildrenArray)
+        previousPartnersNoChildren = previousPartners.filter((pPartner) => {
+          return !parentsChildrenArray.some(({ parent1, parent2 }) => {
+            return (
+              (parent1 === memberId && parent2 === pPartner.nodeId) ||
+              (parent2 === memberId && parent1 === pPartner.nodeId)
+            )
+          })
+        })
+        console.log('previousPartnersNoChildren', previousPartnersNoChildren)
       }
     }
 
@@ -105,6 +120,7 @@
             {actualPartner}
             {SPCChildren}
             {APCChildren}
+            {previousPartnersNoChildren}
             {previousPartnersChildren}
           />
         {/if}
