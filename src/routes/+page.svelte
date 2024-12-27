@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import TreeNode from '../components/treeNode.svelte'
   import { familyTree, firstGenreation, stack } from '../stores/tree'
+  import AddFamilyMemberButton from '../components/addFamilyMemberButton.svelte'
+  import TreeNode from '../components/treeNode.svelte'
 
   let initialMemberId: string
   let treeWrapper: HTMLElement
@@ -34,6 +35,7 @@
 
 <header>
   <h1>Familia Castaño</h1>
+  <AddFamilyMemberButton />
 </header>
 <div id="family-tree-wrapper" bind:this={treeWrapper}>
   {#if initialMemberId}
@@ -46,20 +48,33 @@
 <style lang="scss">
   :global(body) {
     margin: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #e0e0e0;
   }
 
   header {
+    position: sticky;
+    top: 0;
     height: 80px;
     overflow: hidden;
+    z-index: 2;
+    backdrop-filter: blur(9px);
+    box-shadow: 0px 6px 12px 4px #bebebe;
+
+    h1 {
+      text-align: center;
+    }
   }
 
   #family-tree-wrapper {
+    position: relative;
     display: flex;
     flex-direction: row;
     background-color: #e0e0e0;
+    height: 100%;
+    padding: 40px;
     overflow: scroll;
-    padding: 20px;
     scroll-behavior: smooth;
-    position: relative;
   }
 </style>
