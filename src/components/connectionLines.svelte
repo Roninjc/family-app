@@ -1,6 +1,15 @@
 <script lang="ts">
-  import type { ParentsChildren, PartnerRealtionInfo, Relationship } from '$lib/types/familyTypes'
-  import { getMemberCenter, getSvgCoordinates } from '$lib/utils/connectionLines'
+  import type {
+    ParentsChildren,
+    PartnerRealtionInfo,
+    PreviousPartnerRealtionInfo,
+    Relationship
+  } from '$lib/types/familyTypes'
+  import {
+    getMemberCenter,
+    getPreviousPartnerChildrenLinesCoordinates,
+    getSvgCoordinates
+  } from '$lib/utils/connectionLines'
   import { onMount } from 'svelte'
 
   export let memberId: string
@@ -9,12 +18,11 @@
   export let APCChildren: Relationship[] = []
   export let previousPartnersNoChildren: Relationship[] = [] // TODO: implement this
   export let previousPartnersChildren: ParentsChildren[][] = []
-  console.log('first', previousPartnersChildren)
 
   let memberCenter: { x: number; y: number } | undefined
 
   const actualPartnerRelationInfo: PartnerRealtionInfo = {
-    partnerCenter: undefined,
+    partnerCenter: { x: 0, y: 0 },
     childrenCenter: [],
     svgCoordinates: {
       left: 0,
@@ -23,7 +31,8 @@
       bottom: 0
     }
   }
-  const previousPartnersRelationInfo: PartnerRealtionInfo[] = []
+  const previousPartnersNoChildrenRelationInfo: PartnerRealtionInfo[] = []
+  const previousPartnersChildrenRelationInfo: PreviousPartnerRealtionInfo[] = []
 
   onMount(() => {
     memberCenter = getMemberCenter(memberId)
@@ -54,7 +63,7 @@
     if (previousPartnersNoChildren.length > 0) {
       previousPartnersNoChildren.forEach((pPartnerNoChildren) => {
         const previousPartnerRelationInfo: PartnerRealtionInfo = {
-          partnerCenter: undefined,
+          partnerCenter: { x: 0, y: 0 },
           childrenCenter: [],
           svgCoordinates: {
             left: 0,
@@ -75,27 +84,30 @@
           previousPartnerRelationInfo.svgCoordinates = { ...coordinates }
         }
 
-        previousPartnersRelationInfo.push(previousPartnerRelationInfo)
+        previousPartnersNoChildrenRelationInfo.push(previousPartnerRelationInfo)
       })
     }
 
     if (previousPartnersChildren.length > 0) {
-      console.log('[PREVIOUS PARTNER] children ======', previousPartnersChildren)
-      previousPartnersChildren.forEach(([pPartnerChildren]) => {
-        const previousPartnerRelationInfo: PartnerRealtionInfo = {
-          partnerCenter: undefined,
+      previousPartnersChildren.forEach(([pPartnerChildren], index) => {
+        const previousPartnerRelationInfo: PreviousPartnerRealtionInfo = {
+          partnerCenter: { x: 0, y: 0 },
           childrenCenter: [],
           svgCoordinates: {
             left: 0,
             right: 0,
             top: 0,
             bottom: 0
-          }
+          },
+          memberConnectionX: 0,
+          coupleHeight: 0,
+          coupleChildrenConnectorX: 0,
+          childrenHeight: 0,
+          coupleChildrenHorizontalLine: { start: 0, end: 0 }
         }
         const { parent1, parent2, children } = pPartnerChildren
         const pPartnerId = parent1 === memberId ? parent2 : parent1
 
-        // console.log('-----', memberId, pPartnerId, children, getMemberCenter(pPartnerId!))
         previousPartnerRelationInfo.partnerCenter = getMemberCenter(pPartnerId!)
         children.forEach((child) => {
           const childCenter = getMemberCenter(child?.nodeId)
@@ -113,24 +125,32 @@
           previousPartnerRelationInfo.svgCoordinates = { ...coordinates }
         }
 
-        previousPartnersRelationInfo.push(previousPartnerRelationInfo)
-        console.log('[PREVIOUS PARTNER] relations info------', previousPartnersRelationInfo)
+        const {
+          memberConnectionX,
+          coupleHeight,
+          coupleChildrenConnectorX,
+          childrenHeight,
+          coupleChildrenHorizontalLine
+        } = getPreviousPartnerChildrenLinesCoordinates(
+          previousPartnerRelationInfo,
+          previousPartnersChildren.length,
+          index
+        )
+        previousPartnerRelationInfo.memberConnectionX = memberConnectionX
+        previousPartnerRelationInfo.coupleHeight = coupleHeight
+        previousPartnerRelationInfo.coupleChildrenConnectorX = coupleChildrenConnectorX
+        previousPartnerRelationInfo.childrenHeight = childrenHeight
+        previousPartnerRelationInfo.coupleChildrenHorizontalLine = {
+          ...coupleChildrenHorizontalLine
+        }
+
+        previousPartnersChildrenRelationInfo.push(previousPartnerRelationInfo)
       })
     }
   })
 
   $: actualPartnerCommonChildren = APCChildren.length > 0
   $: previousPartnerCommonChildren = previousPartnersChildren.length > 0
-  // $: {
-  //   console.log(
-  //     memberId,
-  //     actualPartnerRelationInfo?.svgCoordinates.left,
-  //     actualPartnerRelationInfo?.svgCoordinates.right,
-  //     actualPartnerRelationInfo?.svgCoordinates.top,
-  //     actualPartnerRelationInfo?.svgCoordinates.bottom,
-  //     actualPartnerRelationInfo?.childrenCenter
-  //   )
-  // }
 </script>
 
 {#if memberCenter && actualPartnerRelationInfo?.partnerCenter}
@@ -153,27 +173,21 @@
       <path
         d="M{Math.abs(
           memberCenter.x - actualPartnerRelationInfo?.svgCoordinates.left
-        )} 0 L{Math.abs(
+        )} 0 H{Math.abs(
           actualPartnerRelationInfo?.partnerCenter.x -
             actualPartnerRelationInfo?.svgCoordinates.left
-        )} 0 M{Math.abs(
+        )} M{Math.abs(
           memberCenter.x -
             actualPartnerRelationInfo?.svgCoordinates.left +
             Math.abs(memberCenter.x - actualPartnerRelationInfo?.partnerCenter.x) / 2
-        )} 0 L{Math.abs(
-          memberCenter.x -
-            actualPartnerRelationInfo?.svgCoordinates.left +
-            Math.abs(memberCenter.x - actualPartnerRelationInfo?.partnerCenter.x) / 2
-        )} 105 M0 105 L{Math.abs(
+        )} 0 V115 M0 115 H{Math.abs(
           actualPartnerRelationInfo?.svgCoordinates.left -
             actualPartnerRelationInfo?.svgCoordinates.right
-        )} 105 Z"
+        )}"
       />
       {#each actualPartnerRelationInfo?.childrenCenter as childCenter}
         <path
-          d="M{Math.abs(
-            childCenter.x - actualPartnerRelationInfo?.svgCoordinates.left
-          )} 105 L{Math.abs(childCenter.x - actualPartnerRelationInfo?.svgCoordinates.left)} 140 Z"
+          d="M{Math.abs(childCenter.x - actualPartnerRelationInfo?.svgCoordinates.left)} 115 V160"
         />
       {/each}
     </svg>
@@ -187,66 +201,82 @@
         actualPartnerRelationInfo.svgCoordinates.top - 100
       }px)`}
     >
-      <path d="M0 0 L{Math.abs(memberCenter.x - actualPartnerRelationInfo.partnerCenter.x)} 0 Z" />
+      <path d="M0 0 H{Math.abs(memberCenter.x - actualPartnerRelationInfo.partnerCenter.x)}" />
     </svg>
   {/if}
 {/if}
 
-{#if memberCenter && previousPartnersRelationInfo?.length > 0}
-  {#each previousPartnersRelationInfo as previousPartnerRelationInfo}
+{#if memberCenter && previousPartnersNoChildrenRelationInfo?.length > 0}
+  {#each previousPartnersNoChildrenRelationInfo as previousPartnerNoChildrenRelationInfo}
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="no-children-previous-couple-svg"
+      width={`${Math.abs(
+        memberCenter?.x - previousPartnerNoChildrenRelationInfo?.partnerCenter?.x
+      )}px`}
+      height="2px"
+      style={`transform: translate(${
+        previousPartnerNoChildrenRelationInfo?.svgCoordinates?.left
+      }px, ${previousPartnerNoChildrenRelationInfo?.svgCoordinates?.top - 100}px)`}
+    >
+      <path
+        d="M0 0 H{Math.abs(
+          memberCenter?.x - previousPartnerNoChildrenRelationInfo?.partnerCenter?.x
+        )}"
+      />
+    </svg>
+  {/each}
+{/if}
+
+{#if memberCenter && previousPartnersChildrenRelationInfo?.length > 0}
+  {#each previousPartnersChildrenRelationInfo as previousPartnerChildrenRelationInfo}
     {#if previousPartnerCommonChildren}
-      <!-- <svg
+      <svg
         xmlns="http://www.w3.org/2000/svg"
-        class="children-couple-svg"
+        class="children-previous-couple-svg"
         width={`${Math.abs(
-          previousPartnerRelationInfo.svgCoordinates.left - previousPartnerRelationInfo.svgCoordinates.right
+          previousPartnerChildrenRelationInfo?.svgCoordinates?.left -
+            previousPartnerChildrenRelationInfo?.svgCoordinates?.right
         )}px`}
         height={`${Math.abs(
-          previousPartnerRelationInfo.svgCoordinates.top - previousPartnerRelationInfo.svgCoordinates.bottom
+          previousPartnerChildrenRelationInfo?.svgCoordinates?.top -
+            previousPartnerChildrenRelationInfo?.svgCoordinates?.bottom
         )}px`}
-        style={`transform: translate(${previousPartnerRelationInfo.svgCoordinates.left}px, ${
-          previousPartnerRelationInfo.svgCoordinates.top - 100
-        }px)`}
+        style={`transform: translate(${
+          previousPartnerChildrenRelationInfo?.svgCoordinates?.left
+        }px, ${previousPartnerChildrenRelationInfo?.svgCoordinates?.top - 100}px)`}
       >
         <path
           d="M{Math.abs(
-            memberCenter.x - previousPartnerRelationInfo.svgCoordinates.left
-          )} 0 L{Math.abs(
-            previousPartnerRelationInfo.partnerCenter.x - previousPartnerRelationInfo.svgCoordinates.left
-          )} 0 M{Math.abs(
-            memberCenter.x -
-              previousPartnerRelationInfo.svgCoordinates.left +
-              Math.abs(memberCenter.x - previousPartnerRelationInfo.partnerCenter.x) / 2
-          )} 0 L{Math.abs(
-            memberCenter.x -
-              previousPartnerRelationInfo.svgCoordinates.left +
-              Math.abs(memberCenter.x - previousPartnerRelationInfo.partnerCenter.x) / 2
-          )} 105 M0 105 L{Math.abs(
-            previousPartnerRelationInfo.svgCoordinates.left -
-              previousPartnerRelationInfo.svgCoordinates.right
-          )} 105 Z"
+            memberCenter?.x -
+              previousPartnerChildrenRelationInfo?.memberConnectionX -
+              previousPartnerChildrenRelationInfo?.svgCoordinates?.left
+          )} 70 V{previousPartnerChildrenRelationInfo?.coupleHeight} M{Math.abs(
+            previousPartnerChildrenRelationInfo?.partnerCenter?.x -
+              previousPartnerChildrenRelationInfo?.svgCoordinates?.left
+          )} 70 V{previousPartnerChildrenRelationInfo?.coupleHeight} M{Math.abs(
+            memberCenter?.x -
+              previousPartnerChildrenRelationInfo?.memberConnectionX -
+              previousPartnerChildrenRelationInfo?.svgCoordinates?.left
+          )} {previousPartnerChildrenRelationInfo?.coupleHeight} H{Math.abs(
+            previousPartnerChildrenRelationInfo?.partnerCenter?.x -
+              previousPartnerChildrenRelationInfo?.svgCoordinates?.left
+          )} M{Math.abs(
+            previousPartnerChildrenRelationInfo?.partnerCenter?.x -
+              previousPartnerChildrenRelationInfo?.svgCoordinates?.left +
+              previousPartnerChildrenRelationInfo.coupleChildrenConnectorX
+          )} {previousPartnerChildrenRelationInfo?.coupleHeight} V{previousPartnerChildrenRelationInfo?.childrenHeight} M{previousPartnerChildrenRelationInfo
+            ?.coupleChildrenHorizontalLine
+            ?.start} {previousPartnerChildrenRelationInfo?.childrenHeight} H{previousPartnerChildrenRelationInfo
+            ?.coupleChildrenHorizontalLine?.end}"
         />
-        {#each previousPartnerRelationInfo.childrenCenter as childCenter}
+        {#each previousPartnerChildrenRelationInfo?.childrenCenter as childCenter}
           <path
             d="M{Math.abs(
-              childCenter.x - previousPartnerRelationInfo.svgCoordinates.left
-            )} 105 L{Math.abs(childCenter.x - previousPartnerRelationInfo.svgCoordinates.left)} 140 Z"
+              childCenter?.x - previousPartnerChildrenRelationInfo?.svgCoordinates?.left
+            )} {previousPartnerChildrenRelationInfo?.childrenHeight} V160"
           />
         {/each}
-      </svg> -->
-    {:else if previousPartnerRelationInfo?.partnerCenter}
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        class="no-children-previous-couple-svg"
-        width={`${Math.abs(memberCenter.x - previousPartnerRelationInfo.partnerCenter.x)}px`}
-        height="2px"
-        style={`transform: translate(${previousPartnerRelationInfo.svgCoordinates.left}px, ${
-          previousPartnerRelationInfo.svgCoordinates.top - 100
-        }px)`}
-      >
-        <path
-          d="M0 0 L{Math.abs(memberCenter.x - previousPartnerRelationInfo.partnerCenter.x)} 0 Z"
-        />
       </svg>
     {/if}
   {/each}
@@ -262,6 +292,7 @@
     stroke-width: 3;
     stroke-linecap: round;
     stroke-linejoin: round;
+    filter: drop-shadow(0px 0px 4px #ffffff);
 
     &.no-children-previous-couple-svg {
       stroke: pink;

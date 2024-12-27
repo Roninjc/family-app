@@ -44,7 +44,7 @@ export interface ParentsChildren {
 }
 
 export interface PartnerRealtionInfo {
-  partnerCenter: { x: number; y: number } | undefined
+  partnerCenter: { x: number; y: number }
   childrenCenter: { x: number; y: number }[]
   svgCoordinates: {
     left: number
@@ -52,4 +52,12 @@ export interface PartnerRealtionInfo {
     top: number
     bottom: number
   }
+}
+
+export interface PreviousPartnerRealtionInfo extends PartnerRealtionInfo {
+  memberConnectionX: number
+  coupleHeight: number
+  coupleChildrenConnectorX: number
+  childrenHeight: number
+  coupleChildrenHorizontalLine: { start: number; end: number }
 }

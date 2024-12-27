@@ -66,7 +66,7 @@ export const familyData: FamilyData = {
       children: ['16', '19'],
       siblings: ['3'],
       partner: ['18'],
-      previousPartners: ['17']
+      previousPartners: ['17', '25']
     },
     {
       id: '5',
@@ -76,7 +76,7 @@ export const familyData: FamilyData = {
       parents: ['3', '6'],
       children: [],
       siblings: ['8', '9', '10'],
-      partner: [],
+      partner: ['26'],
       previousPartners: []
     },
     {
@@ -205,7 +205,7 @@ export const familyData: FamilyData = {
       name: 'Ignacio',
       firstFamilyName: 'Castaño',
       secondFamilyName: '',
-      parents: ['4'],
+      parents: ['4', '25'],
       children: [],
       siblings: ['16'],
       partner: [],
@@ -264,6 +264,28 @@ export const familyData: FamilyData = {
       children: [],
       siblings: ['21', '22', '23'],
       partner: [],
+      previousPartners: []
+    },
+    {
+      id: '25',
+      name: 'Igancio',
+      firstFamilyName: 'Padre',
+      secondFamilyName: '',
+      parents: [],
+      children: ['19'],
+      siblings: [],
+      partner: [],
+      previousPartners: ['4']
+    },
+    {
+      id: '26',
+      name: 'Cristina',
+      firstFamilyName: 'Gjelsten',
+      secondFamilyName: '',
+      parents: [],
+      children: [],
+      siblings: [],
+      partner: ['5'],
       previousPartners: []
     }
   ]

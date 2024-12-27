@@ -148,14 +148,14 @@
   .family-node-column {
     display: flex;
     flex-direction: column;
-    gap: 50px;
+    gap: 70px;
   }
 
   .family-node-row {
     display: flex;
     flex-direction: row;
     justify-content: center;
-    gap: 30px;
+    gap: 40px;
   }
 
   .couple-wrapper {

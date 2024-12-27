@@ -19,7 +19,7 @@
       centerTree()
       // familyTree.getParentsChildren()
       console.log(familyTree.getParentsChildren())
-      // TODO(WIP): draw parentChildren limes
+      // TODO(WIP): animation draw parentChildren limes
     }, 400)
   })
 
