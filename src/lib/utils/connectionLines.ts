@@ -64,7 +64,8 @@ export const getPreviousPartnerChildrenLinesCoordinates = (
 
   if (amountOfPreviousPartners > 1) {
     const memberConnectorSpacing = 7
-    memberConnectionX = (amountOfPreviousPartners - previousPartnerIndex) * memberConnectorSpacing
+    memberConnectionX =
+      (amountOfPreviousPartners - (previousPartnerIndex + 1)) * memberConnectorSpacing
     const steps = amountOfPreviousPartners * 2 + 2
     const height = 70 / steps
     coupleHeight = 80 + height * (previousPartnerIndex + 1)
