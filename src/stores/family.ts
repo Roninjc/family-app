@@ -28,7 +28,7 @@ export const familyData: FamilyData = {
       id: '2',
       name: 'María',
       firstFamilyName: 'Aguado',
-      secondFamilyName: 'Fernandez',
+      secondFamilyName: '',
       parents: [],
       children: [],
       siblings: [],

@@ -52,11 +52,10 @@
   }
 
   .name-wrapper {
-    border-radius: 10px;
+    border-radius: 5px;
     white-space: nowrap;
     overflow: hidden;
     width: 100%;
-    padding: 3px;
     display: flex;
     flex-direction: column;
     justify-content: center;
