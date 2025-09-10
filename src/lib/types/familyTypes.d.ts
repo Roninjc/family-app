@@ -55,7 +55,7 @@ export interface PartnerRealtionInfo {
 }
 
 export interface PreviousPartnerRealtionInfo extends PartnerRealtionInfo {
-  memberConnectionX: number
+  memberConnectorX: number
   coupleHeight: number
   coupleChildrenConnectorX: number
   childrenHeight: number

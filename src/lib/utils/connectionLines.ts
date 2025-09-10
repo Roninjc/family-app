@@ -21,16 +21,27 @@ export const getMemberCenter = (memberId: string) => {
 
 export const getSvgCoordinates = (
   memberCenter: { x: number; y: number },
-  partnerCenter: { x: number; y: number },
+  partnerCenter: { x: number; y: number } | undefined,
   childrenCenter: { x: number; y: number }[]
 ) => {
   const childrenX = childrenCenter.map((child) => child.x)
   const childrenY = childrenCenter.map((child) => child.y)
 
-  const left = Math.min(memberCenter?.x, partnerCenter?.x, ...childrenX)
-  const right = Math.max(memberCenter?.x, partnerCenter?.x, ...childrenX)
-  const top = Math.min(memberCenter?.y, partnerCenter?.y, ...childrenY)
-  const bottom = Math.max(memberCenter?.y, partnerCenter?.y, ...childrenY)
+  const xValues = [
+    memberCenter.x,
+    ...(partnerCenter ? [partnerCenter.x] : []),
+    ...childrenX
+  ].filter((v) => v !== undefined)
+  const yValues = [
+    memberCenter.y,
+    ...(partnerCenter ? [partnerCenter.y] : []),
+    ...childrenY
+  ].filter((v) => v !== undefined)
+
+  const left = Math.min(...xValues)
+  const right = Math.max(...xValues)
+  const top = Math.min(...yValues)
+  const bottom = Math.max(...yValues)
 
   return {
     left,
@@ -45,13 +56,13 @@ export const getPreviousPartnerChildrenLinesCoordinates = (
   amountOfPreviousPartners: number,
   previousPartnerIndex: number
 ): {
-  memberConnectionX: number
+  memberConnectorX: number
   coupleHeight: number
   coupleChildrenConnectorX: number
   childrenHeight: number
   coupleChildrenHorizontalLine: { start: number; end: number }
 } => {
-  let memberConnectionX = 0
+  let memberConnectorX = 0
   let coupleHeight = 0
   let coupleChildrenConnectorX = 0
   let childrenHeight = 0
@@ -64,7 +75,7 @@ export const getPreviousPartnerChildrenLinesCoordinates = (
 
   if (amountOfPreviousPartners > 1) {
     const memberConnectorSpacing = 7
-    memberConnectionX =
+    memberConnectorX =
       (amountOfPreviousPartners - (previousPartnerIndex + 1)) * memberConnectorSpacing
     const steps = amountOfPreviousPartners * 2 + 2
     const height = 70 / steps
@@ -97,7 +108,7 @@ export const getPreviousPartnerChildrenLinesCoordinates = (
     coupleChildrenConnectorX = 75 + 20
   }
   return {
-    memberConnectionX,
+    memberConnectorX,
     coupleHeight,
     coupleChildrenConnectorX,
     childrenHeight,

@@ -37,13 +37,13 @@
   <h1>Familia Castaño</h1>
   <AddFamilyMemberButton />
 </header>
-<div id="family-tree-wrapper" bind:this={treeWrapper}>
+<main id="family-tree-wrapper" bind:this={treeWrapper}>
   {#if initialMemberId}
     <TreeNode memberId={initialMemberId} />
   {:else}
     It seem as you still have not added any member of this family.
   {/if}
-</div>
+</main>
 
 <style lang="scss">
   :global(body) {

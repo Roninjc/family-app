@@ -266,17 +266,17 @@ export const familyData: FamilyData = {
       partner: [],
       previousPartners: []
     },
-    {
-      id: '25',
-      name: 'Igancio',
-      firstFamilyName: 'Padre',
-      secondFamilyName: '',
-      parents: [],
-      children: ['19'],
-      siblings: [],
-      partner: [],
-      previousPartners: ['4']
-    },
+    // {
+    //   id: '25',
+    //   name: 'Ignacio',
+    //   firstFamilyName: 'Padre',
+    //   secondFamilyName: '',
+    //   parents: [],
+    //   children: ['19'],
+    //   siblings: [],
+    //   partner: [],
+    //   previousPartners: ['4']
+    // },
     {
       id: '26',
       name: 'Cristina',
