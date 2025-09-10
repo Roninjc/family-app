@@ -1,3 +1,11 @@
+export enum Relation {
+  Child = 1,
+  Parent,
+  Sibling,
+  Partner,
+  PreviousPartner
+}
+
 export interface FamilyMember {
   id: string
   name: string
@@ -10,14 +18,46 @@ export interface FamilyMember {
   previousPartners: string[]
 }
 
-export interface FamilyNode extends FamilyMember {
-  getParents(): string[]
-  getChildren(): string[]
-  getSiblings(): string[]
-  getPartner(): string[]
-  getPreviousPartners(): string[]
+export interface MemberInfo {
+  name: string
+  firstFamilyName: string
+  secondFamilyName: string
+}
+export interface FamilyNode {
+  relations: Map
+  memberInfo: MemberInfo
 }
 
 export interface FamilyData {
   members: FamilyMember[]
+}
+
+export interface Relationship {
+  nodeId: string
+  weight: Relation
+}
+
+export interface ParentsChildren {
+  parent1: string
+  parent2?: string
+  children: Relationship[]
+}
+
+export interface PartnerRealtionInfo {
+  partnerCenter: { x: number; y: number }
+  childrenCenter: { x: number; y: number }[]
+  svgCoordinates: {
+    left: number
+    right: number
+    top: number
+    bottom: number
+  }
+}
+
+export interface PreviousPartnerRealtionInfo extends PartnerRealtionInfo {
+  memberConnectorX: number
+  coupleHeight: number
+  coupleChildrenConnectorX: number
+  childrenHeight: number
+  coupleChildrenHorizontalLine: { start: number; end: number }
 }
