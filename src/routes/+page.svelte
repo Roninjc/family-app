@@ -1,8 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { familyTree, firstGenreation, stack } from '../stores/tree'
-  import AddFamilyMemberButton from '../components/addFamilyMemberButton.svelte'
+  import Header from '../components/header.svelte'
   import TreeNode from '../components/treeNode.svelte'
+  import Footer from '../components/footer.svelte'
+  import AddFamilyMemberModal from '../components/addFamilyMemberModal.svelte'
 
   let initialMemberId: string
   let treeWrapper: HTMLElement
@@ -33,10 +35,7 @@
   }
 </script>
 
-<header>
-  <h1>Familia Castaño</h1>
-  <AddFamilyMemberButton />
-</header>
+<Header />
 <main id="family-tree-wrapper" bind:this={treeWrapper}>
   {#if initialMemberId}
     <TreeNode memberId={initialMemberId} />
@@ -44,6 +43,8 @@
     It seem as you still have not added any member of this family.
   {/if}
 </main>
+<Footer />
+<AddFamilyMemberModal />
 
 <style lang="scss">
   :global(body) {
@@ -51,20 +52,6 @@
     width: 100vw;
     height: 100vh;
     background: #e0e0e0;
-  }
-
-  header {
-    position: sticky;
-    top: 0;
-    height: 80px;
-    overflow: hidden;
-    z-index: 2;
-    backdrop-filter: blur(9px);
-    box-shadow: 0px 6px 12px 4px #bebebe;
-
-    h1 {
-      text-align: center;
-    }
   }
 
   #family-tree-wrapper {
