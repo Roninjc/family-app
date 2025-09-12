@@ -6,7 +6,7 @@
 
   const member: FamilyNode = familyTree.getList().get(memberId)
   const name = member.memberInfo.name
-  const completeMemberFamilyName = `${member.memberInfo.firstFamilyName} ${member.memberInfo.secondFamilyName}`
+  const familyName = member.memberInfo.familyName
 </script>
 
 <div class="member-badge">
@@ -16,7 +16,7 @@
       {name}
     </div>
     <div class="family-name-container">
-      {completeMemberFamilyName}
+      {familyName}
     </div>
   </div>
 </div>

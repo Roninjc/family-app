@@ -5,8 +5,7 @@ export const familyData: FamilyData = {
     {
       id: '3',
       name: 'Jesús María',
-      firstFamilyName: 'Castaño',
-      secondFamilyName: 'Aguado',
+      familyName: 'Castaño Aguado',
       parents: ['1', '2'],
       children: ['5', '8', '9', '10'],
       siblings: ['4'],
@@ -16,8 +15,7 @@ export const familyData: FamilyData = {
     {
       id: '1',
       name: 'Dionisio',
-      firstFamilyName: 'Castaño',
-      secondFamilyName: 'Fernandez',
+      familyName: 'Castaño Fernandez',
       parents: [],
       children: [],
       siblings: [],
@@ -27,8 +25,7 @@ export const familyData: FamilyData = {
     {
       id: '2',
       name: 'María',
-      firstFamilyName: 'Aguado',
-      secondFamilyName: '',
+      familyName: 'Aguado',
       parents: [],
       children: [],
       siblings: [],
@@ -38,8 +35,7 @@ export const familyData: FamilyData = {
     {
       id: '6',
       name: 'Luisa',
-      firstFamilyName: 'Candela',
-      secondFamilyName: 'Martos',
+      familyName: 'Candela Martos',
       parents: [],
       children: ['5', '8', '9', '10'],
       siblings: [],
@@ -49,8 +45,7 @@ export const familyData: FamilyData = {
     {
       id: '7',
       name: 'María Elena',
-      firstFamilyName: 'Costa',
-      secondFamilyName: 'Jurado',
+      familyName: 'Costa Jurado',
       parents: [],
       children: [],
       siblings: [],
@@ -60,8 +55,7 @@ export const familyData: FamilyData = {
     {
       id: '4',
       name: 'María José',
-      firstFamilyName: 'Castaño',
-      secondFamilyName: 'Aguado',
+      familyName: 'Castaño Aguado',
       parents: ['1', '2'],
       children: ['16', '19'],
       siblings: ['3'],
@@ -71,8 +65,7 @@ export const familyData: FamilyData = {
     {
       id: '5',
       name: 'Jesús',
-      firstFamilyName: 'Castaño',
-      secondFamilyName: 'Candela',
+      familyName: 'Castaño Candela',
       parents: ['3', '6'],
       children: [],
       siblings: ['8', '9', '10'],
@@ -82,8 +75,7 @@ export const familyData: FamilyData = {
     {
       id: '8',
       name: 'Javier',
-      firstFamilyName: 'Castaño',
-      secondFamilyName: 'Candela',
+      familyName: 'Castaño Candela',
       parents: ['3', '6'],
       children: [],
       siblings: ['5', '9', '10'],
@@ -93,8 +85,7 @@ export const familyData: FamilyData = {
     {
       id: '9',
       name: 'Eva',
-      firstFamilyName: 'Castaño',
-      secondFamilyName: 'Candela',
+      familyName: 'Castaño Candela',
       parents: ['3', '6'],
       children: [],
       siblings: ['5', '8', '10'],
@@ -104,8 +95,7 @@ export const familyData: FamilyData = {
     {
       id: '10',
       name: 'Maribel',
-      firstFamilyName: 'Castaño',
-      secondFamilyName: 'Candela',
+      familyName: 'Castaño Candela',
       parents: ['3', '6'],
       children: [],
       siblings: ['5', '8', '9'],
@@ -115,8 +105,7 @@ export const familyData: FamilyData = {
     {
       id: '11',
       name: 'Maria Amparo',
-      firstFamilyName: 'Castaño',
-      secondFamilyName: 'Aguado',
+      familyName: 'Castaño Aguado',
       parents: ['1', '2'],
       children: ['14', '15'],
       siblings: ['3', '4', '12'],
@@ -126,8 +115,7 @@ export const familyData: FamilyData = {
     {
       id: '12',
       name: 'Dionisio',
-      firstFamilyName: 'Castaño',
-      secondFamilyName: 'Aguado',
+      familyName: 'Castaño Aguado',
       parents: ['1', '2'],
       children: ['21', '22', '23', '24'],
       siblings: ['3', '4', '11'],
@@ -137,8 +125,7 @@ export const familyData: FamilyData = {
     {
       id: '13',
       name: 'Lalo',
-      firstFamilyName: 'Garcia',
-      secondFamilyName: '',
+      familyName: 'Garcia',
       parents: [],
       children: ['14', '15'],
       siblings: [],
@@ -148,8 +135,7 @@ export const familyData: FamilyData = {
     {
       id: '14',
       name: 'Lalo',
-      firstFamilyName: 'Castaño',
-      secondFamilyName: 'Garcia',
+      familyName: 'Castaño Garcia',
       parents: ['11', '13'],
       children: [],
       siblings: ['15'],
@@ -159,8 +145,7 @@ export const familyData: FamilyData = {
     {
       id: '15',
       name: 'Andres',
-      firstFamilyName: 'Castaño',
-      secondFamilyName: 'Garcia',
+      familyName: 'Castaño Garcia',
       parents: ['13', '11'],
       children: [],
       siblings: ['14'],
@@ -170,8 +155,7 @@ export const familyData: FamilyData = {
     {
       id: '16',
       name: 'Olalla',
-      firstFamilyName: 'Casamayor',
-      secondFamilyName: 'Castaño',
+      familyName: 'Casamayor Castaño',
       parents: ['4', '17'],
       children: [],
       siblings: ['19'],
@@ -181,8 +165,7 @@ export const familyData: FamilyData = {
     {
       id: '17',
       name: 'Fernando',
-      firstFamilyName: 'Casamayor',
-      secondFamilyName: '',
+      familyName: 'Casamayor',
       parents: [],
       children: ['16'],
       siblings: [],
@@ -192,8 +175,7 @@ export const familyData: FamilyData = {
     {
       id: '18',
       name: 'Juan',
-      firstFamilyName: '',
-      secondFamilyName: '',
+      familyName: '',
       parents: [],
       children: [],
       siblings: [],
@@ -203,8 +185,7 @@ export const familyData: FamilyData = {
     {
       id: '19',
       name: 'Ignacio',
-      firstFamilyName: 'Castaño',
-      secondFamilyName: '',
+      familyName: 'Castaño',
       parents: ['4', '25'],
       children: [],
       siblings: ['16'],
@@ -214,8 +195,7 @@ export const familyData: FamilyData = {
     {
       id: '20',
       name: 'Elvira',
-      firstFamilyName: 'Del Castillo',
-      secondFamilyName: '',
+      familyName: 'Del Castillo',
       parents: [],
       children: ['21', '22', '23', '24'],
       siblings: [],
@@ -225,8 +205,7 @@ export const familyData: FamilyData = {
     {
       id: '21',
       name: 'Daniel',
-      firstFamilyName: 'Castaño',
-      secondFamilyName: 'Del Castillo',
+      familyName: 'Castaño Del Castillo',
       parents: ['12', '20'],
       children: [],
       siblings: ['22', '23', '24'],
@@ -236,8 +215,7 @@ export const familyData: FamilyData = {
     {
       id: '22',
       name: 'Alejandro',
-      firstFamilyName: 'Castaño',
-      secondFamilyName: 'Del Castillo',
+      familyName: 'Castaño Del Castillo',
       parents: ['12', '20'],
       children: [],
       siblings: ['21', '23', '24'],
@@ -247,8 +225,7 @@ export const familyData: FamilyData = {
     {
       id: '23',
       name: 'Carlos',
-      firstFamilyName: 'Castaño',
-      secondFamilyName: 'Del Castillo',
+      familyName: 'Castaño Del Castillo',
       parents: ['12', '20'],
       children: [],
       siblings: ['21', '22', '24'],
@@ -258,8 +235,7 @@ export const familyData: FamilyData = {
     {
       id: '24',
       name: 'Elvira',
-      firstFamilyName: 'Castaño',
-      secondFamilyName: 'Del Castillo',
+      familyName: 'Castaño Del Castillo',
       parents: ['12', '20'],
       children: [],
       siblings: ['21', '22', '23'],
@@ -269,8 +245,7 @@ export const familyData: FamilyData = {
     // {
     //   id: '25',
     //   name: 'Ignacio',
-    //   firstFamilyName: 'Padre',
-    //   secondFamilyName: '',
+    //   familyName: 'Padre',
     //   parents: [],
     //   children: ['19'],
     //   siblings: [],
@@ -280,8 +255,7 @@ export const familyData: FamilyData = {
     {
       id: '26',
       name: 'Cristina',
-      firstFamilyName: 'Gjelsten',
-      secondFamilyName: '',
+      familyName: 'Gjelsten',
       parents: [],
       children: [],
       siblings: [],

@@ -16,16 +16,14 @@ const initFamilyTree = () => {
   function addVertex(m: FamilyMember) {
     const id = m.id
     const name = m.name
-    const firstFamilyName = m.firstFamilyName
-    const secondFamilyName = m.secondFamilyName
+    const familyName = m.familyName
 
     if (id && !adjList.has(id)) {
       adjList.set(id, {
         relations: new Map(),
         memberInfo: {
           name,
-          firstFamilyName,
-          secondFamilyName
+          familyName
         }
       })
     }

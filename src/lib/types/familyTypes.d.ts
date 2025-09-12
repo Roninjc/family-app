@@ -9,8 +9,7 @@ export enum Relation {
 export interface FamilyMember {
   id: string
   name: string
-  firstFamilyName: string
-  secondFamilyName: string
+  familyName: string
   parents: string[]
   children: string[]
   siblings: string[]
@@ -20,8 +19,7 @@ export interface FamilyMember {
 
 export interface MemberInfo {
   name: string
-  firstFamilyName: string
-  secondFamilyName: string
+  familyName: string
 }
 export interface FamilyNode {
   relations: Map
