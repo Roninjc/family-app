@@ -10,7 +10,10 @@
         <AddFamilyMemberButton />
       </ButtonWrapper>
     </div>
-    <div class="footer-bar"></div>
+    <div class="footer-bar">
+      <div class="footer-bar-container"></div>
+      <div class="footer-bar-container">Profile</div>
+    </div>
   </div>
 </footer>
 
@@ -22,6 +25,7 @@
     z-index: 2;
     display: flex;
     align-items: flex-end;
+    pointer-events: none;
 
     .footer-content {
       position: relative;
@@ -43,6 +47,17 @@
         width: 100%;
         height: 50px;
         background: #e0e0e0;
+        display: flex;
+        justify-content: space-evenly;
+        pointer-events: auto;
+
+        .footer-bar-container {
+          flex: 1 0 0;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          cursor: pointer;
+        }
       }
     }
   }

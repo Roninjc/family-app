@@ -6,10 +6,6 @@
 
 <style lang="scss">
   .add-family-member-button {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translate(-50%, 50%);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -21,6 +17,7 @@
       6px 6px 12px #bebebe,
       -6px -6px 12px #ffffff;
     border: none;
+    cursor: copy;
 
     &::before {
       content: '+';
