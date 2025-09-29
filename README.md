@@ -1,38 +1,65 @@
-# create-svelte
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/main/packages/create-svelte).
+# Family App
 
-## Creating a project
+Welcome to the **Family App** repository! This project is built with [SvelteKit](https://kit.svelte.dev/) and provides a modern foundation for developing family tree web applications.
 
-If you're seeing this, you've probably already done this step. Congrats!
+## 🚀 Getting Started
 
-```bash
-# create a new project in the current directory
-npm create svelte@latest
+### Project Setup
 
-# create a new project in my-app
-npm create svelte@latest my-app
-```
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+If you haven't created your project yet, you can start with:
 
 ```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+yarn create svelte
+# or in a specific folder
+yarn create svelte my-app
 ```
 
-## Building
+### Install Dependencies
 
-To create a production version of your app:
+
+Install all required dependencies:
 
 ```bash
-npm run build
+yarn install
 ```
 
-You can preview the production build with `npm run preview`.
+### Development
 
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+
+Start the development server:
+
+```bash
+yarn dev
+# or automatically open the app in your browser
+yarn dev -- --open
+```
+
+### Production Build
+
+
+Create an optimized production build:
+
+```bash
+yarn build
+```
+
+Preview the production build locally:
+
+```bash
+yarn preview
+```
+
+## 📦 Deployment
+
+To deploy your app, install the appropriate [adapter](https://kit.svelte.dev/docs/adapters) for your target environment (e.g., Vercel, Netlify, Node, etc.).
+
+## 📚 Resources
+
+- [SvelteKit Documentation](https://kit.svelte.dev/docs)
+- [create-svelte Repository](https://github.com/sveltejs/kit/tree/main/packages/create-svelte)
+
+---
+
+Thank you for using Family App! If you have questions or suggestions, feel free to open an issue in this repository.
