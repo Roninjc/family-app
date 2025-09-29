@@ -6,15 +6,16 @@
   header {
     position: sticky;
     top: 0;
-    height: 80px;
+    height: 100px;
     overflow: hidden;
-    // background: #e0e0e0;
-    backdrop-filter: blur(9px);
-    box-shadow: 0px 6px 12px 4px #bebebe;
     z-index: 2;
+    backdrop-filter: blur(9px);
+    mask: linear-gradient(black 50%, transparent);
 
     h1 {
+      position: relative;
       text-align: center;
+      margin-top: 0.8rem;
     }
   }
 </style>
