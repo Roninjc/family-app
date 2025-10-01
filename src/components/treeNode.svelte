@@ -159,6 +159,7 @@
   }
 
   .couple-wrapper {
+    position: relative;
     gap: 20px;
   }
 </style>

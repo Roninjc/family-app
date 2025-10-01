@@ -42,6 +42,7 @@
   }
   const previousPartnersNoChildrenRelationInfo: PartnerRealtionInfo[] = []
   const previousPartnersChildrenRelationInfo: PreviousPartnerRealtionInfo[] = []
+  const badgeWidth = 150
 
   onMount(() => {
     memberCenter = getMemberCenter(memberId)
@@ -195,9 +196,11 @@
         actualPartnerRelationInfo?.svgCoordinates.top -
           actualPartnerRelationInfo?.svgCoordinates.bottom
       )}px`}
-      style={`transform: translate(${actualPartnerRelationInfo?.svgCoordinates.left}px, ${
-        actualPartnerRelationInfo?.svgCoordinates.top - 100
-      }px)`}
+      style={`transform: translateX(-${Math.abs(
+        memberCenter.x -
+          actualPartnerRelationInfo?.svgCoordinates.left +
+          Math.abs(memberCenter.x - actualPartnerRelationInfo?.partnerCenter.x) / 2
+      )}px)`}
     >
       <path
         d="M{Math.abs(
@@ -226,9 +229,11 @@
       class="no-children-couple-svg"
       width={`${Math.abs(memberCenter.x - actualPartnerRelationInfo.partnerCenter.x)}px`}
       height="2px"
-      style={`transform: translate(${actualPartnerRelationInfo.svgCoordinates.left}px, ${
-        actualPartnerRelationInfo.svgCoordinates.top - 100
-      }px)`}
+      style={`transform: translateX(-${Math.abs(
+        memberCenter.x -
+          actualPartnerRelationInfo?.svgCoordinates.left +
+          Math.abs(memberCenter.x - actualPartnerRelationInfo?.partnerCenter.x) / 2
+      )}px)`}
     >
       <path d="M0 0 H{Math.abs(memberCenter.x - actualPartnerRelationInfo.partnerCenter.x)}" />
     </svg>
@@ -246,12 +251,14 @@
       height={`${Math.abs(
         noPartnerChildrenInfo?.svgCoordinates.top - noPartnerChildrenInfo?.svgCoordinates.bottom
       )}px`}
-      style={`transform: translate(${noPartnerChildrenInfo?.svgCoordinates.left}px, ${
-        noPartnerChildrenInfo?.svgCoordinates.top - 100
+      style={`left: 0; transform: translateX(${
+        noPartnerChildrenInfo?.svgCoordinates.left + badgeWidth / 2 - memberCenter.x
       }px)`}
     >
       <path
-        d="M10 10 V115 M10 115 H{Math.abs(
+        d="M{memberCenter.x -
+          noPartnerChildrenInfo?.svgCoordinates.left +
+          10} 10 V115 M{noPartnerChildrenInfo.childrenCenter.length === 1 ? 10 : 0} 115 H{Math.abs(
           noPartnerChildrenInfo?.svgCoordinates.left - noPartnerChildrenInfo?.svgCoordinates.right
         )}"
       />
@@ -264,7 +271,8 @@
   {/if}
 {/if}
 
-{#if memberCenter && previousPartnersNoChildrenRelationInfo?.length > 0}
+<!-- TODO: Este probablemente lo quitamos, pensar si tiene sentido -->
+<!-- {#if memberCenter && previousPartnersNoChildrenRelationInfo?.length > 0}
   {#each previousPartnersNoChildrenRelationInfo as previousPartnerNoChildrenRelationInfo}
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -273,9 +281,7 @@
         memberCenter?.x - previousPartnerNoChildrenRelationInfo?.partnerCenter?.x
       )}px`}
       height="2px"
-      style={`transform: translate(${
-        previousPartnerNoChildrenRelationInfo?.svgCoordinates?.left
-      }px, ${previousPartnerNoChildrenRelationInfo?.svgCoordinates?.top - 100}px)`}
+      style={`transform: translateX(-${previousPartnerNoChildrenRelationInfo?.svgCoordinates?.left}px)`}
     >
       <path
         d="M0 0 H{Math.abs(
@@ -284,7 +290,7 @@
       />
     </svg>
   {/each}
-{/if}
+{/if} -->
 
 {#if memberCenter && previousPartnersChildrenRelationInfo?.length > 0}
   {#each previousPartnersChildrenRelationInfo as previousPartnerChildrenRelationInfo}
@@ -300,9 +306,11 @@
           previousPartnerChildrenRelationInfo?.svgCoordinates?.top -
             previousPartnerChildrenRelationInfo?.svgCoordinates?.bottom
         )}px`}
-        style={`transform: translate(${
-          previousPartnerChildrenRelationInfo?.svgCoordinates?.left
-        }px, ${previousPartnerChildrenRelationInfo?.svgCoordinates?.top - 100}px)`}
+        style={`left: 0; transform: translateX(${
+          previousPartnerChildrenRelationInfo?.svgCoordinates?.left +
+          badgeWidth / 2 -
+          memberCenter.x
+        }px)`}
       >
         <path
           d="M{Math.abs(
@@ -343,8 +351,8 @@
 <style lang="scss">
   svg {
     position: absolute;
-    top: 0;
-    left: 0;
+    top: 40px;
+    left: 50%;
     overflow: visible;
     stroke: #555555;
     stroke-width: 3;
