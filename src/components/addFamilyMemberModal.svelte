@@ -1,10 +1,10 @@
 <script lang="ts">
   import { showAddMemberModal } from '../stores/modals'
+  import LiquidGlassWrapper from './liquidGlassWrapper.svelte'
 
   let showAddMemberModalValue = false
   showAddMemberModal.subscribe((value) => (showAddMemberModalValue = value))
 
-  // Variables para los inputs modernos
   let name = ''
   let familyName = ''
 </script>
@@ -22,13 +22,9 @@
   >
     <!-- svelte-ignore a11y-click-events-have-key-events -->
     <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-    <div class="add-member-modal liquidGlass-wrapper" role="banner" on:click|stopPropagation>
+    <div class="add-member-modal" role="banner" on:click|stopPropagation>
       <!-- <button class="close-modal" on:click={() => showAddMemberModal.set(false)}>⨯</button> -->
-
-      <div class="liquidGlass-effect"></div>
-      <div class="liquidGlass-tint"></div>
-      <div class="liquidGlass-shine"></div>
-      <div class="liquidGlass-text">
+      <LiquidGlassWrapper>
         <h2>New Family Member</h2>
         <form>
           <input class="modern-input" type="text" bind:value={name} placeholder="Name" required />
@@ -36,7 +32,7 @@
             class="modern-input"
             type="text"
             bind:value={familyName}
-            placeholder="Last name"
+            placeholder="Family name"
             required
           />
 
@@ -45,7 +41,7 @@
           <!-- <input type="text" id="last-name" name="last-name" required /> -->
           <button type="submit">Add</button>
         </form>
-      </div>
+      </LiquidGlassWrapper>
     </div>
     <svg style="display: none">
       <filter
@@ -121,7 +117,6 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      padding: 40px 25px 25px;
       border-radius: 16px;
       background-color: rgba(255, 255, 255, 0.3);
       z-index: 1000;
@@ -172,57 +167,10 @@
         }
       }
     }
-  }
 
-  .liquidGlass-wrapper {
-    position: relative;
-    display: flex;
-    font-weight: 600;
-    overflow: hidden;
-
-    color: black;
-    cursor: pointer;
-
-    box-shadow:
-      0 6px 6px rgba(0, 0, 0, 0.2),
-      0 0 20px rgba(0, 0, 0, 0.1);
-
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
-  }
-
-  .liquidGlass-effect {
-    position: absolute;
-    z-index: 0;
-    inset: 0;
-
-    backdrop-filter: blur(3px);
-    filter: url(#glass-distortion);
-    overflow: hidden;
-    isolation: isolate;
-  }
-
-  .liquidGlass-tint {
-    z-index: 1;
-    position: absolute;
-    inset: 0;
-    background: rgba(255, 255, 255, 0.25);
-  }
-
-  .liquidGlass-shine {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-
-    overflow: hidden;
-
-    box-shadow:
-      inset 2px 2px 1px 0 rgba(255, 255, 255, 0.5),
-      inset -1px -1px 1px 1px rgba(255, 255, 255, 0.5);
-  }
-
-  .liquidGlass-text {
-    z-index: 3;
-    font-size: 2rem;
-    color: black;
+    :global(.add-member-modal .liquid-glass-text-container) {
+      flex-direction: column;
+      padding: 40px 25px 25px;
+    }
   }
 </style>

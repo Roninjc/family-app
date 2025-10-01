@@ -2,10 +2,10 @@
   export let rounded: boolean = false
 </script>
 
-<div class="liquid-glass-wrapper {rounded ? 'rounded' : 'round-corners'}">
-  <div class="liquid-glass-effect {rounded ? 'rounded' : 'round-corners'}"></div>
-  <div class="liquid-glass-tint {rounded ? 'rounded' : 'round-corners'}"></div>
-  <div class="liquid-glass-shine {rounded ? 'rounded' : 'round-corners'}"></div>
+<div class="liquid-glass-wrapper round-corners" class:rounded>
+  <div class="liquid-glass-effect round-corners" class:rounded></div>
+  <div class="liquid-glass-tint round-corners" class:rounded></div>
+  <div class="liquid-glass-shine round-corners" class:rounded></div>
   <div class="liquid-glass-text-container">
     <slot />
   </div>
@@ -109,8 +109,6 @@
 
   .liquid-glass-text-container {
     z-index: 3;
-    font-size: 2rem;
-    color: black;
     display: flex;
     justify-content: center;
     align-items: center;
