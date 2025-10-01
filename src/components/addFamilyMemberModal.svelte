@@ -7,6 +7,7 @@
 
   let name = ''
   let familyName = ''
+  let birthDate = ''
 </script>
 
 {#if showAddMemberModalValue}
@@ -27,14 +28,44 @@
       <LiquidGlassWrapper>
         <h2>New Family Member</h2>
         <form>
-          <input class="modern-input" type="text" bind:value={name} placeholder="Name" required />
-          <input
-            class="modern-input"
-            type="text"
-            bind:value={familyName}
-            placeholder="Family name"
-            required
-          />
+          <div class="input-wrapper">
+            <input
+              id="newMemberName"
+              class="modern-input"
+              type="text"
+              bind:value={name}
+              required
+              autocomplete="off"
+            />
+            <label for="newMemberName" class:name-active={name.length > 0}>Name</label>
+          </div>
+          <div class="input-wrapper">
+            <input
+              id="newMemberFamilyName"
+              class="modern-input"
+              type="text"
+              bind:value={familyName}
+              required
+              autocomplete="off"
+            />
+            <label for="newMemberFamilyName" class:familyname-active={familyName.length > 0}
+              >Family name</label
+            >
+          </div>
+          <div class="input-wrapper">
+            <input
+              id="newMemberBirthDate"
+              class="modern-input"
+              type="date"
+              bind:value={birthDate}
+              required
+              autocomplete="off"
+            />
+            <label
+              for="newMemberBirthDate"
+              class:birthdate-active={birthDate && birthDate.length > 0}>Birth date</label
+            >
+          </div>
 
           <!-- TODO: Completar formulario con mas pasos y mas info -->
 
@@ -130,12 +161,32 @@
         display: flex;
         flex-direction: column;
 
-        label {
-          margin-bottom: 8px;
+        .input-wrapper {
+          position: relative;
+          margin-bottom: 1.5rem;
+          display: flex;
+
+          label {
+            position: absolute;
+            left: 0.5rem;
+            top: 0.5rem;
+            color: #8f8f8f;
+            font-size: 1.1rem;
+            pointer-events: none;
+            background: transparent;
+            transition:
+              0.2s cubic-bezier(0.4, 0, 0.2, 1) transform,
+              0.2s cubic-bezier(0.4, 0, 0.2, 1) font-size,
+              0.2s cubic-bezier(0.4, 0, 0.2, 1) color,
+              0.2s cubic-bezier(0.4, 0, 0.2, 1) top,
+              0.2s cubic-bezier(0.4, 0, 0.2, 1) background;
+            padding: 0 6px;
+          }
         }
         .modern-input {
-          padding: 0.5rem 0.75rem;
-          margin-bottom: 1rem;
+          width: 100%;
+          height: 18px;
+          padding: 0.6rem 0.75rem 0.4rem;
           border: 1px solid #e0e0e0;
           border-radius: 8px;
           background: #fafafa;
@@ -144,12 +195,41 @@
             border-color 0.2s,
             box-shadow 0.2s;
           box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+          color: #8f8f8f;
+
+          &[type='date']:not(:focus) {
+            color: transparent;
+          }
+          &[type='date']:open,
+          &[type='date']:has(+ label.birthdate-active) {
+            color: #8f8f8f;
+          }
+
+          &::-webkit-calendar-picker-indicator {
+            filter: invert(38%) brightness(95%) contrast(80%);
+          }
+
           &:focus {
             outline: none;
             border-color: #7c3aed;
             box-shadow: 0 2px 8px rgba(124, 58, 237, 0.12);
             background: #fff;
           }
+        }
+
+        .modern-input:focus + label,
+        .modern-input[type='date']:open + label,
+        // .input-wrapper label.name-active,
+        .input-wrapper label.familyname-active,
+        .input-wrapper label.birthdate-active {
+          top: 2px;
+          left: 12px;
+          font-size: 0.8rem;
+          color: #7c3aed;
+          background: #fafafa;
+          transform: translateY(-60%);
+          padding: 0 6px;
+          border-radius: 6px;
         }
 
         button[type='submit'] {
@@ -167,10 +247,10 @@
         }
       }
     }
+  }
 
-    :global(.add-member-modal .liquid-glass-text-container) {
-      flex-direction: column;
-      padding: 40px 25px 25px;
-    }
+  :global(.add-member-modal .liquid-glass-text-container) {
+    flex-direction: column;
+    padding: 40px 20px 20px;
   }
 </style>

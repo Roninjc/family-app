@@ -72,7 +72,7 @@
     display: flex;
     font-weight: 600;
     overflow: hidden;
-    color: black;
+    color: #333;
     cursor: pointer;
     box-shadow:
       0 6px 6px rgba(0, 0, 0, 0.2),
