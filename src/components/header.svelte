@@ -9,6 +9,7 @@
     height: 100px;
     overflow: hidden;
     z-index: 2;
+    background: linear-gradient(to bottom, #e0e0e0 0%, transparent 20%);
     backdrop-filter: blur(9px);
     mask: linear-gradient(black 50%, transparent);
 

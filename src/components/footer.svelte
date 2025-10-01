@@ -1,63 +1,63 @@
 <script lang="ts">
-  import ButtonWrapper from './buttonWrapper.svelte'
-  import AddFamilyMemberButton from './addFamilyMemberButton.svelte'
+  import { showAddMemberModal } from '../stores/modals'
+  import LiquidGlassWrapper from './liquidGlassWrapper.svelte'
+  // import ButtonWrapper from './buttonWrapper.svelte'
+  // import AddFamilyMemberButton from './addFamilyMemberButton.svelte'
 </script>
 
 <footer>
-  <div class="footer-content">
-    <div class="footer-buttons-container">
-      <ButtonWrapper width="80px">
-        <AddFamilyMemberButton />
-      </ButtonWrapper>
-    </div>
-    <div class="footer-bar">
-      <div class="footer-bar-container"></div>
-      <div class="footer-bar-container">Profile</div>
-    </div>
-  </div>
+  <LiquidGlassWrapper rounded={true}>
+    <button class="footer-button profile-button"></button>
+  </LiquidGlassWrapper>
+  <LiquidGlassWrapper rounded={true}>
+    <button
+      class="footer-button add-family-member-button"
+      on:click={() => showAddMemberModal.set(true)}
+    ></button>
+  </LiquidGlassWrapper>
 </footer>
 
 <style lang="scss">
   footer {
     position: sticky;
     bottom: 0;
-    height: 100px;
     z-index: 2;
     display: flex;
-    align-items: flex-end;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 1rem;
+    border-radius: 9px;
     pointer-events: none;
+    background: linear-gradient(to top, #e0e0e0 0%, transparent 60%);
 
-    .footer-content {
-      position: relative;
-      width: 100%;
-      filter: drop-shadow(0px 0px 10px rgba(0, 0, 0, 0.5));
+    .footer-button {
+      color: #333;
+      border: none;
+      width: 50px;
+      height: 50px;
       display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
+      justify-content: center;
       align-items: center;
+      padding: 0;
+      background: none;
+      pointer-events: auto;
+      font: inherit;
+      cursor: pointer;
+    }
 
-      .footer-buttons-container {
-        width: 100%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+    .profile-button {
+      &::before {
+        content: '♟';
+        font-size: 30px;
       }
+    }
 
-      .footer-bar {
-        width: 100%;
-        height: 50px;
-        background: #e0e0e0;
-        display: flex;
-        justify-content: space-evenly;
-        pointer-events: auto;
+    .add-family-member-button {
+      cursor: copy;
 
-        .footer-bar-container {
-          flex: 1 0 0;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          cursor: pointer;
-        }
+      &::before {
+        content: '+';
+        font-size: 30px;
       }
     }
   }

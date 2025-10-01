@@ -22,25 +22,87 @@
   >
     <!-- svelte-ignore a11y-click-events-have-key-events -->
     <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-    <div class="add-member-modal" role="banner" on:click|stopPropagation>
+    <div class="add-member-modal liquidGlass-wrapper" role="banner" on:click|stopPropagation>
       <!-- <button class="close-modal" on:click={() => showAddMemberModal.set(false)}>⨯</button> -->
-      <h2>New Family Member</h2>
-      <form>
-        <input class="modern-input" type="text" bind:value={name} placeholder="Name" required />
-        <input
-          class="modern-input"
-          type="text"
-          bind:value={familyName}
-          placeholder="Last name"
-          required
+
+      <div class="liquidGlass-effect"></div>
+      <div class="liquidGlass-tint"></div>
+      <div class="liquidGlass-shine"></div>
+      <div class="liquidGlass-text">
+        <h2>New Family Member</h2>
+        <form>
+          <input class="modern-input" type="text" bind:value={name} placeholder="Name" required />
+          <input
+            class="modern-input"
+            type="text"
+            bind:value={familyName}
+            placeholder="Last name"
+            required
+          />
+
+          <!-- TODO: Completar formulario con mas pasos y mas info -->
+
+          <!-- <input type="text" id="last-name" name="last-name" required /> -->
+          <button type="submit">Add</button>
+        </form>
+      </div>
+    </div>
+    <svg style="display: none">
+      <filter
+        id="glass-distortion"
+        x="0%"
+        y="0%"
+        width="100%"
+        height="100%"
+        filterUnits="objectBoundingBox"
+      >
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency="0.01 0.01"
+          numOctaves="1"
+          seed="5"
+          result="turbulence"
+        />
+        <!-- Seeds: 14, 17,  -->
+
+        <feComponentTransfer in="turbulence" result="mapped">
+          <feFuncR type="gamma" amplitude="1" exponent="10" offset="0.5" />
+          <feFuncG type="gamma" amplitude="0" exponent="1" offset="0" />
+          <feFuncB type="gamma" amplitude="0" exponent="1" offset="0.5" />
+        </feComponentTransfer>
+
+        <feGaussianBlur in="turbulence" stdDeviation="3" result="softMap" />
+
+        <feSpecularLighting
+          in="softMap"
+          surfaceScale="5"
+          specularConstant="1"
+          specularExponent="100"
+          lighting-color="white"
+          result="specLight"
+        >
+          <fePointLight x="-200" y="-200" z="300" />
+        </feSpecularLighting>
+
+        <feComposite
+          in="specLight"
+          operator="arithmetic"
+          k1="0"
+          k2="1"
+          k3="1"
+          k4="0"
+          result="litImage"
         />
 
-        <!-- TODO: Completar formulario con mas pasos y mas info -->
-
-        <!-- <input type="text" id="last-name" name="last-name" required /> -->
-        <button type="submit">Add</button>
-      </form>
-    </div>
+        <feDisplacementMap
+          in="SourceGraphic"
+          in2="softMap"
+          scale="150"
+          xChannelSelector="R"
+          yChannelSelector="G"
+        />
+      </filter>
+    </svg>
   </div>
 {/if}
 
@@ -51,7 +113,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.4);
     z-index: 999;
 
     .add-member-modal {
@@ -61,9 +123,7 @@
       transform: translate(-50%, -50%);
       padding: 40px 25px 25px;
       border-radius: 16px;
-      backdrop-filter: blur(9px);
       background-color: rgba(255, 255, 255, 0.3);
-      box-shadow: 0px 0px 20px 9px rgba(88, 88, 88, 0.2);
       z-index: 1000;
 
       h2 {
@@ -111,20 +171,58 @@
           }
         }
       }
-
-      // .close-modal {
-      //   position: absolute;
-      //   top: 10px;
-      //   right: 10px;
-      //   border: none;
-      //   background: transparent;
-      //   transition: ease 0.3s;
-      //   cursor: pointer;
-
-      //   &:hover {
-      //     scale: 1.3;
-      //   }
-      // }
     }
+  }
+
+  .liquidGlass-wrapper {
+    position: relative;
+    display: flex;
+    font-weight: 600;
+    overflow: hidden;
+
+    color: black;
+    cursor: pointer;
+
+    box-shadow:
+      0 6px 6px rgba(0, 0, 0, 0.2),
+      0 0 20px rgba(0, 0, 0, 0.1);
+
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+  }
+
+  .liquidGlass-effect {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+
+    backdrop-filter: blur(3px);
+    filter: url(#glass-distortion);
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .liquidGlass-tint {
+    z-index: 1;
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  .liquidGlass-shine {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+
+    overflow: hidden;
+
+    box-shadow:
+      inset 2px 2px 1px 0 rgba(255, 255, 255, 0.5),
+      inset -1px -1px 1px 1px rgba(255, 255, 255, 0.5);
+  }
+
+  .liquidGlass-text {
+    z-index: 3;
+    font-size: 2rem;
+    color: black;
   }
 </style>
