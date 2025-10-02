@@ -166,10 +166,46 @@
           margin-bottom: 1.5rem;
           display: flex;
 
+          .modern-input {
+            width: 100%;
+            height: 18px;
+            padding: 0.6rem 0.75rem 0.4rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+            font-size: 1rem;
+            transition:
+              border-color 0.2s,
+              box-shadow 0.2s;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+            color: #8f8f8f;
+
+            &[type='date']:not(:focus) {
+              color: transparent;
+            }
+
+            &[type='date']:open,
+            &[type='date']:has(+ label.birthdate-active) {
+              color: #8f8f8f;
+            }
+
+            &::-webkit-calendar-picker-indicator {
+              filter: invert(38%) brightness(95%) contrast(80%);
+            }
+
+            &:focus {
+              outline: none;
+              border-color: #7c3aed;
+              box-shadow: 0 2px 8px rgba(124, 58, 237, 0.12);
+              background: #fff;
+            }
+          }
+
           label {
             position: absolute;
             left: 0.5rem;
             top: 0.5rem;
+            padding: 0 6px;
             color: #8f8f8f;
             font-size: 1.1rem;
             pointer-events: none;
@@ -180,56 +216,22 @@
               0.2s cubic-bezier(0.4, 0, 0.2, 1) color,
               0.2s cubic-bezier(0.4, 0, 0.2, 1) top,
               0.2s cubic-bezier(0.4, 0, 0.2, 1) background;
+          }
+
+          .modern-input:focus + label,
+          .modern-input[type='date']:open + label,
+          label.name-active,
+          label.familyname-active,
+          label.birthdate-active {
+            top: 2px;
+            left: 12px;
+            font-size: 0.8rem;
+            color: #7c3aed;
+            background: #fafafa;
+            transform: translateY(-60%);
             padding: 0 6px;
+            border-radius: 6px;
           }
-        }
-        .modern-input {
-          width: 100%;
-          height: 18px;
-          padding: 0.6rem 0.75rem 0.4rem;
-          border: 1px solid #e0e0e0;
-          border-radius: 8px;
-          background: #fafafa;
-          font-size: 1rem;
-          transition:
-            border-color 0.2s,
-            box-shadow 0.2s;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-          color: #8f8f8f;
-
-          &[type='date']:not(:focus) {
-            color: transparent;
-          }
-          &[type='date']:open,
-          &[type='date']:has(+ label.birthdate-active) {
-            color: #8f8f8f;
-          }
-
-          &::-webkit-calendar-picker-indicator {
-            filter: invert(38%) brightness(95%) contrast(80%);
-          }
-
-          &:focus {
-            outline: none;
-            border-color: #7c3aed;
-            box-shadow: 0 2px 8px rgba(124, 58, 237, 0.12);
-            background: #fff;
-          }
-        }
-
-        .modern-input:focus + label,
-        .modern-input[type='date']:open + label,
-        .input-wrapper label.name-active,
-        .input-wrapper label.familyname-active,
-        .input-wrapper label.birthdate-active {
-          top: 2px;
-          left: 12px;
-          font-size: 0.8rem;
-          color: #7c3aed;
-          background: #fafafa;
-          transform: translateY(-60%);
-          padding: 0 6px;
-          border-radius: 6px;
         }
 
         button[type='submit'] {
