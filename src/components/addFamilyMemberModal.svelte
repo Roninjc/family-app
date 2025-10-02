@@ -219,7 +219,7 @@
 
         .modern-input:focus + label,
         .modern-input[type='date']:open + label,
-        // .input-wrapper label.name-active,
+        .input-wrapper label.name-active,
         .input-wrapper label.familyname-active,
         .input-wrapper label.birthdate-active {
           top: 2px;
