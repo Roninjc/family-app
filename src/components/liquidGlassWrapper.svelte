@@ -71,7 +71,6 @@
     position: relative;
     display: flex;
     font-weight: 600;
-    overflow: hidden;
     color: #333;
     cursor: pointer;
     box-shadow:
