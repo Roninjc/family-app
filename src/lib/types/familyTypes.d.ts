@@ -10,6 +10,7 @@ export interface FamilyMember {
   id: string
   name: string
   familyName: string
+  birthDate?: string
   parents: string[]
   children: string[]
   siblings: string[]

@@ -1,32 +1,40 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { familyTree, firstGenreation, stack } from '../stores/tree'
+  import { firstGeneration, initTreeData, stack, treeVersion, visitedMembers } from '../stores/tree'
   import Header from '../components/header.svelte'
   import TreeNode from '../components/treeNode.svelte'
   import Footer from '../components/footer.svelte'
   import AddFamilyMemberModal from '../components/addFamilyMemberModal.svelte'
 
-  let initialMemberId: string
+  export let data
+
+  let initialMemberId: string | undefined
   let treeWrapper: HTMLElement
 
-  if (firstGenreation && firstGenreation.length > 0) {
-    initialMemberId = firstGenreation[0].nodeId
+  // Rebuild the graph whenever the page data changes (initial load or after
+  // adding a member), then re-seed the render stores before the {#key} block
+  // re-mounts the tree.
+  $: if (data.familyData) initTreeData(data.familyData)
+  $: resetTreeRender($treeVersion)
 
-    if (initialMemberId) {
-      stack.set([initialMemberId])
-    }
+  function resetTreeRender(version: number) {
+    visitedMembers.set([])
+    initialMemberId = firstGeneration?.[0]?.nodeId
+    stack.set(initialMemberId ? [initialMemberId] : [])
+
+    if (version > 0) setTimeout(centerTree, 400)
   }
 
   onMount(() => {
     setTimeout(() => {
       centerTree()
-      // familyTree.getParentsChildren()
-      console.log(familyTree.getParentsChildren())
-      // TODO(WIP): animation draw parentChildren limes
+      // TODO(WIP): animation draw parentChildren lines
     }, 400)
   })
 
   function centerTree() {
+    if (!treeWrapper) return
+
     const containerWidth = treeWrapper.clientWidth
     const graphWidth = treeWrapper.scrollWidth
 
@@ -37,11 +45,13 @@
 
 <Header />
 <main id="family-tree-wrapper" bind:this={treeWrapper}>
-  {#if initialMemberId}
-    <TreeNode memberId={initialMemberId} />
-  {:else}
-    It seem as you still have not added any member of this family.
-  {/if}
+  {#key $treeVersion}
+    {#if initialMemberId}
+      <TreeNode memberId={initialMemberId} />
+    {:else}
+      It seem as you still have not added any member of this family.
+    {/if}
+  {/key}
 </main>
 <Footer />
 <AddFamilyMemberModal />

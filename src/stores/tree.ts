@@ -1,6 +1,5 @@
-import type { ParentsChildren, FamilyMember } from '$lib/types/familyTypes'
+import type { FamilyData, ParentsChildren, FamilyMember } from '$lib/types/familyTypes'
 import { writable } from 'svelte/store'
-import { familyData } from './family'
 
 enum Relation {
   Child = 1,
@@ -233,49 +232,70 @@ const initFamilyTree = () => {
 
 export const familyTree = initFamilyTree()
 
-familyData?.members?.forEach((member: FamilyMember) => {
-  familyTree.addVertex(member)
+const buildTree = (familyData: FamilyData) => {
+  familyTree.adjList.clear()
 
-  member.children?.forEach((childId: string) => {
-    const child = familyData.members.find((member) => member.id === childId)
-    if (child) {
-      familyTree.addEdge(member, child, Relation.Child)
-    }
+  familyData?.members?.forEach((member: FamilyMember) => {
+    familyTree.addVertex(member)
+
+    member.children?.forEach((childId: string) => {
+      const child = familyData.members.find((member) => member.id === childId)
+      if (child) {
+        familyTree.addEdge(member, child, Relation.Child)
+      }
+    })
+
+    member.parents?.forEach((parentId: string) => {
+      const parent = familyData.members.find((member) => member.id === parentId)
+      if (parent) {
+        familyTree.addEdge(member, parent, Relation.Parent)
+      }
+      // TODO: comporbar si hay hermanos de los mismos padres para actualizarlos en el momento.
+    })
+
+    member.siblings?.forEach((siblingId: string) => {
+      const sibling = familyData.members.find((member) => member.id === siblingId)
+      if (sibling) {
+        familyTree.addEdge(member, sibling, Relation.Sibling)
+      }
+    })
+
+    member.partner?.forEach((partnerId: string) => {
+      const partner = familyData.members.find((member) => member.id === partnerId)
+      if (partner) {
+        familyTree.addEdge(member, partner, Relation.Partner)
+      }
+    })
+
+    member.previousPartners?.forEach((previousPartnerId: string) => {
+      const previousPartner = familyData.members.find((member) => member.id === previousPartnerId)
+      if (previousPartner) {
+        familyTree.addEdge(member, previousPartner, Relation.PreviousPartner)
+      }
+    })
   })
+}
 
-  member.parents?.forEach((parentId: string) => {
-    const parent = familyData.members.find((member) => member.id === parentId)
-    if (parent) {
-      familyTree.addEdge(member, parent, Relation.Parent)
-    }
-    // TODO: comporbar si hay hermanos de los mismos padres para actualizarlos en el momento.
-  })
+export let generations: { nodeId: string; generation: number }[] | undefined
+export let firstGeneration: { nodeId: string; generation: number }[] | undefined
+export let parentsChildrenArray: ParentsChildren[] = []
 
-  member.siblings?.forEach((siblingId: string) => {
-    const sibling = familyData.members.find((member) => member.id === siblingId)
-    if (sibling) {
-      familyTree.addEdge(member, sibling, Relation.Sibling)
-    }
-  })
-
-  member.partner?.forEach((partnerId: string) => {
-    const partner = familyData.members.find((member) => member.id === partnerId)
-    if (partner) {
-      familyTree.addEdge(member, partner, Relation.Partner)
-    }
-  })
-
-  member.previousPartners?.forEach((previousPartnerId: string) => {
-    const previousPartner = familyData.members.find((member) => member.id === previousPartnerId)
-    if (previousPartner) {
-      familyTree.addEdge(member, previousPartner, Relation.PreviousPartner)
-    }
-  })
-})
-
-export const generations = familyTree.getNodesGeneration()
-export const firstGenreation = generations?.filter((member) => member.generation === 1)
-export const parentsChildrenArray = familyTree.getParentsChildren()
+const refreshDerivedData = () => {
+  generations = familyTree.getNodesGeneration()
+  firstGeneration = generations?.filter((member) => member.generation === 1)
+  parentsChildrenArray = familyTree.getParentsChildren()
+}
 
 export const visitedMembers = writable<string[]>([])
 export const stack = writable<string[]>([])
+
+// Incremented on every rebuild so the page can re-mount the rendered tree
+export const treeVersion = writable(0)
+
+// Rebuilds the graph from fresh page data (initial load or after a mutation)
+// and triggers a re-mount of the rendered tree.
+export const initTreeData = (familyData: FamilyData) => {
+  buildTree(familyData)
+  refreshDerivedData()
+  treeVersion.update((version) => version + 1)
+}

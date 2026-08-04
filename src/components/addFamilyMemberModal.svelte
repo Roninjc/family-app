@@ -1,43 +1,38 @@
 <script lang="ts">
   import type { FamilyMember } from '$lib/types/familyTypes'
+  import { enhance } from '$app/forms'
+  import { invalidateAll } from '$app/navigation'
+  import { page } from '$app/stores'
   import { showAddMemberModal } from '../stores/modals'
   import LiquidGlassWrapper from './liquidGlassWrapper.svelte'
-  import { familyData } from '../stores/family'
 
   let showAddMemberModalValue = false
-  showAddMemberModal.subscribe((value) => (showAddMemberModalValue = value))
+  showAddMemberModal.subscribe((value) => {
+    showAddMemberModalValue = value
+    if (value) resetForm()
+  })
 
-  const familyMembers = familyData.members
+  $: familyMembers = ($page.data.familyData?.members ?? []) as FamilyMember[]
 
   let formStep = 1
   let error = ''
+  let submitting = false
 
   function validateStep1() {
     return name.trim() && familyName.trim() && birthDate
   }
 
   function validateStep2() {
-    // Validar padres (opcional: puedes requerir al menos uno si lo deseas)
-    return true
+    // Los padres son opcionales, pero si hay texto tiene que ser un miembro seleccionado
+    return (!fatherSearch.trim() || fatherId !== '') && (!motherSearch.trim() || motherId !== '')
   }
 
   function validateStep3() {
-    // Hermanos es opcional, siempre válido
-    return true
+    // La pareja es opcional, pero si hay texto tiene que ser un miembro seleccionado
+    return !actualPartnerSearch.trim() || actualPartnerId !== ''
   }
 
-  function validateStep4() {
-    // Pareja actual es opcional, siempre válido
-    return true
-  }
-
-  function validateStep5() {
-    // Parejas anteriores es opcional, siempre válido
-    return true
-  }
-
-  function handleStepSubmit(event: Event) {
-    event.preventDefault()
+  function nextStep() {
     if (formStep === 1) {
       if (validateStep1()) {
         formStep++
@@ -50,35 +45,59 @@
         formStep++
         error = ''
       } else {
-        error = 'Please fill in all required fields.'
+        error = 'Please select a valid family member from the suggestions.'
       }
     } else if (formStep === 3) {
       if (validateStep3()) {
         formStep++
         error = ''
       } else {
-        error = 'Please fill in all required fields.'
+        error = 'Please select a valid family member from the suggestions.'
       }
-    } else if (formStep === 4) {
-      if (validateStep4()) {
-        formStep++
-        error = ''
-      } else {
-        error = 'Please fill in all required fields.'
-      }
-    } else if (formStep === 5) {
-      if (validateStep5()) {
-        formStep++
-        error = ''
-      } else {
-        error = 'Please fill in all required fields.'
-      }
-    } else if (formStep === 6) {
-      // Submit global aquí
-      // Aquí puedes guardar el nuevo miembro en familyData o hacer la petición correspondiente
-      // Por ahora solo cierra el modal
-      showAddMemberModal.set(false)
     }
+  }
+
+  // Enter advances steps; the real submit only happens from step 4.
+  function handleFormKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter' && formStep < 4) {
+      event.preventDefault()
+      nextStep()
+    }
+  }
+
+  const enhanceAddMember = () => {
+    submitting = true
+
+    return async ({ result }: { result: import('@sveltejs/kit').ActionResult }) => {
+      submitting = false
+
+      if (result.type === 'success') {
+        showAddMemberModal.set(false)
+        await invalidateAll()
+      } else if (result.type === 'failure') {
+        error = String(result.data?.addError ?? 'No se pudo guardar el miembro.')
+      } else if (result.type === 'error') {
+        error = 'No se pudo guardar el miembro.'
+      }
+    }
+  }
+
+  function resetForm() {
+    formStep = 1
+    error = ''
+    name = ''
+    familyName = ''
+    birthDate = ''
+    fatherId = ''
+    motherId = ''
+    siblingsIds = []
+    actualPartnerId = ''
+    previousPartnersIds = []
+    fatherSearch = ''
+    motherSearch = ''
+    siblingsSearch = ''
+    actualPartnerSearch = ''
+    previousPartnersSearch = ''
   }
 
   let name = ''
@@ -105,11 +124,11 @@
   let actualPartnerInputEl: HTMLInputElement
   let previousPartnersInputEl: HTMLInputElement
 
-  function reportMemberValidity(element: HTMLInputElement) {
+  function reportMemberValidity(element: HTMLInputElement, search: string, selectedId: string) {
     if (!element) return
     // Si está invalid, ahora sí muestra el mensaje real
-    const match = familyMembers.some((m) => m.id === fatherId)
-    if (!match && fatherSearch.trim() !== '') {
+    const match = familyMembers.some((m) => m.id === selectedId)
+    if (!match && search.trim() !== '') {
       element.setCustomValidity('Please select a valid family member.')
     } else {
       element.setCustomValidity('')
@@ -200,8 +219,13 @@
     <div class="add-member-modal" role="banner" on:click|stopPropagation>
       <!-- <button class="close-modal" on:click={() => showAddMemberModal.set(false)}>⨯</button> -->
       <LiquidGlassWrapper>
-        <h2>New Family Member {formStep}</h2>
-        <form on:submit|preventDefault={handleStepSubmit}>
+        <h2>New Family Member</h2>
+        <form
+          method="POST"
+          action="?/addMember"
+          use:enhance={enhanceAddMember}
+          on:keydown={handleFormKeydown}
+        >
           {#if formStep === 1}
             <section>
               <h3>Personal Information</h3>
@@ -244,7 +268,7 @@
                   class:label-active={birthDate && birthDate.length > 0}>Birth date</label
                 >
               </div>
-              <button type="submit">Next</button>
+              <button type="button" on:click={nextStep}>Next</button>
             </section>
           {:else if formStep === 2}
             <section>
@@ -255,10 +279,14 @@
                   class="modern-input"
                   type="text"
                   bind:value={fatherSearch}
+                  on:input={() => {
+                    fatherId = ''
+                    showFatherSuggestions = true
+                  }}
                   on:focus={() => (showFatherSuggestions = true)}
                   on:blur={() => {
                     setTimeout(() => (showFatherSuggestions = false), 100)
-                    reportMemberValidity(fatherInputEl)
+                    reportMemberValidity(fatherInputEl, fatherSearch, fatherId)
                   }}
                   autocomplete="off"
                   bind:this={fatherInputEl}
@@ -286,10 +314,14 @@
                   class="modern-input"
                   type="text"
                   bind:value={motherSearch}
+                  on:input={() => {
+                    motherId = ''
+                    showMotherSuggestions = true
+                  }}
                   on:focus={() => (showMotherSuggestions = true)}
                   on:blur={() => {
                     setTimeout(() => (showMotherSuggestions = false), 100)
-                    reportMemberValidity(motherInputEl)
+                    reportMemberValidity(motherInputEl, motherSearch, motherId)
                   }}
                   autocomplete="off"
                   bind:this={motherInputEl}
@@ -350,7 +382,7 @@
               {/if}
               <div style="display: flex; gap: 1rem;">
                 <button type="button" on:click={() => formStep--}>Back</button>
-                <button type="submit">Next</button>
+                <button type="button" on:click={nextStep}>Next</button>
               </div>
             </section>
           {:else if formStep === 3}
@@ -362,7 +394,10 @@
                   class="modern-input"
                   type="text"
                   bind:value={actualPartnerSearch}
-                  on:input={() => (showActualPartnerSuggestions = true)}
+                  on:input={() => {
+                    actualPartnerId = ''
+                    showActualPartnerSuggestions = true
+                  }}
                   on:focus={() => (showActualPartnerSuggestions = true)}
                   on:blur={() => setTimeout(() => (showActualPartnerSuggestions = false), 100)}
                   autocomplete="off"
@@ -426,7 +461,7 @@
               {/if}
               <div style="display: flex; gap: 1rem;">
                 <button type="button" on:click={() => formStep--}>Back</button>
-                <button type="submit">Next</button>
+                <button type="button" on:click={nextStep}>Next</button>
               </div>
             </section>
           {:else if formStep === 4}
@@ -445,9 +480,23 @@
                   {previousPartnersIds.map((id) => getMemberName(id)).join(', ')}
                 </li>
               </ul>
+              <input type="hidden" name="name" value={name} />
+              <input type="hidden" name="familyName" value={familyName} />
+              <input type="hidden" name="birthDate" value={birthDate} />
+              <input type="hidden" name="fatherId" value={fatherId} />
+              <input type="hidden" name="motherId" value={motherId} />
+              <input type="hidden" name="partnerId" value={actualPartnerId} />
+              {#each siblingsIds as siblingId}
+                <input type="hidden" name="siblingsIds" value={siblingId} />
+              {/each}
+              {#each previousPartnersIds as previousPartnerId}
+                <input type="hidden" name="previousPartnersIds" value={previousPartnerId} />
+              {/each}
               <div style="display: flex; gap: 1rem;">
                 <button type="button" on:click={() => formStep--}>Back</button>
-                <button type="submit">Confirm & Add</button>
+                <button type="submit" disabled={submitting}>
+                  {submitting ? 'Saving…' : 'Confirm & Add'}
+                </button>
               </div>
             </section>
           {/if}
