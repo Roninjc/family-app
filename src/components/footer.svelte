@@ -1,20 +1,22 @@
 <script lang="ts">
+  import { page } from '$app/stores'
+  import { canEdit } from '$lib/types/auth'
   import { showAddMemberModal } from '../stores/modals'
   import LiquidGlassWrapper from './liquidGlassWrapper.svelte'
-  // import ButtonWrapper from './buttonWrapper.svelte'
-  // import AddFamilyMemberButton from './addFamilyMemberButton.svelte'
 </script>
 
 <footer>
   <LiquidGlassWrapper rounded={true}>
-    <button class="footer-button profile-button"></button>
+    <a href="/profile" class="footer-button profile-button" aria-label="Mi perfil"></a>
   </LiquidGlassWrapper>
-  <LiquidGlassWrapper rounded={true}>
-    <button
-      class="footer-button add-family-member-button"
-      on:click={() => showAddMemberModal.set(true)}
-    ></button>
-  </LiquidGlassWrapper>
+  {#if canEdit($page.data.profile)}
+    <LiquidGlassWrapper rounded={true}>
+      <button
+        class="footer-button add-family-member-button"
+        on:click={() => showAddMemberModal.set(true)}
+      ></button>
+    </LiquidGlassWrapper>
+  {/if}
 </footer>
 
 <style lang="scss">
@@ -43,6 +45,7 @@
       pointer-events: auto;
       font: inherit;
       cursor: pointer;
+      text-decoration: none;
     }
 
     .profile-button {
