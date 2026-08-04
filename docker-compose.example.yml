@@ -1,20 +1,15 @@
-# Example service definition to merge into the home server's docker-compose.
-# The app sits behind the existing nginx reverse proxy, which terminates TLS.
-# Requires a .env next to the compose file with:
-#   PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY
+# Example service definition for the home server's docker-compose.
+# The image is built and pushed to GHCR by .github/workflows/deploy.yml;
+# the server only pulls it. The app sits behind the existing nginx reverse
+# proxy, which terminates TLS.
 services:
   family-app:
-    build:
-      context: .
-      args:
-        PUBLIC_SUPABASE_URL: ${PUBLIC_SUPABASE_URL}
-        PUBLIC_SUPABASE_ANON_KEY: ${PUBLIC_SUPABASE_ANON_KEY}
+    image: ghcr.io/roninjc/family-app:latest
     # ORIGIN must match the public URL served by nginx, otherwise SvelteKit
     # form actions fail the cross-site POST check.
     environment:
-      ORIGIN: https://familia.example.com
+      PORT: 3456
+      ORIGIN: https://familia.milkyhome.vip
     restart: unless-stopped
-    # If nginx runs in the same compose/network, drop `ports` and proxy to
-    # http://family-app:3000 instead.
     ports:
-      - '3000:3000'
+      - '3456:3456'
