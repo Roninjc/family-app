@@ -1,0 +1,27 @@
+# Example service definitions to merge into the home server's docker-compose.
+# Requires a .env next to the compose file with:
+#   PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, CLOUDFLARE_TUNNEL_TOKEN
+# and ORIGIN set to the public URL served by the Cloudflare Tunnel.
+services:
+  family-app:
+    build:
+      context: .
+      args:
+        PUBLIC_SUPABASE_URL: ${PUBLIC_SUPABASE_URL}
+        PUBLIC_SUPABASE_ANON_KEY: ${PUBLIC_SUPABASE_ANON_KEY}
+    # ORIGIN must match the public URL, otherwise SvelteKit form actions
+    # fail the cross-site POST check.
+    environment:
+      ORIGIN: https://familia.example.com
+    restart: unless-stopped
+    # No ports needed: cloudflared reaches it through the compose network
+    # as http://family-app:3000. Uncomment to also expose it on the LAN:
+    # ports:
+    #   - '3000:3000'
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+    restart: unless-stopped
