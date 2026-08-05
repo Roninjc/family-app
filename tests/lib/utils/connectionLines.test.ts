@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { PreviousPartnerRealtionInfo } from '$lib/types/familyTypes'
-import { getPreviousPartnerChildrenLinesCoordinates, getSvgCoordinates } from './connectionLines'
+import {
+  getPreviousPartnerChildrenLinesCoordinates,
+  getSvgCoordinates
+} from '$lib/utils/connectionLines'
 
 const relationInfo = (
   partial: Partial<PreviousPartnerRealtionInfo> = {}

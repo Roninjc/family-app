@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { FamilyData, FamilyMember } from '$lib/types/familyTypes'
-import * as tree from './tree'
+import * as tree from '../../src/stores/tree'
 
 // Los tests construyen familias mínimas con el mismo shape que produce
 // rowsToFamilyData (arrays bidireccionales), aunque buildTree solo necesita

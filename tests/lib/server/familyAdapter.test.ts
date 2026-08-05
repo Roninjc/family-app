@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { rowsToFamilyData, type MemberRow, type RelationshipRow } from './familyAdapter'
+import { rowsToFamilyData, type MemberRow, type RelationshipRow } from '$lib/server/familyAdapter'
 
 const row = (id: string): MemberRow => ({
   id,

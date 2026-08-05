@@ -9,7 +9,7 @@ Uses yarn (yarn.lock is present).
 - `yarn dev` — start dev server (`yarn dev -- --open` to open browser)
 - `yarn build` / `yarn preview` — production build (adapter-node) / preview it
 - `yarn run check` — type-check with svelte-check (must be `yarn run check`; plain `yarn check` runs yarn's builtin integrity check instead).
-- `yarn test` / `yarn test:watch` — Vitest (config in `vitest.config.ts`, separate from vite.config; component tests run in jsdom via `// @vitest-environment jsdom`). Covers the tree engine, the DB adapter, connection-line math, treeNode rendering and the addMember action.
+- `yarn test` / `yarn test:watch` — Vitest. Tests live in `tests/`, mirroring the `src/` structure (config in `vitest.config.ts`, separate from vite.config; component tests run in jsdom via `// @vitest-environment jsdom`). Covers the tree engine, the DB adapter, connection-line math, treeNode rendering and the page actions.
 - `yarn lint` — prettier check + eslint
 - `yarn format` — prettier write
 - `yarn migrate:seed` — one-time data migration of the hardcoded seed into Supabase (service role; refuses to run if members already exist unless `--force`)

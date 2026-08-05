@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { actions } from './+page.server'
+import { actions } from '../../src/routes/+page.server'
 
 // Mock mínimo del cliente supabase: solo lo que usan las acciones de la página
 const makeSupabase = ({ existingCoupleRows = [] as { id: string }[] } = {}) => {

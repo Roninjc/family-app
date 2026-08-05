@@ -3,9 +3,9 @@ import { tick } from 'svelte'
 import { get } from 'svelte/store'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { FamilyData, FamilyMember } from '$lib/types/familyTypes'
-import { editingMemberId, showEditMemberModal } from '../stores/modals'
-import { initTreeData, renderRoots, stack, visitedMembers } from '../stores/tree'
-import TreeNode from './treeNode.svelte'
+import { editingMemberId, showEditMemberModal } from '../../src/stores/modals'
+import { initTreeData, renderRoots, stack, visitedMembers } from '../../src/stores/tree'
+import TreeNode from '../../src/components/treeNode.svelte'
 
 const member = (id: string, partial: Partial<FamilyMember> = {}): FamilyMember => ({
   id,
