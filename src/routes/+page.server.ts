@@ -2,6 +2,22 @@ import { error, fail, redirect } from '@sveltejs/kit'
 import { rowsToFamilyData } from '$lib/server/familyAdapter'
 import type { Actions, PageServerLoad } from './$types'
 
+// Relaciones vistas desde el miembro editado, tal y como las manda el modal
+const RELATION_KINDS = ['parent', 'child', 'sibling', 'partner', 'previous_partner'] as const
+type RelationKind = (typeof RELATION_KINDS)[number]
+
+// Traduce (miembro, otro, tipo-desde-el-miembro) a la fila normalizada de la
+// tabla: 'parent' es dirigida member_a→member_b y el resto se guardan una vez
+// con member_a < member_b (el orden de strings coincide con el orden uuid de
+// Postgres para uuids canónicos en minúsculas).
+const relationRow = (memberId: string, otherId: string, kind: RelationKind) => {
+  if (kind === 'parent') return { member_a: otherId, member_b: memberId, type: 'parent' }
+  if (kind === 'child') return { member_a: memberId, member_b: otherId, type: 'parent' }
+
+  const [memberA, memberB] = memberId < otherId ? [memberId, otherId] : [otherId, memberId]
+  return { member_a: memberA, member_b: memberB, type: kind }
+}
+
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
   const [membersRes, relationshipsRes] = await Promise.all([
     supabase
@@ -133,5 +149,60 @@ export const actions: Actions = {
     }
 
     return { deleted: true }
+  },
+
+  addRelation: async ({ request, locals: { supabase, user } }) => {
+    if (!user) redirect(303, '/login')
+
+    const form = await request.formData()
+    const memberId = String(form.get('memberId') ?? '')
+    const otherId = String(form.get('otherId') ?? '')
+    const kind = String(form.get('kind') ?? '') as RelationKind
+
+    if (!memberId || !otherId || !RELATION_KINDS.includes(kind))
+      return fail(400, { relationError: 'Relación no válida.' })
+    if (memberId === otherId)
+      return fail(400, { relationError: 'Un miembro no puede relacionarse consigo mismo.' })
+
+    const { error: insertError } = await supabase
+      .from('relationships')
+      .insert(relationRow(memberId, otherId, kind))
+
+    if (insertError) {
+      if (insertError.code === '23505')
+        return fail(400, { relationError: 'Esa relación ya existe.' })
+      const message = /row-level security/i.test(insertError.message)
+        ? 'No tienes permisos para editar relaciones.'
+        : insertError.message
+      return fail(403, { relationError: message })
+    }
+
+    return { relationAdded: true }
+  },
+
+  removeRelation: async ({ request, locals: { supabase, user } }) => {
+    if (!user) redirect(303, '/login')
+
+    const form = await request.formData()
+    const memberId = String(form.get('memberId') ?? '')
+    const otherId = String(form.get('otherId') ?? '')
+    const kind = String(form.get('kind') ?? '') as RelationKind
+
+    if (!memberId || !otherId || !RELATION_KINDS.includes(kind))
+      return fail(400, { relationError: 'Relación no válida.' })
+
+    const { error: deleteError } = await supabase
+      .from('relationships')
+      .delete()
+      .match(relationRow(memberId, otherId, kind))
+
+    if (deleteError) {
+      const message = /row-level security/i.test(deleteError.message)
+        ? 'No tienes permisos para editar relaciones.'
+        : deleteError.message
+      return fail(403, { relationError: message })
+    }
+
+    return { relationRemoved: true }
   }
 }

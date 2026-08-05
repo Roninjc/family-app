@@ -1,77 +1,139 @@
 import { describe, expect, it } from 'vitest'
-import type { PreviousPartnerRealtionInfo } from '$lib/types/familyTypes'
+import type { MemberBox } from '$lib/utils/connectionLines'
 import {
-  getPreviousPartnerChildrenLinesCoordinates,
-  getSvgCoordinates
+  childrenLinesSpec,
+  coupleLineSpec,
+  memberExitOffsets,
+  midGapY,
+  previousPartnerHeights,
+  previousPartnerJoinSpec
 } from '$lib/utils/connectionLines'
 
-const relationInfo = (
-  partial: Partial<PreviousPartnerRealtionInfo> = {}
-): PreviousPartnerRealtionInfo => ({
-  partnerCenter: { x: 0, y: 0 },
-  childrenCenter: [],
-  svgCoordinates: { left: 0, right: 0, top: 0, bottom: 0 },
-  memberConnectorX: 0,
-  coupleHeight: 0,
-  coupleChildrenConnectorX: 0,
-  childrenHeight: 0,
-  coupleChildrenHorizontalLine: { start: 0, end: 0 },
-  ...partial
+// Coordenadas relativas al couple-wrapper, como las produce el componente
+const box = (centerX: number, centerY: number, height = 120): MemberBox => ({
+  center: { x: centerX, y: centerY },
+  top: centerY - height / 2,
+  bottom: centerY + height / 2
 })
 
-describe('getSvgCoordinates', () => {
-  it('calcula el bounding box de miembro + pareja + hijos', () => {
-    const coordinates = getSvgCoordinates({ x: 100, y: 50 }, { x: 300, y: 50 }, [
-      { x: 50, y: 200 },
-      { x: 350, y: 200 }
-    ])
-
-    expect(coordinates).toEqual({ left: 50, right: 350, top: 50, bottom: 200 })
-  })
-
-  it('funciona sin pareja y sin hijos (progenitor único aún sin medir hijos)', () => {
-    const coordinates = getSvgCoordinates({ x: 100, y: 50 }, undefined, [])
-
-    expect(coordinates).toEqual({ left: 100, right: 100, top: 50, bottom: 50 })
+describe('midGapY', () => {
+  it('devuelve el punto medio del hueco entre filas', () => {
+    expect(midGapY(120, 190)).toBe(155)
   })
 })
 
-describe('getPreviousPartnerChildrenLinesCoordinates', () => {
-  it('usa alturas fijas cuando hay una sola expareja', () => {
-    const info = relationInfo({
-      childrenCenter: [{ x: 200, y: 300 }],
-      svgCoordinates: { left: 100, right: 400, top: 50, bottom: 300 }
-    })
+describe('coupleLineSpec', () => {
+  it('dibuja una horizontal entre los centros, con bounds ajustados', () => {
+    const spec = coupleLineSpec({ x: 75, y: 60 }, { x: 245, y: 60 })
 
-    const result = getPreviousPartnerChildrenLinesCoordinates(info, 1, 0)
-
-    expect(result.memberConnectorX).toBe(0)
-    expect(result.coupleHeight).toBe(100)
-    expect(result.childrenHeight).toBe(130)
-    // Con un solo hijo la línea horizontal va del conector fijo (75 + 20) al hijo
-    expect(result.coupleChildrenConnectorX).toBe(95)
-    expect(result.coupleChildrenHorizontalLine).toEqual({ start: 95, end: 100 })
+    expect(spec.left).toBe(75)
+    expect(spec.top).toBe(60)
+    expect(spec.width).toBe(170)
+    expect(spec.height).toBe(1) // altura mínima, la línea es horizontal
+    expect(spec.d).toBe('M0 0 L170 0')
   })
 
-  it('escalona conectores y alturas cuando hay varias exparejas', () => {
-    const info = relationInfo({
-      childrenCenter: [
-        { x: 150, y: 300 },
-        { x: 350, y: 300 }
-      ],
-      svgCoordinates: { left: 100, right: 400, top: 50, bottom: 300 }
-    })
+  it('funciona con la pareja a la izquierda (expareja): sin anchos negativos', () => {
+    const spec = coupleLineSpec({ x: 75, y: 60 }, { x: -115, y: 60 })
 
-    const first = getPreviousPartnerChildrenLinesCoordinates(info, 2, 0)
-    const second = getPreviousPartnerChildrenLinesCoordinates(info, 2, 1)
+    expect(spec.left).toBe(-115)
+    expect(spec.width).toBe(190)
+    expect(spec.d).toBe('M190 0 L0 0')
+  })
+})
 
-    // El conector del miembro se desplaza 7px por expareja pendiente
-    expect(first.memberConnectorX).toBe(7)
-    expect(second.memberConnectorX).toBe(0)
-    // Las alturas se escalonan para que las líneas de cada pareja no se solapen
-    expect(first.coupleHeight).toBeLessThan(second.coupleHeight)
-    expect(first.childrenHeight).toBeGreaterThan(second.childrenHeight)
-    // Con varios hijos la horizontal abarca del más a la izquierda al más a la derecha
-    expect(first.coupleChildrenHorizontalLine).toEqual({ start: 50, end: 250 })
+describe('childrenLinesSpec', () => {
+  it('bajada desde el junction, bus horizontal y bajada a cada hijo', () => {
+    const junction = { x: 160, y: 60 }
+    const children = [
+      { x: 75, y: 250 },
+      { x: 245, y: 250 }
+    ]
+
+    const spec = childrenLinesSpec(junction, children, 155)
+
+    expect(spec.left).toBe(75)
+    expect(spec.top).toBe(60)
+    expect(spec.width).toBe(170)
+    expect(spec.height).toBe(190)
+    // Bajada del junction hasta el bus
+    expect(spec.d).toContain('M85 0 L85 95')
+    // Bus horizontal a la altura del hueco
+    expect(spec.d).toContain('M0 95 L170 95')
+    // Bajadas hasta el centro de cada hijo
+    expect(spec.d).toContain('M0 95 L0 190')
+    expect(spec.d).toContain('M170 95 L170 190')
+  })
+
+  it('el bus cubre al junction aunque los hijos queden todos a un lado', () => {
+    const spec = childrenLinesSpec({ x: 300, y: 60 }, [{ x: 75, y: 250 }], 155)
+
+    // De el hijo más a la izquierda (75) hasta el junction (300)
+    expect(spec.left).toBe(75)
+    expect(spec.width).toBe(225)
+    expect(spec.d).toContain('M0 95 L225 95')
+  })
+})
+
+describe('previousPartnerHeights', () => {
+  it('reparte la unión desde arriba y el bus de hijos desde abajo dentro del hueco', () => {
+    // hueco 120→190 (70px), 1 expareja → steps 4
+    expect(previousPartnerHeights(120, 190, 0, 1)).toEqual({ coupleY: 137.5, busY: 172.5 })
+  })
+
+  it('escalona varias exparejas sin que se solapen', () => {
+    const first = previousPartnerHeights(120, 190, 0, 2)
+    const second = previousPartnerHeights(120, 190, 1, 2)
+
+    expect(first.coupleY).toBeLessThan(second.coupleY)
+    expect(first.busY).toBeGreaterThan(second.busY)
+    expect(second.coupleY).toBeLessThan(second.busY)
+  })
+
+  it('mantiene un hueco mínimo si las filas están muy juntas', () => {
+    // gapHeight se fuerza a 24: coupleY = 120 + 24/4 = 126
+    expect(previousPartnerHeights(120, 121, 0, 1).coupleY).toBe(126)
+  })
+})
+
+describe('previousPartnerJoinSpec', () => {
+  const member = box(75, 60)
+  const previousPartner = box(-115, 60)
+
+  it('une ambos badges con stubs hasta coupleY y una horizontal entre ellos', () => {
+    const spec = previousPartnerJoinSpec(member, previousPartner, 137.5, -6)
+    const local = (x: number) => x - spec.left
+
+    // Stub del miembro, desplazado por el offset de salida (75 - 6 = 69)
+    expect(spec.d).toContain(`M${local(69)} ${120 - spec.top} L${local(69)} ${137.5 - spec.top}`)
+    // Stub de la expareja desde el borde inferior de su badge
+    expect(spec.d).toContain(
+      `M${local(-115)} ${120 - spec.top} L${local(-115)} ${137.5 - spec.top}`
+    )
+    // Horizontal entre ambos a la altura de la unión
+    expect(spec.d).toContain(
+      `M${local(-115)} ${137.5 - spec.top} L${local(69)} ${137.5 - spec.top}`
+    )
+  })
+})
+
+describe('memberExitOffsets', () => {
+  it('una sola salida queda centrada en el badge', () => {
+    expect(memberExitOffsets(1, false).previousPartnerOffsets).toEqual([0])
+    expect(memberExitOffsets(0, true).singleParentOffset).toBe(0)
+  })
+
+  it('expareja con hijos + progenitor único: las salidas se separan alrededor del centro', () => {
+    const { previousPartnerOffsets, singleParentOffset } = memberExitOffsets(1, true)
+
+    expect(previousPartnerOffsets).toEqual([-6])
+    expect(singleParentOffset).toBe(6)
+  })
+
+  it('varias exparejas se reparten en orden, con el progenitor único a la derecha', () => {
+    const { previousPartnerOffsets, singleParentOffset } = memberExitOffsets(2, true)
+
+    expect(previousPartnerOffsets).toEqual([-12, 0])
+    expect(singleParentOffset).toBe(12)
   })
 })

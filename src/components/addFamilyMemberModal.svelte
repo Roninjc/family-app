@@ -808,6 +808,13 @@
 
   :global(.add-member-modal .liquid-glass-text-container) {
     flex-direction: column;
+    // flex-start: con justify-content center (el default del wrapper) el
+    // contenido que desborda por arriba queda cortado e inaccesible al scroll
+    justify-content: flex-start;
+    align-items: stretch;
     padding: 30px 20px 20px;
+    box-sizing: border-box;
+    max-height: 85vh;
+    overflow-y: auto;
   }
 </style>

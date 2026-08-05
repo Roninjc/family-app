@@ -6,6 +6,7 @@
   import { canEdit } from '$lib/types/auth'
   import { editingMemberId, showEditMemberModal } from '../stores/modals'
   import LiquidGlassWrapper from './liquidGlassWrapper.svelte'
+  import RelationChipsEditor from './relationChipsEditor.svelte'
 
   let name = ''
   let familyName = ''
@@ -13,15 +14,33 @@
   let error = ''
   let submitting = false
   let confirmingDelete = false
+  let loadedMemberId: string | null = null
 
   $: familyMembers = ($page.data.familyData?.members ?? []) as FamilyMember[]
   $: member = $editingMemberId ? familyMembers.find((m) => m.id === $editingMemberId) : undefined
   $: editable = canEdit($page.data.profile)
 
-  // Precarga los campos cada vez que se abre el modal
-  $: if ($showEditMemberModal && member) loadMember(member)
+  // Precarga los campos al abrir el modal o cambiar de miembro. Se compara por
+  // id (no por referencia) para no pisar los campos personales a medio editar
+  // cuando invalidateAll refresca los datos tras guardar una relación.
+  $: if ($showEditMemberModal && member && member.id !== loadedMemberId) loadMember(member)
+  $: if (!$showEditMemberModal) loadedMemberId = null
+
+  // Quien ya tiene una relación con el miembro (o es el propio miembro) no es
+  // seleccionable en ningún otro grupo de relaciones
+  $: relatedOrSelfIds = member
+    ? [
+        member.id,
+        ...member.parents,
+        ...member.children,
+        ...member.siblings,
+        ...member.partner,
+        ...member.previousPartners
+      ]
+    : []
 
   function loadMember(m: FamilyMember) {
+    loadedMemberId = m.id
     name = m.name
     familyName = m.familyName
     birthDate = m.birthDate ?? ''
@@ -119,6 +138,66 @@
             </button>
           {/if}
         </form>
+        <div class="relations-section">
+          <h3>Relaciones</h3>
+          <RelationChipsEditor
+            label="Padres"
+            addPlaceholder="Añadir padre/madre…"
+            memberId={member.id}
+            kind="parent"
+            relatedIds={member.parents}
+            excludedIds={relatedOrSelfIds}
+            members={familyMembers}
+            {editable}
+            maxItems={2}
+            on:error={(e) => (error = e.detail)}
+          />
+          <RelationChipsEditor
+            label="Hijos"
+            addPlaceholder="Añadir hijo/a…"
+            memberId={member.id}
+            kind="child"
+            relatedIds={member.children}
+            excludedIds={relatedOrSelfIds}
+            members={familyMembers}
+            {editable}
+            on:error={(e) => (error = e.detail)}
+          />
+          <RelationChipsEditor
+            label="Hermanos"
+            addPlaceholder="Añadir hermano/a…"
+            memberId={member.id}
+            kind="sibling"
+            relatedIds={member.siblings}
+            excludedIds={relatedOrSelfIds}
+            members={familyMembers}
+            {editable}
+            on:error={(e) => (error = e.detail)}
+          />
+          <RelationChipsEditor
+            label="Pareja"
+            addPlaceholder="Añadir pareja…"
+            memberId={member.id}
+            kind="partner"
+            relatedIds={member.partner}
+            excludedIds={relatedOrSelfIds}
+            members={familyMembers}
+            {editable}
+            maxItems={1}
+            on:error={(e) => (error = e.detail)}
+          />
+          <RelationChipsEditor
+            label="Exparejas"
+            addPlaceholder="Añadir expareja…"
+            memberId={member.id}
+            kind="previous_partner"
+            relatedIds={member.previousPartners}
+            excludedIds={relatedOrSelfIds}
+            members={familyMembers}
+            {editable}
+            on:error={(e) => (error = e.detail)}
+          />
+        </div>
         {#if editable}
           <div class="danger-zone">
             {#if !confirmingDelete}
@@ -260,6 +339,15 @@
         }
       }
 
+      .relations-section {
+        margin-top: 0.5rem;
+
+        h3 {
+          margin: 0 0 0.8rem;
+          font-size: 1rem;
+        }
+      }
+
       .danger-zone {
         margin-top: 1.5rem;
         display: flex;
@@ -296,6 +384,15 @@
 
   :global(.edit-member-modal .liquid-glass-text-container) {
     flex-direction: column;
+    align-items: stretch;
+    // flex-start: con justify-content center (el default del wrapper) el
+    // contenido que desborda por arriba queda cortado e inaccesible al scroll
+    justify-content: flex-start;
     padding: 30px 20px 20px;
+    box-sizing: border-box;
+    width: 340px;
+    // El modal crece con las relaciones: scroll interno en pantallas bajas
+    max-height: 80vh;
+    overflow-y: auto;
   }
 </style>

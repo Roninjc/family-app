@@ -41,22 +41,3 @@ export interface ParentsChildren {
   parent2?: string
   children: Relationship[]
 }
-
-export interface PartnerRealtionInfo {
-  partnerCenter: { x: number; y: number }
-  childrenCenter: { x: number; y: number }[]
-  svgCoordinates: {
-    left: number
-    right: number
-    top: number
-    bottom: number
-  }
-}
-
-export interface PreviousPartnerRealtionInfo extends PartnerRealtionInfo {
-  memberConnectorX: number
-  coupleHeight: number
-  coupleChildrenConnectorX: number
-  childrenHeight: number
-  coupleChildrenHorizontalLine: { start: number; end: number }
-}

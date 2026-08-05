@@ -37,7 +37,7 @@ beforeEach(() => {
 })
 
 describe('treeNode', () => {
-  it('renderiza una pareja con hijos', () => {
+  it('renderiza una pareja con hijos y sus líneas', async () => {
     mountTree([
       member('padre', { partner: ['madre'], children: ['hijo1', 'hijo2'] }),
       member('madre', { children: ['hijo1', 'hijo2'] }),
@@ -45,9 +45,13 @@ describe('treeNode', () => {
       member('hijo2')
     ])
 
+    await tick()
+
     for (const id of ['padre', 'madre', 'hijo1', 'hijo2']) {
       expect(document.getElementById(id), id).toBeTruthy()
     }
+    expect(document.querySelector('svg.couple-line')).toBeTruthy()
+    expect(document.querySelector('svg.couple-children-lines')).toBeTruthy()
   })
 
   it('renderiza un progenitor único con hijos sin crashear', () => {
@@ -105,6 +109,53 @@ describe('treeNode', () => {
       expect(document.getElementById(id), id).toBeTruthy()
     }
     expect(document.querySelector('svg.no-children-previous-couple-svg')).toBeTruthy()
+  })
+
+  it('separa las salidas cuando conviven expareja con hijos y progenitor único', async () => {
+    mountTree([
+      member('mariajose', { previousPartners: ['ignacio'], children: ['hijoex', 'olalla'] }),
+      member('ignacio', { children: ['hijoex'] }),
+      member('hijoex'),
+      member('olalla')
+    ])
+
+    await tick()
+
+    // La unión de la expareja va discontinua y sus bajadas a hijos sólidas
+    expect(document.querySelector('svg.previous-couple-join')).toBeTruthy()
+    expect(document.querySelector('svg.previous-couple-children-lines')).toBeTruthy()
+    const singleParentPath = document
+      .querySelector('svg.single-parent-lines path')
+      ?.getAttribute('d')
+    // En jsdom todos los rects miden 0, así que el offset de salida (+6) es
+    // lo único que desplaza la bajada de progenitor único
+    expect(singleParentPath).toContain('M6 0')
+  })
+
+  it('agrupa a los hijos por familia en la fila (los de la expareja a la izquierda)', async () => {
+    mountTree([
+      member('padre', {
+        partner: ['madre'],
+        previousPartners: ['ex'],
+        children: ['hijoactual', 'hijoex']
+      }),
+      member('madre', { children: ['hijoactual'] }),
+      member('ex', { children: ['hijoex'] }),
+      member('hijoactual'),
+      member('hijoex')
+    ])
+
+    await tick()
+
+    const hijoEx = document.getElementById('hijoex')
+    const hijoActual = document.getElementById('hijoactual')
+    expect(hijoEx).toBeTruthy()
+    expect(hijoActual).toBeTruthy()
+    // Aunque en los datos hijoactual va primero, en el DOM el hijo de la
+    // expareja se coloca antes (a la izquierda, junto a la ex)
+    expect(
+      hijoEx!.compareDocumentPosition(hijoActual!) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
   })
 
   it('pulsar el badge de un miembro abre el modal de edición con su id', () => {

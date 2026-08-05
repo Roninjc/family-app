@@ -1,117 +1,139 @@
-import type { PreviousPartnerRealtionInfo } from '$lib/types/familyTypes'
+// Geometría de las líneas del árbol. Todas las coordenadas son relativas al
+// couple-wrapper del miembro (se las da connectionLines.svelte tras medir el
+// DOM), así que aquí no hay ninguna suposición sobre tamaños de badge ni gaps.
 
-export const getMemberCenter = (memberId: string) => {
-  const elemPos = document.getElementById(memberId)?.getBoundingClientRect()
-  let center = { x: 0, y: 0 }
-
-  if (elemPos) {
-    const { left, width, top, height } = elemPos
-    const elemCenter = {
-      x: left + width / 2,
-      y: top + height / 2
-    }
-
-    if (!isNaN(elemCenter.x) && !isNaN(elemCenter.y)) {
-      center = elemCenter
-    }
-  }
-
-  return center
+export interface Point {
+  x: number
+  y: number
 }
 
-export const getSvgCoordinates = (
-  memberCenter: { x: number; y: number },
-  partnerCenter: { x: number; y: number } | undefined,
-  childrenCenter: { x: number; y: number }[]
-) => {
-  const childrenX = childrenCenter.map((child) => child.x)
-  const childrenY = childrenCenter.map((child) => child.y)
+// Caja medida de un badge: centro + bordes verticales
+export interface MemberBox {
+  center: Point
+  top: number
+  bottom: number
+}
 
-  const xValues = [
-    memberCenter.x,
-    ...(partnerCenter ? [partnerCenter.x] : []),
-    ...childrenX
-  ].filter((v) => v !== undefined)
-  const yValues = [
-    memberCenter.y,
-    ...(partnerCenter ? [partnerCenter.y] : []),
-    ...childrenY
-  ].filter((v) => v !== undefined)
+// Un SVG posicionado en absoluto dentro del couple-wrapper, con su path en
+// coordenadas locales
+export interface LineSpec {
+  left: number
+  top: number
+  width: number
+  height: number
+  d: string
+}
 
-  const left = Math.min(...xValues)
-  const right = Math.max(...xValues)
-  const top = Math.min(...yValues)
-  const bottom = Math.max(...yValues)
+interface Segment {
+  from: Point
+  to: Point
+}
+
+const specFromSegments = (segments: Segment[]): LineSpec => {
+  const xs = segments.flatMap(({ from, to }) => [from.x, to.x])
+  const ys = segments.flatMap(({ from, to }) => [from.y, to.y])
+  const left = Math.min(...xs)
+  const top = Math.min(...ys)
 
   return {
     left,
-    right,
     top,
-    bottom
+    width: Math.max(Math.max(...xs) - left, 1),
+    height: Math.max(Math.max(...ys) - top, 1),
+    d: segments
+      .map(({ from, to }) => `M${from.x - left} ${from.y - top} L${to.x - left} ${to.y - top}`)
+      .join(' ')
   }
 }
 
-export const getPreviousPartnerChildrenLinesCoordinates = (
-  previousPartnerRelationInfo: PreviousPartnerRealtionInfo,
-  amountOfPreviousPartners: number,
-  previousPartnerIndex: number
-): {
-  memberConnectorX: number
-  coupleHeight: number
-  coupleChildrenConnectorX: number
-  childrenHeight: number
-  coupleChildrenHorizontalLine: { start: number; end: number }
-} => {
-  let memberConnectorX = 0
-  let coupleHeight = 0
-  let coupleChildrenConnectorX = 0
-  let childrenHeight = 0
-  const coupleChildrenHorizontalLine = { start: 0, end: 0 }
+// Altura de la línea horizontal de hijos: punto medio del hueco entre la fila
+// de los padres y la de los hijos
+export const midGapY = (parentsBottomY: number, childrenTopY: number) =>
+  (parentsBottomY + childrenTopY) / 2
 
-  if (amountOfPreviousPartners === 1 && previousPartnerIndex === 0) {
-    coupleHeight = 100
-    childrenHeight = 130
-  }
+// Un badge puede tener varias "salidas" hacia hijos (stubs de exparejas y la
+// bajada de progenitor único). Para poder seguir cada línea, se reparten
+// simétricamente alrededor del centro del badge: exparejas a la izquierda
+// (en orden) y la salida de progenitor único la más a la derecha.
+export const memberExitOffsets = (
+  previousFamiliesCount: number,
+  hasSingleParentExit: boolean,
+  spacing = 12
+): { previousPartnerOffsets: number[]; singleParentOffset: number } => {
+  const totalExits = previousFamiliesCount + (hasSingleParentExit ? 1 : 0)
+  const offsetAt = (exitIndex: number) =>
+    totalExits > 1 ? (exitIndex - (totalExits - 1) / 2) * spacing : 0
 
-  if (amountOfPreviousPartners > 1) {
-    const memberConnectorSpacing = 7
-    memberConnectorX =
-      (amountOfPreviousPartners - (previousPartnerIndex + 1)) * memberConnectorSpacing
-    const steps = amountOfPreviousPartners * 2 + 2
-    const height = 70 / steps
-    coupleHeight = 80 + height * (previousPartnerIndex + 1)
-    childrenHeight = 150 - height * (previousPartnerIndex + 1)
-  }
-
-  if (previousPartnerRelationInfo.childrenCenter.length === 1) {
-    coupleChildrenConnectorX = 75 + 20
-    coupleChildrenHorizontalLine.start = coupleChildrenConnectorX
-    coupleChildrenHorizontalLine.end = Math.abs(
-      previousPartnerRelationInfo.svgCoordinates.left -
-        previousPartnerRelationInfo?.childrenCenter[0]?.x
-    )
-  }
-
-  if (previousPartnerRelationInfo.childrenCenter.length > 1) {
-    const mostLeftChild = previousPartnerRelationInfo.childrenCenter.reduce((prev, current) => {
-      return current.x < prev.x ? current : prev
-    })
-    const mostRightChild = previousPartnerRelationInfo.childrenCenter.reduce((prev, current) => {
-      return current.x > prev.x ? current : prev
-    })
-    coupleChildrenHorizontalLine.start = Math.abs(
-      previousPartnerRelationInfo.svgCoordinates.left - mostLeftChild.x
-    )
-    coupleChildrenHorizontalLine.end = Math.abs(
-      previousPartnerRelationInfo.svgCoordinates.left - mostRightChild.x
-    )
-    coupleChildrenConnectorX = 75 + 20
-  }
   return {
-    memberConnectorX,
-    coupleHeight,
-    coupleChildrenConnectorX,
-    childrenHeight,
-    coupleChildrenHorizontalLine
+    previousPartnerOffsets: Array.from({ length: previousFamiliesCount }, (_, index) =>
+      offsetAt(index)
+    ),
+    singleParentOffset: offsetAt(totalExits - 1)
   }
+}
+
+// Línea horizontal entre los centros de una pareja (la discontinua de
+// expareja usa esta misma spec con otra clase CSS)
+export const coupleLineSpec = (memberCenter: Point, partnerCenter: Point): LineSpec =>
+  specFromSegments([{ from: memberCenter, to: partnerCenter }])
+
+// Bajada desde junction, línea horizontal (bus) a la altura busY y una bajada
+// hasta el centro de cada hijo. junction es el punto medio de la pareja (a la
+// altura de su línea) o el centro del progenitor único.
+export const childrenLinesSpec = (
+  junction: Point,
+  childrenCenters: Point[],
+  busY: number
+): LineSpec => {
+  const busXs = [junction.x, ...childrenCenters.map(({ x }) => x)]
+  const busStart = Math.min(...busXs)
+  const busEnd = Math.max(...busXs)
+
+  return specFromSegments([
+    { from: junction, to: { x: junction.x, y: busY } },
+    { from: { x: busStart, y: busY }, to: { x: busEnd, y: busY } },
+    ...childrenCenters.map((childCenter) => ({
+      from: { x: childCenter.x, y: busY },
+      to: childCenter
+    }))
+  ])
+}
+
+// Alturas escalonadas de una ex-familia dentro del hueco entre filas: la
+// unión de la pareja baja desde arriba y el bus de sus hijos sube desde
+// abajo, con un paso por expareja para que varias no se solapen.
+export const previousPartnerHeights = (
+  gapTop: number,
+  childrenTopY: number,
+  previousPartnerIndex: number,
+  amountOfPreviousPartners: number
+): { coupleY: number; busY: number } => {
+  const gapHeight = Math.max(childrenTopY - gapTop, 24)
+  const steps = amountOfPreviousPartners * 2 + 2
+  const offset = (gapHeight * (previousPartnerIndex + 1)) / steps
+
+  return { coupleY: gapTop + offset, busY: childrenTopY - offset }
+}
+
+// Unión de una expareja (se pinta discontinua: relación pasada): stubs
+// bajando de ambos badges hasta coupleY y horizontal entre ellos. Las bajadas
+// a los hijos comunes son un childrenLinesSpec aparte (sólido) cuyo junction
+// es el punto medio de la unión.
+export const previousPartnerJoinSpec = (
+  member: MemberBox,
+  previousPartner: MemberBox,
+  coupleY: number,
+  // Separación horizontal de la salida en el badge (ver memberExitOffsets)
+  memberStubOffset = 0
+): LineSpec => {
+  const memberX = member.center.x + memberStubOffset
+
+  return specFromSegments([
+    { from: { x: memberX, y: member.bottom }, to: { x: memberX, y: coupleY } },
+    {
+      from: { x: previousPartner.center.x, y: previousPartner.bottom },
+      to: { x: previousPartner.center.x, y: coupleY }
+    },
+    { from: { x: previousPartner.center.x, y: coupleY }, to: { x: memberX, y: coupleY } }
+  ])
 }

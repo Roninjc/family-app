@@ -1,374 +1,214 @@
 <script lang="ts">
-  import type {
-    ParentsChildren,
-    PartnerRealtionInfo,
-    PreviousPartnerRealtionInfo,
-    Relationship
-  } from '$lib/types/familyTypes'
+  import type { ParentsChildren, Relationship } from '$lib/types/familyTypes'
+  import type { LineSpec, MemberBox, Point } from '$lib/utils/connectionLines'
   import {
-    getMemberCenter,
-    getPreviousPartnerChildrenLinesCoordinates,
-    getSvgCoordinates
+    childrenLinesSpec,
+    coupleLineSpec,
+    memberExitOffsets,
+    midGapY,
+    previousPartnerHeights,
+    previousPartnerJoinSpec
   } from '$lib/utils/connectionLines'
   import { onMount } from 'svelte'
 
   export let memberId: string
   export let actualPartner: Relationship[] = []
-  export let SPCChildren: Relationship[] = [] // TODO: implement this
+  export let SPCChildren: Relationship[] = []
   export let APCChildren: Relationship[] = []
-  export let previousPartnersNoChildren: Relationship[] = [] // TODO: implement this
+  export let previousPartnersNoChildren: Relationship[] = []
   export let previousPartnersChildren: ParentsChildren[][] = []
 
-  let memberCenter: { x: number; y: number } | undefined
+  let coupleLine: LineSpec | undefined
+  let coupleChildrenLines: LineSpec | undefined
+  let singleParentLines: LineSpec | undefined
+  let previousPartnerFamilyLines: { join: LineSpec; children: LineSpec }[] = []
+  let previousPartnerDashedLines: LineSpec[] = []
 
-  const actualPartnerRelationInfo: PartnerRealtionInfo = {
-    partnerCenter: { x: 0, y: 0 },
-    childrenCenter: [],
-    svgCoordinates: {
-      left: 0,
-      right: 0,
-      top: 0,
-      bottom: 0
-    }
-  }
-  const noPartnerChildrenInfo: Omit<PartnerRealtionInfo, 'partnerCenter'> = {
-    childrenCenter: [],
-    svgCoordinates: {
-      left: 0,
-      right: 0,
-      top: 0,
-      bottom: 0
-    }
-  }
-  const previousPartnersNoChildrenRelationInfo: PartnerRealtionInfo[] = []
-  const previousPartnersChildrenRelationInfo: PreviousPartnerRealtionInfo[] = []
-  const badgeWidth = 150
-
+  // Todo se mide una vez montado el árbol (el resize re-monta y re-mide).
+  // Las coordenadas son relativas al couple-wrapper (padre del member-node),
+  // así que el resultado no depende del scroll ni de anchos de subárboles.
   onMount(() => {
-    memberCenter = getMemberCenter(memberId)
+    const memberElement = document.getElementById(memberId)
+    const wrapperRect = memberElement?.parentElement?.getBoundingClientRect()
 
-    if (actualPartner.length > 0) {
-      actualPartnerRelationInfo.partnerCenter = getMemberCenter(actualPartner[0]?.nodeId)
+    if (!memberElement || !wrapperRect) return
+
+    const toMemberBox = (rect: DOMRect): MemberBox => ({
+      center: {
+        x: rect.left + rect.width / 2 - wrapperRect.left,
+        y: rect.top + rect.height / 2 - wrapperRect.top
+      },
+      top: rect.top - wrapperRect.top,
+      bottom: rect.bottom - wrapperRect.top
+    })
+    const measure = (id: string): MemberBox | undefined => {
+      const element = document.getElementById(id)
+      return element ? toMemberBox(element.getBoundingClientRect()) : undefined
     }
+    const measureAll = (relatives: Relationship[]): MemberBox[] =>
+      relatives.map(({ nodeId }) => measure(nodeId)).filter((box): box is MemberBox => Boolean(box))
 
-    if (SPCChildren.length > 0) {
-      SPCChildren.forEach((child) => {
-        const childCenter = getMemberCenter(child?.nodeId)
+    const member = toMemberBox(memberElement.getBoundingClientRect())
 
-        if (childCenter) {
-          noPartnerChildrenInfo.childrenCenter.push(childCenter)
+    // Separa las salidas hacia hijos que parten del mismo badge (stubs de
+    // exparejas + bajada de progenitor único) para poder seguir cada línea
+    const { previousPartnerOffsets, singleParentOffset } = memberExitOffsets(
+      previousPartnersChildren.length,
+      SPCChildren.length > 0
+    )
+
+    const partner = actualPartner.length > 0 ? measure(actualPartner[0].nodeId) : undefined
+    const coupleChildren = partner ? measureAll(APCChildren) : []
+    const spcChildren = measureAll(SPCChildren)
+    // Si conviven hijos de la pareja actual y de progenitor único, sus buses
+    // (a la misma altura del hueco) se separan unos px para no confundirse
+    const busSplit = coupleChildren.length > 0 && spcChildren.length > 0 ? 5 : 0
+
+    if (partner) {
+      coupleLine = coupleLineSpec(member.center, partner.center)
+
+      if (coupleChildren.length > 0) {
+        const busY =
+          midGapY(
+            Math.max(member.bottom, partner.bottom),
+            Math.min(...coupleChildren.map(({ top }) => top))
+          ) - busSplit
+        const junction: Point = {
+          x: (member.center.x + partner.center.x) / 2,
+          y: member.center.y
         }
-      })
-    }
-
-    if (APCChildren.length > 0) {
-      APCChildren.forEach((child) => {
-        const childCenter = getMemberCenter(child?.nodeId)
-
-        if (childCenter) {
-          actualPartnerRelationInfo.childrenCenter.push(childCenter)
-        }
-      })
-    }
-
-    if (memberCenter && actualPartnerRelationInfo.partnerCenter) {
-      const coordinates = getSvgCoordinates(
-        memberCenter,
-        actualPartnerRelationInfo.partnerCenter,
-        actualPartnerRelationInfo.childrenCenter
-      )
-      actualPartnerRelationInfo.svgCoordinates = { ...coordinates }
-    }
-
-    if (memberCenter && noPartnerChildrenInfo.childrenCenter.length > 0) {
-      const coordinates = getSvgCoordinates(
-        memberCenter,
-        undefined,
-        noPartnerChildrenInfo.childrenCenter
-      )
-      noPartnerChildrenInfo.svgCoordinates = { ...coordinates }
-    }
-
-    if (previousPartnersNoChildren.length > 0) {
-      previousPartnersNoChildren.forEach((pPartnerNoChildren) => {
-        const previousPartnerRelationInfo: PartnerRealtionInfo = {
-          partnerCenter: { x: 0, y: 0 },
-          childrenCenter: [],
-          svgCoordinates: {
-            left: 0,
-            right: 0,
-            top: 0,
-            bottom: 0
-          }
-        }
-        previousPartnerRelationInfo.partnerCenter = getMemberCenter(pPartnerNoChildren.nodeId)
-
-        if (memberCenter && previousPartnerRelationInfo.partnerCenter) {
-          const coordinates = getSvgCoordinates(
-            memberCenter,
-            previousPartnerRelationInfo.partnerCenter,
-            previousPartnerRelationInfo.childrenCenter
-          )
-
-          previousPartnerRelationInfo.svgCoordinates = { ...coordinates }
-        }
-
-        previousPartnersNoChildrenRelationInfo.push(previousPartnerRelationInfo)
-      })
-    }
-
-    if (previousPartnersChildren.length > 0) {
-      previousPartnersChildren.forEach(([pPartnerChildren], index) => {
-        const previousPartnerRelationInfo: PreviousPartnerRealtionInfo = {
-          partnerCenter: { x: 0, y: 0 },
-          childrenCenter: [],
-          svgCoordinates: {
-            left: 0,
-            right: 0,
-            top: 0,
-            bottom: 0
-          },
-          memberConnectorX: 0,
-          coupleHeight: 0,
-          coupleChildrenConnectorX: 0,
-          childrenHeight: 0,
-          coupleChildrenHorizontalLine: { start: 0, end: 0 }
-        }
-        const { parent1, parent2, children } = pPartnerChildren
-        const pPartnerId = parent1 === memberId ? parent2 : parent1
-
-        previousPartnerRelationInfo.partnerCenter = getMemberCenter(pPartnerId!)
-        children.forEach((child) => {
-          const childCenter = getMemberCenter(child?.nodeId)
-
-          if (childCenter) previousPartnerRelationInfo.childrenCenter.push(childCenter)
-        })
-
-        if (memberCenter && previousPartnerRelationInfo.partnerCenter) {
-          const coordinates = getSvgCoordinates(
-            memberCenter,
-            previousPartnerRelationInfo.partnerCenter,
-            previousPartnerRelationInfo.childrenCenter
-          )
-
-          previousPartnerRelationInfo.svgCoordinates = { ...coordinates }
-        }
-
-        const {
-          memberConnectorX,
-          coupleHeight,
-          coupleChildrenConnectorX,
-          childrenHeight,
-          coupleChildrenHorizontalLine
-        } = getPreviousPartnerChildrenLinesCoordinates(
-          previousPartnerRelationInfo,
-          previousPartnersChildren.length,
-          index
+        coupleChildrenLines = childrenLinesSpec(
+          junction,
+          coupleChildren.map(({ center }) => center),
+          busY
         )
-        previousPartnerRelationInfo.memberConnectorX = memberConnectorX
-        previousPartnerRelationInfo.coupleHeight = coupleHeight
-        previousPartnerRelationInfo.coupleChildrenConnectorX = coupleChildrenConnectorX
-        previousPartnerRelationInfo.childrenHeight = childrenHeight
-        previousPartnerRelationInfo.coupleChildrenHorizontalLine = {
-          ...coupleChildrenHorizontalLine
-        }
-
-        previousPartnersChildrenRelationInfo.push(previousPartnerRelationInfo)
-      })
+      }
     }
+
+    if (spcChildren.length > 0) {
+      const busY = midGapY(member.bottom, Math.min(...spcChildren.map(({ top }) => top))) + busSplit
+      singleParentLines = childrenLinesSpec(
+        { x: member.center.x + singleParentOffset, y: member.center.y },
+        spcChildren.map(({ center }) => center),
+        busY
+      )
+    }
+
+    previousPartnersChildren.forEach(([pPartnerChildren], index) => {
+      const { parent1, parent2, children } = pPartnerChildren
+      const pPartnerId = parent1 === memberId ? parent2 : parent1
+      const previousPartner = pPartnerId ? measure(pPartnerId) : undefined
+      const childrenBoxes = measureAll(children)
+
+      if (previousPartner && childrenBoxes.length > 0) {
+        const { coupleY, busY } = previousPartnerHeights(
+          Math.max(member.bottom, previousPartner.bottom),
+          Math.min(...childrenBoxes.map(({ top }) => top)),
+          index,
+          previousPartnersChildren.length
+        )
+        const dropX = (member.center.x + previousPartner.center.x) / 2
+
+        previousPartnerFamilyLines.push({
+          join: previousPartnerJoinSpec(
+            member,
+            previousPartner,
+            coupleY,
+            previousPartnerOffsets[index]
+          ),
+          children: childrenLinesSpec(
+            { x: dropX, y: coupleY },
+            childrenBoxes.map(({ center }) => center),
+            busY
+          )
+        })
+      }
+    })
+    previousPartnerFamilyLines = previousPartnerFamilyLines
+
+    previousPartnersNoChildren.forEach((pPartner) => {
+      const previousPartner = measure(pPartner.nodeId)
+
+      if (previousPartner) {
+        previousPartnerDashedLines.push(coupleLineSpec(member.center, previousPartner.center))
+      }
+    })
+    previousPartnerDashedLines = previousPartnerDashedLines
   })
 
-  $: actualPartnerCommonChildren = APCChildren.length > 0
-  $: noPartnerChildren = SPCChildren.length > 0
-  $: previousPartnerCommonChildren = previousPartnersChildren.length > 0
+  const specStyle = ({ left, top, width, height }: LineSpec) =>
+    `left: ${left}px; top: ${top}px; width: ${width}px; height: ${height}px;`
 </script>
 
-{#if memberCenter && actualPartnerRelationInfo?.partnerCenter}
-  {#if actualPartnerCommonChildren}
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      class="children-couple-svg"
-      width={`${Math.abs(
-        actualPartnerRelationInfo?.svgCoordinates.left -
-          actualPartnerRelationInfo?.svgCoordinates.right
-      )}px`}
-      height={`${Math.abs(
-        actualPartnerRelationInfo?.svgCoordinates.top -
-          actualPartnerRelationInfo?.svgCoordinates.bottom
-      )}px`}
-      style={`transform: translateX(-${Math.abs(
-        memberCenter.x -
-          actualPartnerRelationInfo?.svgCoordinates.left +
-          Math.abs(memberCenter.x - actualPartnerRelationInfo?.partnerCenter.x) / 2
-      )}px)`}
-    >
-      <path
-        d="M{Math.abs(
-          memberCenter.x - actualPartnerRelationInfo?.svgCoordinates.left
-        )} 0 H{Math.abs(
-          actualPartnerRelationInfo?.partnerCenter.x -
-            actualPartnerRelationInfo?.svgCoordinates.left
-        )} M{Math.abs(
-          memberCenter.x -
-            actualPartnerRelationInfo?.svgCoordinates.left +
-            Math.abs(memberCenter.x - actualPartnerRelationInfo?.partnerCenter.x) / 2
-        )} 0 V115 M0 115 H{Math.abs(
-          actualPartnerRelationInfo?.svgCoordinates.left -
-            actualPartnerRelationInfo?.svgCoordinates.right
-        )}"
-      />
-      {#each actualPartnerRelationInfo?.childrenCenter as childCenter}
-        <path
-          d="M{Math.abs(childCenter.x - actualPartnerRelationInfo?.svgCoordinates.left)} 115 V160"
-        />
-      {/each}
-    </svg>
-  {:else}
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      class="no-children-couple-svg"
-      width={`${Math.abs(memberCenter.x - actualPartnerRelationInfo.partnerCenter.x)}px`}
-      height="2px"
-      style={`transform: translateX(-${Math.abs(
-        memberCenter.x -
-          actualPartnerRelationInfo?.svgCoordinates.left +
-          Math.abs(memberCenter.x - actualPartnerRelationInfo?.partnerCenter.x) / 2
-      )}px)`}
-    >
-      <path d="M0 0 H{Math.abs(memberCenter.x - actualPartnerRelationInfo.partnerCenter.x)}" />
-    </svg>
-  {/if}
+{#if coupleLine}
+  <svg xmlns="http://www.w3.org/2000/svg" class="couple-line" style={specStyle(coupleLine)}>
+    <path d={coupleLine.d} />
+  </svg>
 {/if}
 
-{#if memberCenter && noPartnerChildren}
-  {#if noPartnerChildrenInfo.childrenCenter.length > 0}
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      class="children-no-partner-svg"
-      width={`${Math.abs(
-        noPartnerChildrenInfo?.svgCoordinates.left - noPartnerChildrenInfo?.svgCoordinates.right
-      )}px`}
-      height={`${Math.abs(
-        noPartnerChildrenInfo?.svgCoordinates.top - noPartnerChildrenInfo?.svgCoordinates.bottom
-      )}px`}
-      style={`left: 0; transform: translateX(${
-        noPartnerChildrenInfo?.svgCoordinates.left + badgeWidth / 2 - memberCenter.x
-      }px)`}
-    >
-      <path
-        d="M{memberCenter.x -
-          noPartnerChildrenInfo?.svgCoordinates.left +
-          10} 10 V115 M{noPartnerChildrenInfo.childrenCenter.length === 1 ? 10 : 0} 115 H{Math.abs(
-          noPartnerChildrenInfo?.svgCoordinates.left - noPartnerChildrenInfo?.svgCoordinates.right
-        )}"
-      />
-      {#each noPartnerChildrenInfo?.childrenCenter as childCenter}
-        <path
-          d="M{Math.abs(childCenter.x - noPartnerChildrenInfo?.svgCoordinates.left)} 115 V160"
-        />
-      {/each}
-    </svg>
-  {/if}
+{#if coupleChildrenLines}
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    class="couple-children-lines"
+    style={specStyle(coupleChildrenLines)}
+  >
+    <path d={coupleChildrenLines.d} />
+  </svg>
 {/if}
+
+{#if singleParentLines}
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    class="single-parent-lines"
+    style={specStyle(singleParentLines)}
+  >
+    <path d={singleParentLines.d} />
+  </svg>
+{/if}
+
+{#each previousPartnerFamilyLines as familyLines}
+  <!-- Unión de la expareja discontinua (relación pasada); bajadas a hijos sólidas -->
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    class="previous-couple-join"
+    style={specStyle(familyLines.join)}
+  >
+    <path d={familyLines.join.d} />
+  </svg>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    class="previous-couple-children-lines"
+    style={specStyle(familyLines.children)}
+  >
+    <path d={familyLines.children.d} />
+  </svg>
+{/each}
 
 <!-- Expareja sin hijos comunes: línea discontinua entre ambos badges -->
-{#if memberCenter && previousPartnersNoChildrenRelationInfo?.length > 0}
-  {#each previousPartnersNoChildrenRelationInfo as previousPartnerNoChildrenRelationInfo}
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      class="no-children-previous-couple-svg"
-      width={`${Math.abs(
-        previousPartnerNoChildrenRelationInfo?.svgCoordinates?.right -
-          previousPartnerNoChildrenRelationInfo?.svgCoordinates?.left
-      )}px`}
-      height="2px"
-      style={`left: 0; transform: translateX(${
-        previousPartnerNoChildrenRelationInfo?.svgCoordinates?.left +
-        badgeWidth / 2 -
-        memberCenter.x
-      }px)`}
-    >
-      <path
-        d="M{Math.abs(
-          previousPartnerNoChildrenRelationInfo?.partnerCenter?.x -
-            previousPartnerNoChildrenRelationInfo?.svgCoordinates?.left
-        )} 0 H{Math.abs(
-          memberCenter.x - previousPartnerNoChildrenRelationInfo?.svgCoordinates?.left
-        )}"
-      />
-    </svg>
-  {/each}
-{/if}
-
-{#if memberCenter && previousPartnersChildrenRelationInfo?.length > 0}
-  {#each previousPartnersChildrenRelationInfo as previousPartnerChildrenRelationInfo}
-    {#if previousPartnerCommonChildren}
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        class="children-previous-couple-svg"
-        width={`${Math.abs(
-          previousPartnerChildrenRelationInfo?.svgCoordinates?.left -
-            previousPartnerChildrenRelationInfo?.svgCoordinates?.right
-        )}px`}
-        height={`${Math.abs(
-          previousPartnerChildrenRelationInfo?.svgCoordinates?.top -
-            previousPartnerChildrenRelationInfo?.svgCoordinates?.bottom
-        )}px`}
-        style={`left: 0; transform: translateX(${
-          previousPartnerChildrenRelationInfo?.svgCoordinates?.left +
-          badgeWidth / 2 -
-          memberCenter.x
-        }px)`}
-      >
-        <path
-          d="M{Math.abs(
-            memberCenter?.x -
-              previousPartnerChildrenRelationInfo?.memberConnectorX -
-              previousPartnerChildrenRelationInfo?.svgCoordinates?.left
-          )} 70 V{previousPartnerChildrenRelationInfo?.coupleHeight} M{Math.abs(
-            previousPartnerChildrenRelationInfo?.partnerCenter?.x -
-              previousPartnerChildrenRelationInfo?.svgCoordinates?.left
-          )} 70 V{previousPartnerChildrenRelationInfo?.coupleHeight} M{Math.abs(
-            memberCenter?.x -
-              previousPartnerChildrenRelationInfo?.memberConnectorX -
-              previousPartnerChildrenRelationInfo?.svgCoordinates?.left
-          )} {previousPartnerChildrenRelationInfo?.coupleHeight} H{Math.abs(
-            previousPartnerChildrenRelationInfo?.partnerCenter?.x -
-              previousPartnerChildrenRelationInfo?.svgCoordinates?.left
-          )} M{Math.abs(
-            previousPartnerChildrenRelationInfo?.partnerCenter?.x -
-              previousPartnerChildrenRelationInfo?.svgCoordinates?.left +
-              previousPartnerChildrenRelationInfo.coupleChildrenConnectorX
-          )} {previousPartnerChildrenRelationInfo?.coupleHeight} V{previousPartnerChildrenRelationInfo?.childrenHeight} M{previousPartnerChildrenRelationInfo
-            ?.coupleChildrenHorizontalLine
-            ?.start} {previousPartnerChildrenRelationInfo?.childrenHeight} H{previousPartnerChildrenRelationInfo
-            ?.coupleChildrenHorizontalLine?.end}"
-        />
-        {#each previousPartnerChildrenRelationInfo?.childrenCenter as childCenter}
-          <path
-            d="M{Math.abs(
-              childCenter?.x - previousPartnerChildrenRelationInfo?.svgCoordinates?.left
-            )} {previousPartnerChildrenRelationInfo?.childrenHeight} V160"
-          />
-        {/each}
-      </svg>
-    {/if}
-  {/each}
-{/if}
+{#each previousPartnerDashedLines as dashedLine}
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    class="no-children-previous-couple-svg"
+    style={specStyle(dashedLine)}
+  >
+    <path d={dashedLine.d} />
+  </svg>
+{/each}
 
 <style lang="scss">
   svg {
     position: absolute;
-    top: 40px;
-    left: 50%;
     overflow: visible;
+    fill: none;
     stroke: #555555;
     stroke-width: 3;
     stroke-linecap: round;
     stroke-linejoin: round;
     filter: drop-shadow(0px 0px 4px #ffffff);
+    pointer-events: none;
 
-    &.no-children-previous-couple-svg {
+    &.no-children-previous-couple-svg,
+    &.previous-couple-join {
       stroke-dasharray: 9 7;
       stroke-width: 2.5;
     }

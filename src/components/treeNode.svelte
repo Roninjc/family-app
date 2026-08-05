@@ -95,6 +95,25 @@
           previousPartnersNoChildren.push(pPartner)
         }
       })
+
+      // Ordena la fila de hijos por familia, siguiendo el orden horizontal de
+      // las salidas (exparejas a la izquierda, progenitor único, pareja actual
+      // a la derecha) para que las líneas de cada familia no se crucen
+      const childrenOrder = new Map<string, number>()
+      let nextOrder = 0
+      const claimGroup = (group: ParentsChildren | undefined) =>
+        group?.children.forEach(({ nodeId }) => {
+          if (!childrenOrder.has(nodeId)) childrenOrder.set(nodeId, nextOrder++)
+        })
+
+      previousPartnersChildren.forEach(([group]) => claimGroup(group))
+      claimGroup(singleParentChildren)
+      claimGroup(actualPartnerChildren)
+
+      children = [...children].sort(
+        (a, b) =>
+          (childrenOrder.get(a.nodeId) ?? Infinity) - (childrenOrder.get(b.nodeId) ?? Infinity)
+      )
     }
 
     for (const { nodeId, weight } of relationships) {
