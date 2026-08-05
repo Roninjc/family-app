@@ -62,12 +62,14 @@
         singleParentChildren = parentsChildrenArray.find(
           ({ parent1, parent2 }) => parent1 === memberId && !parent2
         )
-        actualPartnerChildren = parentsChildrenArray.find(({ parent1, parent2 }) => {
-          return (
-            (parent1 === memberId && parent2 === actualPartner[0].nodeId) ||
-            (parent2 === memberId && parent1 === actualPartner[0].nodeId)
-          )
-        })
+        if (actualPartner.length > 0) {
+          actualPartnerChildren = parentsChildrenArray.find(({ parent1, parent2 }) => {
+            return (
+              (parent1 === memberId && parent2 === actualPartner[0].nodeId) ||
+              (parent2 === memberId && parent1 === actualPartner[0].nodeId)
+            )
+          })
+        }
         previousPartners.forEach((pPartner) => {
           const pPartnerChildren = parentsChildrenArray.filter(({ parent1, parent2 }) => {
             return (

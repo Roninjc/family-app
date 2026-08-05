@@ -57,6 +57,30 @@ export const actions: Actions = {
       return fail(403, { addError: message })
     }
 
+    // El árbol solo agrupa a un hijo bajo sus dos progenitores si entre ellos
+    // existe un vínculo partner/previous_partner, así que si no consta ninguno
+    // lo creamos como pareja actual. Si esta inserción extra falla no anulamos
+    // el alta (el miembro ya existe); simplemente quedaría sin línea, como antes.
+    if (fatherId && motherId && fatherId !== motherId) {
+      // Mismo orden member_a < member_b que impone el check de la tabla; la
+      // comparación de strings coincide con el orden uuid de Postgres para
+      // uuids canónicos en minúsculas.
+      const [memberA, memberB] = fatherId < motherId ? [fatherId, motherId] : [motherId, fatherId]
+      const { data: existingCouple } = await supabase
+        .from('relationships')
+        .select('id')
+        .eq('member_a', memberA)
+        .eq('member_b', memberB)
+        .in('type', ['partner', 'previous_partner'])
+        .limit(1)
+
+      if (!existingCouple?.length) {
+        await supabase
+          .from('relationships')
+          .insert({ member_a: memberA, member_b: memberB, type: 'partner' })
+      }
+    }
+
     return { added: true, newMemberId: data }
   }
 }
