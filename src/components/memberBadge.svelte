@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { FamilyNode } from '$lib/types/familyTypes'
+  import { editingMemberId, showEditMemberModal } from '../stores/modals'
   import { familyTree } from '../stores/tree'
 
   export let memberId: string
@@ -7,9 +8,14 @@
   const member: FamilyNode = familyTree.getList().get(memberId)
   const name = member.memberInfo.name
   const familyName = member.memberInfo.familyName
+
+  function openMemberModal() {
+    editingMemberId.set(memberId)
+    showEditMemberModal.set(true)
+  }
 </script>
 
-<div class="member-badge">
+<button type="button" class="member-badge" on:click={openMemberModal}>
   <div class="picture-wrapper"></div>
   <div class="name-wrapper">
     <div class="name-container">
@@ -19,7 +25,7 @@
       {familyName}
     </div>
   </div>
-</div>
+</button>
 
 <style lang="scss">
   .member-badge {
@@ -33,12 +39,16 @@
     height: 110px;
     padding: 5px;
     overflow: hidden;
+    border: none;
     border-radius: 10px;
     background: linear-gradient(145deg, #f0f0f0, #cacaca);
     box-shadow:
       6px 6px 12px #bebebe,
       -6px -6px 12px #ffffff;
     z-index: 1;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
   }
 
   .picture-wrapper {

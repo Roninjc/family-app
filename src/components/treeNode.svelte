@@ -18,14 +18,13 @@
   let memberToDisplay = false
   let renderConnectionLine = false
   let children: Relationship[] = []
-  let parent: Relationship[] = []
   let siblings: Relationship[] = []
   let actualPartner: Relationship[] = []
   let previousPartners: Relationship[] = []
 
   if (memberId && !actualVisitedMembers.includes(memberId)) {
     const stackIndex = actualStack.findIndex((id) => id === memberId)
-    actualStack.splice(stackIndex, 1)
+    if (stackIndex !== -1) actualStack.splice(stackIndex, 1)
     memberToDisplay = true
 
     // Add actual member to visitedMembers store
@@ -37,10 +36,6 @@
     children = relationships.filter(
       ({ nodeId, weight }) =>
         weight === 1 && !actualVisitedMembers.includes(nodeId) && !actualStack.includes(nodeId)
-    )
-    parent = relationships.filter(
-      ({ nodeId, weight }) =>
-        weight === 2 && !actualVisitedMembers.includes(nodeId) && !actualStack.includes(nodeId)
     )
     siblings = relationships.filter(
       ({ nodeId, weight }) =>
@@ -58,46 +53,58 @@
     if (actualPartner.length > 0 || children.length > 0 || previousPartners.length > 0) {
       renderConnectionLine = true
 
+      // Solo se dibujan líneas hacia hijos renderizados debajo de este nodo;
+      // un hijo ya dibujado en otra rama (o en otro árbol raíz) conserva su
+      // badge allí y aquí se omite para no cruzar la página con la línea.
+      const renderedChildIds = new Set(children.map(({ nodeId }) => nodeId))
+      const onlyRenderedChildren = (group: ParentsChildren): ParentsChildren => ({
+        ...group,
+        children: group.children.filter(({ nodeId }) => renderedChildIds.has(nodeId))
+      })
+
       if (children.length > 0) {
-        singleParentChildren = parentsChildrenArray.find(
+        const singleParentGroup = parentsChildrenArray.find(
           ({ parent1, parent2 }) => parent1 === memberId && !parent2
         )
+        if (singleParentGroup) singleParentChildren = onlyRenderedChildren(singleParentGroup)
+
         if (actualPartner.length > 0) {
-          actualPartnerChildren = parentsChildrenArray.find(({ parent1, parent2 }) => {
+          const coupleGroup = parentsChildrenArray.find(({ parent1, parent2 }) => {
             return (
               (parent1 === memberId && parent2 === actualPartner[0].nodeId) ||
               (parent2 === memberId && parent1 === actualPartner[0].nodeId)
             )
           })
+          if (coupleGroup) actualPartnerChildren = onlyRenderedChildren(coupleGroup)
         }
-        previousPartners.forEach((pPartner) => {
-          const pPartnerChildren = parentsChildrenArray.filter(({ parent1, parent2 }) => {
-            return (
-              (parent1 === memberId && parent2 === pPartner.nodeId) ||
-              (parent2 === memberId && parent1 === pPartner.nodeId)
-            )
-          })
-          previousPartnersChildren.push(pPartnerChildren)
-        })
       }
 
-      if (previousPartners.length > 0) {
-        previousPartnersNoChildren = previousPartners.filter((pPartner) => {
-          return !parentsChildrenArray.some(({ parent1, parent2 }) => {
-            return (
-              (parent1 === memberId && parent2 === pPartner.nodeId) ||
-              (parent2 === memberId && parent1 === pPartner.nodeId)
-            )
-          })
+      previousPartners.forEach((pPartner) => {
+        const pairGroup = parentsChildrenArray.find(({ parent1, parent2 }) => {
+          return (
+            (parent1 === memberId && parent2 === pPartner.nodeId) ||
+            (parent2 === memberId && parent1 === pPartner.nodeId)
+          )
         })
-      }
+        const renderedGroup = pairGroup ? onlyRenderedChildren(pairGroup) : undefined
+
+        if (renderedGroup && renderedGroup.children.length > 0) {
+          previousPartnersChildren.push([renderedGroup])
+        } else {
+          // Sin hijos comunes renderizados debajo: línea discontinua de expareja
+          previousPartnersNoChildren.push(pPartner)
+        }
+      })
     }
 
-    for (const i in relationships) {
-      // Add member's relatives to stack for next loop
-      actualStack.push(relationships[i].nodeId)
-      stack.set(actualStack)
+    for (const { nodeId, weight } of relationships) {
+      // Se apilan los parientes que el render recursivo puede dibujar. Los
+      // padres (weight 2) no: nunca se renderizan hacia abajo y dejarían
+      // entradas muertas en el stack que bloquearían su render (y el de sus
+      // parejas) cuando les toque salir como raíz extra.
+      if (weight !== 2) actualStack.push(nodeId)
     }
+    stack.set(actualStack)
   }
 
   $: SPCChildren = singleParentChildren?.children

@@ -91,11 +91,13 @@
     fatherId = ''
     motherId = ''
     siblingsIds = []
+    childrenIds = []
     actualPartnerId = ''
     previousPartnersIds = []
     fatherSearch = ''
     motherSearch = ''
     siblingsSearch = ''
+    childrenSearch = ''
     actualPartnerSearch = ''
     previousPartnersSearch = ''
   }
@@ -106,21 +108,25 @@
   let fatherId = ''
   let motherId = ''
   let siblingsIds: string[] = []
+  let childrenIds: string[] = []
   let actualPartnerId = ''
   let previousPartnersIds: string[] = []
   let fatherSearch = ''
   let motherSearch = ''
   let siblingsSearch = ''
+  let childrenSearch = ''
   let actualPartnerSearch = ''
   let previousPartnersSearch = ''
   let showFatherSuggestions = false
   let showMotherSuggestions = false
   let showSiblingsSuggestions = false
+  let showChildrenSuggestions = false
   let showActualPartnerSuggestions = false
   let showPreviousPartnersSuggestions = false
   let fatherInputEl: HTMLInputElement
   let motherInputEl: HTMLInputElement
   let siblingsInputEl: HTMLInputElement
+  let childrenInputEl: HTMLInputElement
   let actualPartnerInputEl: HTMLInputElement
   let previousPartnersInputEl: HTMLInputElement
 
@@ -139,33 +145,51 @@
   $: filteredFatherSuggestions = familyMembers.filter(
     (m) =>
       (m.name + ' ' + m.familyName).toLowerCase().includes(fatherSearch.toLowerCase()) &&
-      m.id !== ''
+      m.id !== '' &&
+      m.id !== motherId &&
+      !childrenIds.includes(m.id)
   )
   $: filteredMotherSuggestions = familyMembers.filter(
     (m) =>
       (m.name + ' ' + m.familyName).toLowerCase().includes(motherSearch.toLowerCase()) &&
-      m.id !== ''
+      m.id !== '' &&
+      m.id !== fatherId &&
+      !childrenIds.includes(m.id)
   )
   $: filteredSiblingSuggestions = familyMembers.filter(
     (m) =>
       (m.name + ' ' + m.familyName).toLowerCase().includes(siblingsSearch.toLowerCase()) &&
       m.id !== '' &&
       !siblingsIds.includes(m.id) &&
+      !childrenIds.includes(m.id) &&
       m.id !== fatherId &&
       m.id !== motherId
+  )
+  $: filteredChildrenSuggestions = familyMembers.filter(
+    (m) =>
+      (m.name + ' ' + m.familyName).toLowerCase().includes(childrenSearch.toLowerCase()) &&
+      m.id !== '' &&
+      !childrenIds.includes(m.id) &&
+      !siblingsIds.includes(m.id) &&
+      !previousPartnersIds.includes(m.id) &&
+      m.id !== fatherId &&
+      m.id !== motherId &&
+      m.id !== actualPartnerId
   )
   $: filteredActualPartnerSuggestions = familyMembers.filter(
     (m) =>
       (m.name + ' ' + m.familyName).toLowerCase().includes(actualPartnerSearch.toLowerCase()) &&
       m.id !== '' &&
       m.id !== fatherId &&
-      m.id !== motherId
+      m.id !== motherId &&
+      !childrenIds.includes(m.id)
   )
   $: filteredPreviousPartnerSuggestions = familyMembers.filter(
     (m) =>
       (m.name + ' ' + m.familyName).toLowerCase().includes(previousPartnersSearch.toLowerCase()) &&
       m.id !== '' &&
       !previousPartnersIds.includes(m.id) &&
+      !childrenIds.includes(m.id) &&
       m.id !== fatherId &&
       m.id !== motherId
   )
@@ -189,6 +213,11 @@
     if (!siblingsIds.includes(member.id)) siblingsIds = [...siblingsIds, member.id]
     siblingsSearch = ''
     showSiblingsSuggestions = false
+  }
+  function addChild(member: FamilyMember) {
+    if (!childrenIds.includes(member.id)) childrenIds = [...childrenIds, member.id]
+    childrenSearch = ''
+    showChildrenSuggestions = false
   }
   function addPreviousPartner(member: FamilyMember) {
     if (!previousPartnersIds.includes(member.id))
@@ -380,6 +409,43 @@
                   Siblings: {siblingsIds.map((id) => getMemberName(id)).join(', ')}
                 </div>
               {/if}
+              <h3>Hijos</h3>
+              <div class="input-wrapper autocomplete-wrapper">
+                <input
+                  id="childrenAutocomplete"
+                  class="modern-input"
+                  type="text"
+                  bind:value={childrenSearch}
+                  on:input={() => (showChildrenSuggestions = true)}
+                  on:focus={() => (showChildrenSuggestions = true)}
+                  on:blur={() => setTimeout(() => (showChildrenSuggestions = false), 100)}
+                  autocomplete="off"
+                  bind:this={childrenInputEl}
+                />
+                <label
+                  for="childrenAutocomplete"
+                  class:label-active={childrenSearch && childrenSearch.length > 0}
+                  >Añadir hijo/a</label
+                >
+                {#if showChildrenSuggestions && filteredChildrenSuggestions.length > 0}
+                  <ul class="autocomplete-suggestions">
+                    {#each filteredChildrenSuggestions as member (member.id)}
+                      <li
+                        class:active={childrenIds.includes(member.id)}
+                        on:mousedown={() => addChild(member)}
+                      >
+                        {member.name}
+                        {member.familyName}
+                      </li>
+                    {/each}
+                  </ul>
+                {/if}
+              </div>
+              {#if childrenIds.length > 0}
+                <div class="selected-list">
+                  Hijos: {childrenIds.map((id) => getMemberName(id)).join(', ')}
+                </div>
+              {/if}
               <div style="display: flex; gap: 1rem;">
                 <button type="button" on:click={() => formStep--}>Back</button>
                 <button type="button" on:click={nextStep}>Next</button>
@@ -474,6 +540,7 @@
                 <li><b>Father:</b> {getMemberName(fatherId)}</li>
                 <li><b>Mother:</b> {getMemberName(motherId)}</li>
                 <li><b>Siblings:</b> {siblingsIds.map((id) => getMemberName(id)).join(', ')}</li>
+                <li><b>Hijos:</b> {childrenIds.map((id) => getMemberName(id)).join(', ')}</li>
                 <li><b>Partner:</b> {getMemberName(actualPartnerId)}</li>
                 <li>
                   <b>Previous Partners:</b>
@@ -488,6 +555,9 @@
               <input type="hidden" name="partnerId" value={actualPartnerId} />
               {#each siblingsIds as siblingId}
                 <input type="hidden" name="siblingsIds" value={siblingId} />
+              {/each}
+              {#each childrenIds as childId}
+                <input type="hidden" name="childrenIds" value={childId} />
               {/each}
               {#each previousPartnersIds as previousPartnerId}
                 <input type="hidden" name="previousPartnersIds" value={previousPartnerId} />

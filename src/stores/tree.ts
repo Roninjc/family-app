@@ -110,85 +110,157 @@ const initFamilyTree = () => {
   }
 
   function getNodesGeneration(): { nodeId: string; generation: number }[] | undefined {
-    const initialNode = familyTree.getAnyNodeId()
+    if (adjList.size === 0) return undefined
 
-    if (!initialNode) return undefined
+    const visitedNodes = new Set<string>()
+    const generations: { nodeId: string; generation: number }[] = []
 
-    const rawGenerations = [...familyTree.dfsLevels(initialNode)]
-    const genNormalizer = 1 - Math.min(...rawGenerations.map((node) => node.level))
-    const generations = rawGenerations.map(({ nodeId, level }) => {
-      return { nodeId, generation: level + genNormalizer }
-    })
+    // Una pasada por componente conexo; cada componente se normaliza por
+    // separado para que su generación más antigua sea la 1.
+    for (const startNodeId of adjList.keys()) {
+      if (visitedNodes.has(startNodeId)) continue
+
+      const rawGenerations = [...familyTree.dfsLevels(startNodeId)]
+      const genNormalizer = 1 - Math.min(...rawGenerations.map((node) => node.level))
+
+      rawGenerations.forEach(({ nodeId, level }) => {
+        visitedNodes.add(nodeId)
+        generations.push({ nodeId, generation: level + genNormalizer })
+      })
+    }
 
     return generations
+  }
+
+  // Nodos que el render recursivo alcanza desde una raíz: todo lo conectado
+  // por aristas que no sean Parent (el árbol solo se dibuja hacia abajo).
+  function getDownwardReach(rootNodeId: string): Set<string> {
+    const reached = new Set<string>([rootNodeId])
+    const pending = [rootNodeId]
+
+    while (pending.length > 0) {
+      const nodeId = pending.pop()!
+
+      for (const { nodeId: relativeNodeId, weight } of getNodeRelationships(nodeId)) {
+        if (weight !== Relation.Parent && !reached.has(relativeNodeId)) {
+          reached.add(relativeNodeId)
+          pending.push(relativeNodeId)
+        }
+      }
+    }
+
+    return reached
+  }
+
+  // Raíces desde las que renderizar para que todos los miembros aparezcan:
+  // mientras queden nodos sin cubrir, elige el de generación más antigua que
+  // más nodos pendientes alcance. Los ancestros de consortes y los
+  // componentes desconectados generan raíces extra.
+  function getRenderRoots(
+    nodesGeneration: { nodeId: string; generation: number }[] | undefined
+  ): string[] {
+    if (!nodesGeneration || nodesGeneration.length === 0) return []
+
+    const roots: string[] = []
+    const covered = new Set<string>()
+
+    while (covered.size < nodesGeneration.length) {
+      const candidates = nodesGeneration.filter(({ nodeId }) => !covered.has(nodeId))
+      const oldestGeneration = Math.min(...candidates.map(({ generation }) => generation))
+
+      let bestRoot: string | undefined
+      let bestReach = new Set<string>()
+
+      for (const { nodeId, generation } of candidates) {
+        if (generation !== oldestGeneration) continue
+
+        const reach = new Set(
+          [...familyTree.getDownwardReach(nodeId)].filter((id) => !covered.has(id))
+        )
+
+        if (reach.size > bestReach.size) {
+          bestRoot = nodeId
+          bestReach = reach
+        }
+      }
+
+      roots.push(bestRoot!)
+      bestReach.forEach((nodeId) => covered.add(nodeId))
+    }
+
+    return roots
   }
 
   function* dfsParentsChildren() {
     const visitedNodes = new Set<string>()
     const stack: string[] = []
     const parentsChildren: ParentsChildren[] = []
-    const initialNodeId = familyTree.getAnyNodeId()
 
-    if (!initialNodeId) return
+    // Recorre todos los componentes conexos, no solo el del primer nodo.
+    for (const initialNodeId of adjList.keys()) {
+      if (visitedNodes.has(initialNodeId)) continue
 
-    stack.push(initialNodeId)
+      stack.push(initialNodeId)
 
-    while (stack.length > 0) {
-      const incomingNodeId = stack.pop()
+      while (stack.length > 0) {
+        const incomingNodeId = stack.pop()
 
-      if (incomingNodeId && !visitedNodes.has(incomingNodeId)) {
-        const relationships = getNodeRelationships(incomingNodeId)
-        const nodeChildren = relationships.filter((relative) => relative.weight === Relation.Child)
+        if (incomingNodeId && !visitedNodes.has(incomingNodeId)) {
+          const relationships = getNodeRelationships(incomingNodeId)
+          const nodeChildren = relationships.filter(
+            (relative) => relative.weight === Relation.Child
+          )
 
-        for (const { nodeId: incomingRelativeNodeId, weight } of relationships) {
-          if (nodeChildren.length > 0) {
-            if (weight === Relation.Partner || weight === Relation.PreviousPartner) {
-              const coupleExists = parentsChildren.find(
-                ({ parent1, parent2 }) =>
-                  parent1 === incomingRelativeNodeId && parent2 === incomingNodeId
-              )
-              if (!coupleExists) {
-                const coupleRelationships = getNodeRelationships(incomingRelativeNodeId)
-                const coupleChildren = coupleRelationships.filter(
-                  (relative) => relative.weight === Relation.Child
+          for (const { nodeId: incomingRelativeNodeId, weight } of relationships) {
+            if (nodeChildren.length > 0) {
+              if (weight === Relation.Partner || weight === Relation.PreviousPartner) {
+                const coupleExists = parentsChildren.find(
+                  ({ parent1, parent2 }) =>
+                    parent1 === incomingRelativeNodeId && parent2 === incomingNodeId
                 )
-                const commonChildren = nodeChildren.filter((child) =>
-                  coupleChildren.some(({ nodeId }) => child.nodeId === nodeId)
+                if (!coupleExists) {
+                  const coupleRelationships = getNodeRelationships(incomingRelativeNodeId)
+                  const coupleChildren = coupleRelationships.filter(
+                    (relative) => relative.weight === Relation.Child
+                  )
+                  const commonChildren = nodeChildren.filter((child) =>
+                    coupleChildren.some(({ nodeId }) => child.nodeId === nodeId)
+                  )
+
+                  if (commonChildren.length > 0) {
+                    const incomingParentsChildren = {
+                      parent1: incomingNodeId,
+                      parent2: incomingRelativeNodeId,
+                      children: commonChildren
+                    }
+
+                    parentsChildren.push(incomingParentsChildren)
+                    yield incomingParentsChildren
+                  }
+                }
+              } else if (weight === Relation.Child) {
+                const childParents = familyTree.getNodeRelationships(
+                  incomingRelativeNodeId,
+                  Relation.Parent
                 )
 
-                if (commonChildren.length > 0) {
-                  const incomingParentsChildren = {
+                if (childParents.length === 1 && childParents[0].nodeId === incomingNodeId) {
+                  const incomingParentChildren = {
                     parent1: incomingNodeId,
-                    parent2: incomingRelativeNodeId,
-                    children: commonChildren
+                    children: [{ nodeId: incomingRelativeNodeId, weight }]
                   }
 
-                  parentsChildren.push(incomingParentsChildren)
-                  yield incomingParentsChildren
+                  parentsChildren.push(incomingParentChildren)
+                  yield incomingParentChildren
                 }
-              }
-            } else if (weight === Relation.Child) {
-              const childParents = familyTree.getNodeRelationships(
-                incomingRelativeNodeId,
-                Relation.Parent
-              )
-
-              if (childParents.length === 1 && childParents[0].nodeId === incomingNodeId) {
-                const incomingParentChildren = {
-                  parent1: incomingNodeId,
-                  children: [{ nodeId: incomingRelativeNodeId, weight }]
-                }
-
-                parentsChildren.push(incomingParentChildren)
-                yield incomingParentChildren
               }
             }
+
+            stack.push(incomingRelativeNodeId)
           }
 
-          stack.push(incomingRelativeNodeId)
+          visitedNodes.add(incomingNodeId)
         }
-
-        visitedNodes.add(incomingNodeId)
       }
     }
   }
@@ -225,6 +297,8 @@ const initFamilyTree = () => {
     dfsLevels,
     getAnyNodeId,
     getNodesGeneration,
+    getDownwardReach,
+    getRenderRoots,
     dfsParentsChildren,
     getParentsChildren
   }
@@ -279,11 +353,13 @@ const buildTree = (familyData: FamilyData) => {
 export let generations: { nodeId: string; generation: number }[] | undefined
 export let firstGeneration: { nodeId: string; generation: number }[] | undefined
 export let parentsChildrenArray: ParentsChildren[] = []
+export let renderRoots: string[] = []
 
 const refreshDerivedData = () => {
   generations = familyTree.getNodesGeneration()
   firstGeneration = generations?.filter((member) => member.generation === 1)
   parentsChildrenArray = familyTree.getParentsChildren()
+  renderRoots = familyTree.getRenderRoots(generations)
 }
 
 export const visitedMembers = writable<string[]>([])

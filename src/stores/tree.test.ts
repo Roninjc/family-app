@@ -75,13 +75,80 @@ describe('generations (dfsLevels + normalización)', () => {
     expect(generationOf('eva')).toBe(1)
   })
 
-  it('LIMITACIÓN ACTUAL: un miembro sin relaciones (componente desconectado) no aparece en generations', () => {
-    build([member('raiz', { children: ['hijo'] }), member('hijo'), member('aislado')])
+  it('los componentes desconectados también reciben generación, normalizada por componente', () => {
+    build([
+      member('raiz', { children: ['hijo'] }),
+      member('hijo'),
+      member('aislado'),
+      member('otraRaiz', { children: ['otroHijo'] }),
+      member('otroHijo')
+    ])
 
-    // dfsLevels solo recorre el componente del primer nodo insertado, así que
-    // 'aislado' nunca recibe generación y el árbol no lo renderiza.
-    expect(generationOf('aislado')).toBeUndefined()
-    expect(tree.generations?.map(({ nodeId }) => nodeId)).not.toContain('aislado')
+    expect(generationOf('aislado')).toBe(1)
+    expect(generationOf('otraRaiz')).toBe(1)
+    expect(generationOf('otroHijo')).toBe(2)
+  })
+})
+
+describe('renderRoots (raíces de renderizado)', () => {
+  it('una familia conectada hacia abajo produce una única raíz: su ancestro más antiguo', () => {
+    build([
+      member('abuelo', { partner: ['abuela'], children: ['padre'] }),
+      member('abuela', { children: ['padre'] }),
+      member('padre', { partner: ['madre'], children: ['hijo'] }),
+      member('madre', { children: ['hijo'] }),
+      member('hijo')
+    ])
+
+    expect(tree.renderRoots).toEqual(['abuelo'])
+  })
+
+  it('los padres de un consorte generan una raíz extra (antes desaparecían del árbol)', () => {
+    build([
+      member('abuelo', { partner: ['abuela'], children: ['padre'] }),
+      member('abuela', { children: ['padre'] }),
+      member('padre', { partner: ['madre'], children: ['hijo'] }),
+      member('madre', { children: ['hijo'], parents: ['suegro', 'suegra'] }),
+      member('suegro', { partner: ['suegra'] }),
+      member('suegra'),
+      member('hijo')
+    ])
+
+    expect(tree.renderRoots).toHaveLength(2)
+    expect(tree.renderRoots[0]).toBe('abuelo')
+    // La segunda raíz es uno de los suegros; su pareja se renderiza con él
+    expect(['suegro', 'suegra']).toContain(tree.renderRoots[1])
+  })
+
+  it('la rama con más generaciones de ancestros se renderiza primero', () => {
+    build([
+      member('bisabuela', { children: ['suegra'] }),
+      member('suegra', { children: ['madre'] }),
+      member('abuelo', { children: ['padre'] }),
+      member('padre', { partner: ['madre'], children: ['hijo'] }),
+      member('madre', { children: ['hijo'] }),
+      member('hijo')
+    ])
+
+    // bisabuela es la única de generación 1; abuelo (generación 2) queda
+    // fuera de su alcance descendente y sale como raíz extra.
+    expect(tree.renderRoots).toEqual(['bisabuela', 'abuelo'])
+  })
+
+  it('un miembro sin relaciones y otros componentes sueltos salen como raíces extra', () => {
+    build([
+      member('raiz', { children: ['hijo'] }),
+      member('hijo'),
+      member('aislado'),
+      member('otraRaiz', { children: ['otroHijo'] }),
+      member('otroHijo')
+    ])
+
+    expect(tree.renderRoots).toHaveLength(3)
+    expect(tree.renderRoots[0]).toBe('raiz')
+    expect(tree.renderRoots).toContain('aislado')
+    expect(tree.renderRoots).toContain('otraRaiz')
+    expect(tree.renderRoots).not.toContain('otroHijo')
   })
 })
 
@@ -169,6 +236,27 @@ describe('getParentsChildren (agrupación pareja + hijos comunes)', () => {
     )
 
     expect(groupsWithChild).toHaveLength(0)
+  })
+
+  it('agrupa parejas también en componentes desconectados', () => {
+    build([
+      member('a', { partner: ['b'], children: ['c'] }),
+      member('b', { children: ['c'] }),
+      member('c'),
+      member('x', { partner: ['y'], children: ['z'] }),
+      member('y', { children: ['z'] }),
+      member('z')
+    ])
+
+    const coupleAB = tree.parentsChildrenArray.find(
+      ({ parent1, parent2 }) => [parent1, parent2].includes('a') && [parent1, parent2].includes('b')
+    )
+    const coupleXY = tree.parentsChildrenArray.find(
+      ({ parent1, parent2 }) => [parent1, parent2].includes('x') && [parent1, parent2].includes('y')
+    )
+
+    expect(coupleAB?.children.map(({ nodeId }) => nodeId)).toEqual(['c'])
+    expect(coupleXY?.children.map(({ nodeId }) => nodeId)).toEqual(['z'])
   })
 
   it('no duplica la pareja aunque ambos miembros la recorran', () => {

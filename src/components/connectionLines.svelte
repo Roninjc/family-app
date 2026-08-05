@@ -31,7 +31,7 @@
       bottom: 0
     }
   }
-  const noPartnerChildrenInfo: any = {
+  const noPartnerChildrenInfo: Omit<PartnerRealtionInfo, 'partnerCenter'> = {
     childrenCenter: [],
     svgCoordinates: {
       left: 0,
@@ -271,26 +271,34 @@
   {/if}
 {/if}
 
-<!-- TODO: Este probablemente lo quitamos, pensar si tiene sentido -->
-<!-- {#if memberCenter && previousPartnersNoChildrenRelationInfo?.length > 0}
+<!-- Expareja sin hijos comunes: línea discontinua entre ambos badges -->
+{#if memberCenter && previousPartnersNoChildrenRelationInfo?.length > 0}
   {#each previousPartnersNoChildrenRelationInfo as previousPartnerNoChildrenRelationInfo}
     <svg
       xmlns="http://www.w3.org/2000/svg"
       class="no-children-previous-couple-svg"
       width={`${Math.abs(
-        memberCenter?.x - previousPartnerNoChildrenRelationInfo?.partnerCenter?.x
+        previousPartnerNoChildrenRelationInfo?.svgCoordinates?.right -
+          previousPartnerNoChildrenRelationInfo?.svgCoordinates?.left
       )}px`}
       height="2px"
-      style={`transform: translateX(-${previousPartnerNoChildrenRelationInfo?.svgCoordinates?.left}px)`}
+      style={`left: 0; transform: translateX(${
+        previousPartnerNoChildrenRelationInfo?.svgCoordinates?.left +
+        badgeWidth / 2 -
+        memberCenter.x
+      }px)`}
     >
       <path
-        d="M0 0 H{Math.abs(
-          memberCenter?.x - previousPartnerNoChildrenRelationInfo?.partnerCenter?.x
+        d="M{Math.abs(
+          previousPartnerNoChildrenRelationInfo?.partnerCenter?.x -
+            previousPartnerNoChildrenRelationInfo?.svgCoordinates?.left
+        )} 0 H{Math.abs(
+          memberCenter.x - previousPartnerNoChildrenRelationInfo?.svgCoordinates?.left
         )}"
       />
     </svg>
   {/each}
-{/if} -->
+{/if}
 
 {#if memberCenter && previousPartnersChildrenRelationInfo?.length > 0}
   {#each previousPartnersChildrenRelationInfo as previousPartnerChildrenRelationInfo}
@@ -361,7 +369,8 @@
     filter: drop-shadow(0px 0px 4px #ffffff);
 
     &.no-children-previous-couple-svg {
-      stroke: pink;
+      stroke-dasharray: 9 7;
+      stroke-width: 2.5;
     }
   }
 </style>

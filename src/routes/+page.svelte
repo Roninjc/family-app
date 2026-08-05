@@ -1,14 +1,15 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { firstGeneration, initTreeData, stack, treeVersion, visitedMembers } from '../stores/tree'
+  import { initTreeData, renderRoots, stack, treeVersion, visitedMembers } from '../stores/tree'
   import Header from '../components/header.svelte'
   import TreeNode from '../components/treeNode.svelte'
   import Footer from '../components/footer.svelte'
   import AddFamilyMemberModal from '../components/addFamilyMemberModal.svelte'
+  import EditMemberModal from '../components/editMemberModal.svelte'
 
   export let data
 
-  let initialMemberId: string | undefined
+  let roots: string[] = []
   let treeWrapper: HTMLElement
 
   // Rebuild the graph whenever the page data changes (initial load or after
@@ -19,8 +20,10 @@
 
   function resetTreeRender(version: number) {
     visitedMembers.set([])
-    initialMemberId = firstGeneration?.[0]?.nodeId
-    stack.set(initialMemberId ? [initialMemberId] : [])
+    // Una raíz por árbol a renderizar: la familia principal primero y después
+    // los ancestros de consortes / componentes desconectados (ver renderRoots).
+    roots = renderRoots
+    stack.set([...roots])
 
     if (version > 0) setTimeout(centerTree, 400)
   }
@@ -41,13 +44,25 @@
     const scrollLeft = (graphWidth - containerWidth) / 2
     treeWrapper.scrollLeft = scrollLeft
   }
+
+  // Las líneas se miden una sola vez al montar cada nodo, así que al cambiar
+  // el tamaño de la ventana se re-monta el árbol (con debounce) para re-medir.
+  let resizeTimer: ReturnType<typeof setTimeout>
+  function handleResize() {
+    clearTimeout(resizeTimer)
+    resizeTimer = setTimeout(() => treeVersion.update((version) => version + 1), 250)
+  }
 </script>
+
+<svelte:window on:resize={handleResize} />
 
 <Header />
 <main id="family-tree-wrapper" bind:this={treeWrapper}>
   {#key $treeVersion}
-    {#if initialMemberId}
-      <TreeNode memberId={initialMemberId} />
+    {#if roots.length > 0}
+      {#each roots as rootMemberId (rootMemberId)}
+        <TreeNode memberId={rootMemberId} />
+      {/each}
     {:else}
       It seem as you still have not added any member of this family.
     {/if}
@@ -55,6 +70,7 @@
 </main>
 <Footer />
 <AddFamilyMemberModal />
+<EditMemberModal />
 
 <style lang="scss">
   :global(body) {
@@ -68,6 +84,8 @@
     position: relative;
     display: flex;
     flex-direction: row;
+    // Separación entre árboles raíz (familia principal, ramas políticas...)
+    gap: 120px;
     background-color: #e0e0e0;
     height: 100%;
     padding: 40px;

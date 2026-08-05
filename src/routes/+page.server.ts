@@ -33,6 +33,7 @@ export const actions: Actions = {
     const motherId = String(form.get('motherId') ?? '')
     const partnerId = String(form.get('partnerId') ?? '')
     const siblingsIds = form.getAll('siblingsIds').map(String).filter(Boolean)
+    const childrenIds = form.getAll('childrenIds').map(String).filter(Boolean)
     const previousPartnersIds = form.getAll('previousPartnersIds').map(String).filter(Boolean)
 
     if (!name) return fail(400, { addError: 'El nombre es obligatorio.' })
@@ -41,6 +42,8 @@ export const actions: Actions = {
       ...[fatherId, motherId]
         .filter(Boolean)
         .map((other) => ({ other, type: 'parent', direction: 'child_of' })),
+      // Hijos ya existentes del nuevo miembro: permite añadir ancestros
+      ...childrenIds.map((other) => ({ other, type: 'parent', direction: 'parent_of' })),
       ...siblingsIds.map((other) => ({ other, type: 'sibling' })),
       ...(partnerId ? [{ other: partnerId, type: 'partner' }] : []),
       ...previousPartnersIds.map((other) => ({ other, type: 'previous_partner' }))
@@ -82,5 +85,53 @@ export const actions: Actions = {
     }
 
     return { added: true, newMemberId: data }
+  },
+
+  updateMember: async ({ request, locals: { supabase, user } }) => {
+    if (!user) redirect(303, '/login')
+
+    const form = await request.formData()
+    const memberId = String(form.get('memberId') ?? '')
+    const name = String(form.get('name') ?? '').trim()
+    const familyName = String(form.get('familyName') ?? '').trim()
+    const birthDate = String(form.get('birthDate') ?? '')
+
+    if (!memberId) return fail(400, { editError: 'Falta el miembro a editar.' })
+    if (!name) return fail(400, { editError: 'El nombre es obligatorio.' })
+
+    const { error: updateError } = await supabase
+      .from('members')
+      .update({ name, family_name: familyName, birth_date: birthDate || null })
+      .eq('id', memberId)
+
+    if (updateError) {
+      const message = /row-level security/i.test(updateError.message)
+        ? 'No tienes permisos para editar miembros.'
+        : updateError.message
+      return fail(403, { editError: message })
+    }
+
+    return { updated: true }
+  },
+
+  deleteMember: async ({ request, locals: { supabase, user } }) => {
+    if (!user) redirect(303, '/login')
+
+    const form = await request.formData()
+    const memberId = String(form.get('memberId') ?? '')
+
+    if (!memberId) return fail(400, { editError: 'Falta el miembro a eliminar.' })
+
+    // Las relaciones caen en cascada (FK on delete cascade)
+    const { error: deleteError } = await supabase.from('members').delete().eq('id', memberId)
+
+    if (deleteError) {
+      const message = /row-level security/i.test(deleteError.message)
+        ? 'No tienes permisos para eliminar miembros.'
+        : deleteError.message
+      return fail(403, { editError: message })
+    }
+
+    return { deleted: true }
   }
 }
