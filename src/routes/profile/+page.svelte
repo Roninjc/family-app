@@ -13,6 +13,7 @@
 
   let displayName = data.profile?.display_name ?? ''
   let password = ''
+  let selectedMemberId = data.linkedMember?.id ?? ''
 </script>
 
 <svelte:head>
@@ -69,6 +70,29 @@
           <button type="submit">Guardar contraseña</button>
           {#if form?.passwordSaved}<span class="saved-note">Guardada ✓</span>{/if}
           {#if form?.passwordError}<div class="form-error">{form.passwordError}</div>{/if}
+        </form>
+
+        <h2>Vinculación familiar</h2>
+        <p class="hint">
+          Puedes vincular tu cuenta a un miembro libre del árbol o dejarla sin vínculo.
+        </p>
+        <form method="POST" action="?/setMemberLink" use:enhance>
+          <select class="member-select" name="member_id" bind:value={selectedMemberId}>
+            <option value="">Sin vínculo</option>
+            {#each data.availableMembers as member (member.id)}
+              <option value={member.id}>{member.name} {member.family_name}</option>
+            {/each}
+          </select>
+          <button type="submit">Guardar vínculo</button>
+          {#if data.linkedMember}
+            <span class="saved-note">
+              Vinculado actualmente a {data.linkedMember.name} {data.linkedMember.family_name}
+            </span>
+          {:else}
+            <span class="saved-note">Tu cuenta no está vinculada a ningún miembro.</span>
+          {/if}
+          {#if form?.linkSaved}<span class="saved-note">Vínculo actualizado ✓</span>{/if}
+          {#if form?.linkError}<div class="form-error">{form.linkError}</div>{/if}
         </form>
 
         {#if data.profile?.role === 'admin' || data.profile?.role === 'editor'}
@@ -146,6 +170,17 @@
     form {
       display: flex;
       flex-direction: column;
+    }
+
+    .member-select {
+      width: 100%;
+      margin-bottom: 0.75rem;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      background: #fafafa;
+      color: #444;
+      padding: 0.55rem 0.65rem;
+      font-size: 0.95rem;
     }
 
     .input-wrapper {

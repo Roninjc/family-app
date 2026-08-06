@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { page } from '$app/stores'
   import LiquidGlassWrapper from '../../components/liquidGlassWrapper.svelte'
 
   export let data
@@ -40,6 +41,10 @@
   $: memberNameById = new Map(
     data.members.map((member) => [member.id, `${member.name} ${member.family_name}`])
   )
+  $: preselectedMemberId = $page.url.searchParams.get('memberId') ?? ''
+  $: if (!memberId && preselectedMemberId && memberNameById.has(preselectedMemberId)) {
+    memberId = preselectedMemberId
+  }
 </script>
 
 <svelte:head>
@@ -202,7 +207,7 @@
   .admin-content {
     display: flex;
     flex-direction: column;
-      width: min(960px, 92vw);
+    width: min(960px, 92vw);
 
     h1 {
       margin: 0 0 1rem;

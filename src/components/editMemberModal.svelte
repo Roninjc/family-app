@@ -146,6 +146,11 @@
             </button>
           {/if}
         </form>
+        {#if editable}
+          <a class="invite-member-link" href={`/admin?memberId=${member.id}`}>
+            Invitar a esta persona por email →
+          </a>
+        {/if}
         <div class="relations-section">
           <h3>Relaciones</h3>
           <RelationChipsEditor
@@ -357,6 +362,17 @@
         h3 {
           margin: 0 0 0.8rem;
           font-size: 1rem;
+        }
+      }
+
+      .invite-member-link {
+        margin: 0.75rem 0 0.25rem;
+        color: #096bc1;
+        font-size: 0.9rem;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
         }
       }
 
