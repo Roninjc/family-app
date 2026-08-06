@@ -221,7 +221,7 @@
     background: linear-gradient(160deg, rgba(255, 252, 247, 0.6), rgba(255, 245, 233, 0.4));
     border-radius: 12px;
     padding: 11px;
-    border: 1px solid rgba(255, 239, 219, 0.62);
+    border: none;
   }
 
   .tree-list li {

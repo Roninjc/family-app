@@ -293,7 +293,7 @@
     .admin-section {
       margin-bottom: 0.6rem;
       background: rgba(255, 255, 255, 0.34);
-      border: 1px solid rgba(255, 255, 255, 0.54);
+      border: none;
       border-radius: 12px;
 
       &.open {
@@ -348,7 +348,7 @@
         flex: 1 1 220px;
         min-height: 44px;
         padding: 0.52rem 0.76rem;
-        border: 1px solid var(--field-border);
+        border: none;
         border-radius: 10px;
         background: var(--field-bg);
         font-size: 0.95rem;
@@ -371,7 +371,7 @@
     select {
       min-width: 170px;
       min-height: 44px;
-      border: 1px solid var(--field-border);
+      border: none;
       border-radius: 10px;
       background: var(--field-bg);
       color: var(--text-main);
@@ -400,7 +400,7 @@
         align-items: center;
         gap: 10px;
         background: rgba(255, 255, 255, 0.44);
-        border: 1px solid rgba(255, 238, 218, 0.6);
+        border: none;
         border-radius: 10px;
         padding: 10px 12px;
         transition:

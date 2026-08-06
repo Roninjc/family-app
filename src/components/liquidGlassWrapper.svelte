@@ -71,39 +71,27 @@
     position: relative;
     display: flex;
     font-weight: 600;
-    color: #333;
-    cursor: pointer;
-    box-shadow:
-      0 6px 6px rgba(0, 0, 0, 0.2),
-      0 0 20px rgba(0, 0, 0, 0.1);
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+    color: var(--text-main);
+    cursor: default;
+    background: var(--neu-surface);
+    border: none;
+    box-shadow: var(--neu-shadow-out);
+    backdrop-filter: none;
+    transition:
+      box-shadow 0.25s var(--motion-standard),
+      transform 0.25s var(--motion-standard);
   }
 
   .liquid-glass-effect {
-    position: absolute;
-    z-index: 0;
-    inset: 0;
-    backdrop-filter: blur(3px);
-    filter: url(#glass-distortion);
-    overflow: hidden;
-    isolation: isolate;
+    display: none;
   }
 
   .liquid-glass-tint {
-    z-index: 1;
-    position: absolute;
-    inset: 0;
-    background: rgba(255, 255, 255, 0.25);
+    display: none;
   }
 
   .liquid-glass-shine {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    overflow: hidden;
-    box-shadow:
-      inset 2px 2px 1px 0 rgba(255, 255, 255, 0.5),
-      inset -1px -1px 1px 1px rgba(255, 255, 255, 0.5);
+    display: none;
   }
 
   .liquid-glass-text-container {

@@ -36,6 +36,7 @@
     pointer-events: auto;
     width: min(1080px, 100%);
     margin: 0 auto;
+    border: none;
     padding: 10px 14px;
     display: flex;
     align-items: center;
@@ -75,14 +76,13 @@
     gap: 0.38rem;
     flex-shrink: 0;
     color: var(--accent-sky);
-    border-color: rgba(137, 114, 95, 0.28);
+    border: none;
     background: linear-gradient(160deg, rgba(252, 249, 244, 0.9), rgba(245, 236, 225, 0.74));
     box-shadow: 0 6px 12px rgba(110, 89, 67, 0.12);
   }
 
   .add-member-inline:hover:not(:disabled):not([aria-disabled='true']) {
     background: linear-gradient(160deg, rgba(254, 252, 248, 0.94), rgba(247, 239, 229, 0.8));
-    border-color: rgba(137, 114, 95, 0.38);
   }
 
   .icon {

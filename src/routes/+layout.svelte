@@ -5,6 +5,7 @@
   import BottomNav from '../components/bottomNav.svelte'
 
   export let data
+  let showTopFade = false
 
   $: ({ supabase, session } = data)
   $: signupNoticeCode = $page.url.searchParams.get('signup_notice')
@@ -13,7 +14,14 @@
       ? 'Tu cuenta se creó correctamente, pero ese miembro ya está vinculado a otra cuenta.'
       : null
 
+  function handleViewportScroll() {
+    showTopFade = window.scrollY > 12
+  }
+
   onMount(() => {
+    handleViewportScroll()
+    window.addEventListener('scroll', handleViewportScroll, { passive: true })
+
     const {
       data: { subscription }
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
@@ -22,7 +30,10 @@
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      window.removeEventListener('scroll', handleViewportScroll)
+      subscription.unsubscribe()
+    }
   })
 </script>
 
@@ -33,6 +44,8 @@
 {/if}
 
 <slot />
+<div class="viewport-fade viewport-fade-top" class:active={showTopFade} aria-hidden="true"></div>
+<div class="viewport-fade viewport-fade-bottom" aria-hidden="true"></div>
 {#if session}
   <BottomNav />
 {/if}
@@ -54,6 +67,19 @@
     --glass-shadow:
       0 16px 34px rgba(79, 66, 53, 0.13),
       inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    --neu-surface: #efe8de;
+    --neu-surface-soft: #f4efe7;
+    --neu-light: rgba(255, 255, 255, 0.8);
+    --neu-dark: rgba(154, 132, 109, 0.3);
+    --neu-shadow-out:
+      8px 8px 16px var(--neu-dark),
+      -8px -8px 16px var(--neu-light);
+    --neu-shadow-out-soft:
+      5px 5px 10px rgba(154, 132, 109, 0.24),
+      -5px -5px 10px rgba(255, 255, 255, 0.76);
+    --neu-shadow-inset:
+      inset 5px 5px 10px rgba(154, 132, 109, 0.24),
+      inset -5px -5px 10px rgba(255, 255, 255, 0.76);
     --text-main: #2e2823;
     --text-muted: #544b43;
     --text-soft: #675c53;
@@ -180,20 +206,20 @@
   }
 
   :global(.glass-panel) {
-    background: linear-gradient(160deg, var(--glass-surface-strong), var(--glass-surface));
-    border: 1px solid var(--glass-border);
+    background: var(--neu-surface);
+    border: none;
     border-radius: var(--radius-lg);
-    box-shadow: var(--glass-shadow);
-    backdrop-filter: blur(14px) saturate(1.08);
+    box-shadow: var(--neu-shadow-out);
   }
 
   :global(.app-btn) {
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     min-height: 44px;
     padding: 0.62rem 0.9rem;
     border-radius: var(--radius-md);
-    border: 1px solid transparent;
+    border: none;
+    background: var(--neu-surface-soft);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -213,63 +239,41 @@
   }
 
   :global(.app-btn:hover:not(:disabled):not([aria-disabled='true'])) {
-    transform: translateY(-2px) scale(1.01);
-    box-shadow: 0 12px 20px rgba(86, 46, 20, 0.18);
+    transform: translateY(-1px);
+    box-shadow: var(--neu-shadow-out-soft);
   }
 
   :global(.app-btn:active:not(:disabled):not([aria-disabled='true'])) {
-    transform: translateY(0) scale(0.995);
-  }
-
-  :global(.app-btn::before) {
-    content: '';
-    position: absolute;
-    inset: -180% 40% auto -120%;
-    height: 260%;
-    transform: rotate(16deg) translateX(-34%);
-    background: linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0),
-      rgba(255, 255, 255, 0.34),
-      rgba(255, 255, 255, 0)
-    );
-    transition: transform 0.56s var(--motion-standard);
-  }
-
-  :global(.app-btn:hover:not(:disabled):not([aria-disabled='true'])::before) {
-    transform: rotate(16deg) translateX(180%);
+    transform: translateY(0);
+    box-shadow: var(--neu-shadow-inset);
   }
 
   :global(.app-btn--primary) {
-    background: linear-gradient(140deg, #8b745f, #9d8766);
-    color: #fffdfb;
-    border-color: rgba(104, 86, 69, 0.56);
+    background: #dbc8b2;
+    color: #4b3a2d;
   }
 
   :global(.app-btn--primary:hover:not(:disabled):not([aria-disabled='true'])) {
-    background: linear-gradient(140deg, #806a56, #927c5f);
+    background: #e3d2be;
   }
 
   :global(.app-btn--secondary) {
-    background: linear-gradient(160deg, rgba(252, 250, 246, 0.88), rgba(244, 237, 228, 0.78));
+    background: #f4eee6;
     color: var(--text-main);
-    border-color: rgba(206, 188, 166, 0.72);
   }
 
   :global(.app-btn--danger) {
-    background: linear-gradient(140deg, #b63e3e, #c85353);
-    color: #fff;
-    border-color: rgba(145, 43, 43, 0.6);
+    background: #e3c8c4;
+    color: #7a2f2f;
   }
 
   :global(.app-btn--danger:hover:not(:disabled):not([aria-disabled='true'])) {
-    background: linear-gradient(140deg, #9d2f2f, #b63e3e);
+    background: #ebd4d1;
   }
 
   :global(.app-btn--ghost) {
-    background: rgba(252, 248, 243, 0.64);
+    background: #f2ece4;
     color: var(--brand);
-    border-color: rgba(127, 102, 82, 0.26);
   }
 
   :global(.app-bottom-nav) {
@@ -296,8 +300,9 @@
     font-weight: 700;
     letter-spacing: 0.01em;
     color: #332c26;
-    background: rgba(253, 250, 246, 0.86);
-    border: 1px solid rgba(224, 210, 193, 0.9);
+    background: var(--neu-surface);
+    border: none;
+    box-shadow: var(--neu-shadow-out-soft);
     transition:
       transform 0.2s var(--motion-standard),
       background-color 0.2s var(--motion-standard),
@@ -324,13 +329,13 @@
 
   :global(.app-bottom-nav a:hover) {
     transform: translateY(-1px);
-    box-shadow: 0 8px 14px rgba(89, 71, 54, 0.11);
+    box-shadow: 6px 6px 12px rgba(154, 132, 109, 0.28), -6px -6px 12px rgba(255, 255, 255, 0.8);
   }
 
   :global(.app-bottom-nav a[aria-current='page']) {
-    background: rgba(var(--nav-accent-rgb), 0.16);
-    border-color: rgba(var(--nav-accent-rgb), 0.5);
+    background: rgba(var(--nav-accent-rgb), 0.12);
     color: rgb(var(--nav-accent-rgb));
+    box-shadow: var(--neu-shadow-inset);
   }
 
   :global(.app-bottom-nav a[aria-current='page']::after) {
@@ -338,19 +343,18 @@
     position: absolute;
     left: 18%;
     right: 18%;
-    bottom: 5px;
-    height: 2px;
+    bottom: 6px;
+    height: 1.5px;
     border-radius: 999px;
-    background: rgba(var(--nav-accent-rgb), 0.55);
+    background: rgba(var(--nav-accent-rgb), 0.42);
   }
 
   :global(.app-nav-dock) {
     padding: 8px;
     border-radius: 15px;
-    border: 1px solid rgba(224, 210, 193, 0.82);
-    background: linear-gradient(160deg, rgba(252, 249, 245, 0.82), rgba(242, 236, 229, 0.58));
-    backdrop-filter: blur(14px) saturate(1.07);
-    box-shadow: var(--nav-dock-shadow);
+    border: none;
+    background: var(--neu-surface);
+    box-shadow: var(--neu-shadow-out);
   }
 
   :global(.page-shell) {
@@ -378,14 +382,14 @@
     width: 100%;
     height: 40px;
     padding: 0.6rem 0.75rem 0.4rem;
-    border: 1px solid var(--field-border);
+    border: none;
     border-radius: 10px;
-    background: var(--field-bg);
+    background: #f2ece4;
     font-size: var(--fs-md);
     transition:
       border-color 0.2s,
       box-shadow 0.2s;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--neu-shadow-inset);
     color: var(--text-main);
   }
 
@@ -404,9 +408,10 @@
 
   :global(.floating-input-wrapper .modern-input:focus) {
     outline: none;
-    border-color: var(--brand);
-    box-shadow: 0 0 0 3px rgba(156, 90, 45, 0.16);
-    background: #fff;
+    box-shadow:
+      var(--neu-shadow-inset),
+      0 0 0 2px rgba(156, 123, 95, 0.18);
+    background: #f7f2ea;
   }
 
   :global(.floating-input-wrapper .modern-input:focus),
@@ -538,6 +543,84 @@
     :global(body::after) {
       animation: none !important;
     }
+
+    .viewport-fade {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+  }
+
+  .viewport-fade {
+    position: fixed;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+    z-index: 9;
+    backdrop-filter: blur(6px) saturate(0.94);
+    -webkit-backdrop-filter: blur(6px) saturate(0.94);
+    overflow: hidden;
+  }
+
+  .viewport-fade-top {
+    top: 0;
+    height: max(86px, calc(env(safe-area-inset-top) + 68px));
+    opacity: 0;
+    transform: translateY(-4px);
+    transition:
+      opacity 0.24s var(--motion-standard),
+      transform 0.24s var(--motion-standard);
+    background: linear-gradient(
+      to bottom,
+      rgba(241, 236, 228, 0.54) 0%,
+      rgba(241, 236, 228, 0.3) 46%,
+      rgba(241, 236, 228, 0.1) 78%,
+      rgba(241, 236, 228, 0) 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.98) 0%,
+      rgba(0, 0, 0, 0.78) 45%,
+      rgba(0, 0, 0, 0.34) 78%,
+      rgba(0, 0, 0, 0) 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.98) 0%,
+      rgba(0, 0, 0, 0.78) 45%,
+      rgba(0, 0, 0, 0.34) 78%,
+      rgba(0, 0, 0, 0) 100%
+    );
+  }
+
+  .viewport-fade-top.active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .viewport-fade-bottom {
+    bottom: 0;
+    height: max(90px, calc(env(safe-area-inset-bottom) + 74px));
+    background: linear-gradient(
+      to top,
+      rgba(241, 236, 228, 0.56) 0%,
+      rgba(241, 236, 228, 0.3) 40%,
+      rgba(241, 236, 228, 0.1) 72%,
+      rgba(241, 236, 228, 0) 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.98) 0%,
+      rgba(0, 0, 0, 0.78) 42%,
+      rgba(0, 0, 0, 0.28) 74%,
+      rgba(0, 0, 0, 0) 100%
+    );
+    mask-image: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.98) 0%,
+      rgba(0, 0, 0, 0.78) 42%,
+      rgba(0, 0, 0, 0.28) 74%,
+      rgba(0, 0, 0, 0) 100%
+    );
   }
 
   .signup-notice {

@@ -119,7 +119,6 @@
     border-radius: 14px;
     color: var(--text-muted);
     background: linear-gradient(160deg, rgba(255, 252, 247, 0.72), rgba(255, 241, 224, 0.46));
-    border: 1px solid rgba(255, 236, 214, 0.68);
     box-shadow: 0 14px 24px rgba(106, 62, 30, 0.12);
 
     .empty-title,

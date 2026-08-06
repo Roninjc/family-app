@@ -171,7 +171,7 @@
       width: 100%;
       margin-bottom: 0.75rem;
       min-height: 44px;
-      border: 1px solid var(--field-border);
+      border: none;
       border-radius: 10px;
       background: var(--field-bg);
       color: var(--text-main);
