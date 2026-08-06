@@ -19,7 +19,7 @@
 </svelte:head>
 
 <main>
-  <div class="login-card">
+  <div class="login-card reveal-fade-up">
     <LiquidGlassWrapper>
       <div class="login-content">
         <h1>Familia Castaño</h1>
@@ -46,7 +46,7 @@
               <input type="hidden" name="inviteToken" value={inviteToken} />
             {/if}
 
-            <div class="input-wrapper">
+            <div class="input-wrapper floating-input-wrapper">
               <input
                 id="loginEmail"
                 class="modern-input"
@@ -60,7 +60,7 @@
             </div>
 
             {#if showPasswordForm}
-              <div class="input-wrapper">
+              <div class="input-wrapper floating-input-wrapper">
                 <input
                   id="loginPassword"
                   class="modern-input"
@@ -76,7 +76,7 @@
               </div>
             {/if}
 
-            <button type="submit" disabled={submitting}>
+            <button class="app-btn app-btn--primary" type="submit" disabled={submitting}>
               {#if showPasswordForm}
                 Entrar
               {:else}
@@ -101,13 +101,15 @@
             </p>
           {:else}
             <form method="POST" action="?/google" use:enhance>
-              <button type="submit" class="google-button">Continuar con Google</button>
+              <button type="submit" class="app-btn app-btn--secondary google-button">
+                Continuar con Google
+              </button>
             </form>
           {/if}
         {/if}
 
         {#if form?.error || urlError}
-          <div class="form-error">{form?.error ?? urlError}</div>
+          <div class="form-error" role="alert">{form?.error ?? urlError}</div>
         {/if}
       </div>
     </LiquidGlassWrapper>
@@ -125,8 +127,8 @@
 
   .login-card {
     width: min(430px, 100%);
-    border-radius: 18px;
-    background-color: var(--surface-soft);
+    border-radius: var(--radius-lg);
+    background-color: transparent;
   }
 
   .login-content {
@@ -137,7 +139,8 @@
 
     h1 {
       margin: 0;
-      font-size: clamp(1.4rem, 4.2vw, 1.7rem);
+      font-size: var(--fs-xl);
+      line-height: var(--lh-tight);
       text-align: left;
       letter-spacing: 0.01em;
     }
@@ -145,15 +148,15 @@
     .subtitle {
       margin: 0 0 0.45rem;
       color: var(--text-muted);
-      line-height: 1.45;
-      font-size: 0.92rem;
+      line-height: var(--lh-copy);
+      font-size: var(--fs-sm);
     }
 
     .sent-message {
       margin: 0;
       color: var(--text-main);
-      line-height: 1.5;
-      font-size: 0.92rem;
+      line-height: var(--lh-copy);
+      font-size: var(--fs-sm);
       background: rgba(184, 236, 206, 0.36);
       border: 1px solid rgba(87, 154, 113, 0.3);
       border-radius: 10px;
@@ -166,94 +169,27 @@
     }
 
     .input-wrapper {
-      position: relative;
       margin-bottom: 1.5rem;
-      display: flex;
-
-      .modern-input {
-        width: 100%;
-        min-height: 48px;
-        padding: 1rem 0.78rem 0.4rem;
-        border: 1px solid var(--field-border);
-        border-radius: 10px;
-        background: var(--field-bg);
-        font-size: 1rem;
-        transition:
-          border-color 0.2s,
-          box-shadow 0.2s;
-        color: var(--text-main);
-
-        &:focus {
-          outline: none;
-          border-color: var(--brand);
-          box-shadow: 0 0 0 3px rgba(31, 79, 123, 0.16);
-          background: #fff;
-        }
-      }
-
-      label {
-        position: absolute;
-        left: 0.55rem;
-        top: 0.75rem;
-        padding: 0 6px;
-        color: #7a7a86;
-        font-size: 1rem;
-        pointer-events: none;
-        background: transparent;
-        transition:
-          0.2s cubic-bezier(0.4, 0, 0.2, 1) transform,
-          0.2s cubic-bezier(0.4, 0, 0.2, 1) font-size,
-          0.2s cubic-bezier(0.4, 0, 0.2, 1) color,
-          0.2s cubic-bezier(0.4, 0, 0.2, 1) top,
-          0.2s cubic-bezier(0.4, 0, 0.2, 1) background;
-      }
-
-      .modern-input:focus + label,
-      label.label-active {
-        top: 2px;
-        left: 12px;
-        font-size: 0.8rem;
-        color: var(--brand);
-        background: var(--field-bg);
-        transform: translateY(-60%);
-        padding: 0 6px;
-        border-radius: 6px;
-      }
     }
 
     button {
       width: 100%;
-      min-height: 46px;
-      padding: 10px;
-      border: none;
-      border-radius: 11px;
       cursor: pointer;
-      transition: ease 0.3s;
-      font-size: 0.94rem;
-      font-weight: 600;
+      font-size: var(--fs-sm);
 
       &[type='submit'] {
-        background-color: #2c7a60;
-        color: white;
-
-        &:hover {
-          background-color: #24654f;
-        }
-
         &:disabled {
-          opacity: 0.6;
-          cursor: wait;
+          opacity: 1;
+          cursor: not-allowed;
+          background: #c3ccd6;
+          color: #5c6673;
+          border: 1px solid #aeb8c5;
+          box-shadow: none;
         }
+      }
 
-        &.google-button {
-          background: rgba(255, 255, 255, 0.72);
-          border: 1px solid #ccd3dc;
-          color: var(--text-main);
-
-          &:hover {
-            background: #fff;
-          }
-        }
+      &.google-button {
+        margin-top: 2px;
       }
     }
 
@@ -261,9 +197,11 @@
       margin-top: 0.25rem;
       background: none;
       color: var(--brand);
-      font-size: 0.84rem;
+      font-size: var(--fs-xs);
       padding: 4px;
       min-height: 36px;
+      border: none;
+      text-align: left;
 
       &:hover {
         text-decoration: underline;
@@ -274,8 +212,8 @@
       display: flex;
       align-items: center;
       margin: 1rem 0;
-      color: #8f8f8f;
-      font-size: 0.85rem;
+      color: var(--text-soft);
+      font-size: var(--fs-xs);
 
       &::before,
       &::after {
@@ -293,16 +231,16 @@
     .invite-hint {
       margin: 0;
       text-align: left;
-      color: #666;
-      font-size: 0.85rem;
-      line-height: 1.4;
+      color: var(--text-muted);
+      font-size: var(--fs-xs);
+      line-height: var(--lh-copy);
     }
 
     .form-error {
       margin-top: 0.4rem;
       color: #9d1f1f;
-      font-size: 0.87rem;
-      line-height: 1.4;
+      font-size: var(--fs-xs);
+      line-height: var(--lh-copy);
       background: rgba(246, 189, 189, 0.42);
       border: 1px solid rgba(204, 107, 107, 0.35);
       border-radius: 10px;

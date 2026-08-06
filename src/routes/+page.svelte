@@ -1,9 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+  import { page } from '$app/stores'
+  import { canEdit } from '$lib/types/auth'
+  import { showAddMemberModal } from '../stores/modals'
   import { initTreeData, renderRoots, stack, treeVersion, visitedMembers } from '../stores/tree'
   import Header from '../components/header.svelte'
   import TreeNode from '../components/treeNode.svelte'
-  import Footer from '../components/footer.svelte'
   import AddFamilyMemberModal from '../components/addFamilyMemberModal.svelte'
   import EditMemberModal from '../components/editMemberModal.svelte'
 
@@ -11,6 +13,8 @@
 
   let roots: string[] = []
   let treeWrapper: HTMLElement
+
+  $: canManage = canEdit($page.data.profile)
 
   // Rebuild the graph whenever the page data changes (initial load or after
   // adding a member), then re-seed the render stores before the {#key} block
@@ -56,7 +60,7 @@
 
 <svelte:window on:resize={handleResize} />
 
-<Header />
+<Header canManage={canManage} onAddMember={() => showAddMemberModal.set(true)} />
 <main id="family-tree-wrapper" bind:this={treeWrapper}>
   {#key $treeVersion}
     {#if roots.length > 0}
@@ -64,16 +68,24 @@
         <TreeNode memberId={rootMemberId} />
       {/each}
     {:else}
-        Todavía no has añadido ningún miembro al árbol familiar.
+      <div class="empty-tree-message" role="status">
+        <p class="empty-title">Tu árbol familiar está listo para empezar.</p>
+        <p class="empty-subtitle">
+          Añade el primer miembro para construir conexiones, ramas y generaciones.
+        </p>
+      </div>
     {/if}
   {/key}
 </main>
-<Footer />
 <AddFamilyMemberModal />
 <EditMemberModal />
 
 <style lang="scss">
   #family-tree-wrapper {
+    --tree-row-height: 126px;
+    --tree-generation-gap: 74px;
+    --tree-generation-step: calc(var(--tree-row-height) + var(--tree-generation-gap));
+    --tree-band-height: calc(var(--tree-row-height) + 10px);
     position: relative;
     display: flex;
     flex-direction: row;
@@ -83,14 +95,54 @@
     height: 100%;
     min-height: 100vh;
     padding: 24px;
-    padding-top: max(24px, env(safe-area-inset-top));
-    padding-bottom: max(24px, env(safe-area-inset-bottom));
+    padding-top: max(108px, env(safe-area-inset-top));
+    padding-bottom: max(154px, env(safe-area-inset-bottom));
     overflow: scroll;
     scroll-behavior: smooth;
+    background-image: none;
 
     @media (max-width: 720px) {
+      --tree-row-height: 120px;
+      --tree-band-height: calc(var(--tree-row-height) + 8px);
       gap: 80px;
       padding: 16px;
+      padding-top: max(116px, env(safe-area-inset-top));
+      padding-bottom: max(182px, env(safe-area-inset-bottom));
+    }
+  }
+
+  .empty-tree-message {
+    margin: 0 auto;
+    max-width: 520px;
+    text-align: center;
+    padding: 20px 18px;
+    border-radius: 14px;
+    color: var(--text-muted);
+    background: linear-gradient(160deg, rgba(255, 252, 247, 0.72), rgba(255, 241, 224, 0.46));
+    border: 1px solid rgba(255, 236, 214, 0.68);
+    box-shadow: 0 14px 24px rgba(106, 62, 30, 0.12);
+
+    .empty-title,
+    .empty-subtitle {
+      margin: 0;
+    }
+
+    .empty-title {
+      font-size: var(--fs-lg);
+      line-height: var(--lh-tight);
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+
+    .empty-subtitle {
+      font-size: var(--fs-sm);
+      line-height: var(--lh-copy);
+    }
+  }
+
+  @media (max-width: 820px) {
+    #family-tree-wrapper {
+      padding-top: max(122px, env(safe-area-inset-top));
     }
   }
 </style>

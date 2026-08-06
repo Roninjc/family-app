@@ -92,7 +92,7 @@
         {/if}
       </li>
     {:else}
-      <li class="chip empty">—</li>
+      <li class="chip empty">Sin registros</li>
     {/each}
   </ul>
   {#if canAdd}
@@ -114,6 +114,7 @@
             if (e.key === 'Enter') e.preventDefault()
           }}
           autocomplete="off"
+          aria-label={`Buscar para ${label.toLowerCase()}`}
         />
         {#if showSuggestions && suggestions.length > 0}
           <ul class="autocomplete-suggestions">
@@ -156,13 +157,13 @@
   .relation-editor {
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    gap: 0.45rem;
     margin-bottom: 1rem;
 
     h4 {
       margin: 0;
-      font-size: 0.85rem;
-      color: #666;
+      font-size: var(--fs-xs);
+      color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.03em;
     }
@@ -179,16 +180,18 @@
         display: flex;
         align-items: center;
         gap: 0.3rem;
-        padding: 4px 10px;
+        min-height: 32px;
+        padding: 5px 10px;
         border-radius: 999px;
-        background: #fafafa;
-        border: 1px solid #e0e0e0;
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.82);
         font-size: 0.9rem;
-        color: #444;
+        color: var(--text-main);
 
         &.empty {
-          color: #9f9f9f;
+          color: var(--text-soft);
           border-style: dashed;
+          background: rgba(255, 249, 241, 0.5);
         }
 
         form {
@@ -198,14 +201,22 @@
         .remove-chip {
           border: none;
           background: none;
-          padding: 0 2px;
+          min-width: 24px;
+          min-height: 24px;
+          padding: 0;
           font-size: 1rem;
           line-height: 1;
-          color: #9f9f9f;
+          color: #7f7f87;
           cursor: pointer;
 
           &:hover {
-            color: #dc2626;
+            color: var(--danger);
+          }
+
+          &:disabled {
+            opacity: 1;
+            color: #9aa3af;
+            cursor: not-allowed;
           }
         }
       }
@@ -216,21 +227,30 @@
       flex-wrap: wrap;
       align-items: center;
       gap: 0.4rem;
-      font-size: 0.8rem;
-      color: #7c3aed;
+      font-size: var(--fs-xs);
+      color: var(--brand);
 
       .suggested-chip {
-        padding: 3px 10px;
-        border: 1px dashed #7c3aed88;
+        min-height: 30px;
+        padding: 4px 10px;
+        border: 1px dashed rgba(156, 90, 45, 0.45);
         border-radius: 999px;
-        background: #f3f3ff;
-        font-size: 0.8rem;
-        color: #7c3aed;
+        background: rgba(255, 243, 228, 0.78);
+        font-size: var(--fs-xs);
+        color: #7e4520;
         cursor: pointer;
         transition: background 0.2s;
 
         &:hover {
-          background: #e6e6ff;
+          background: rgba(249, 227, 203, 0.88);
+        }
+
+        &:disabled {
+          opacity: 1;
+          border-color: #aeb8c5;
+          background: #e3e8ef;
+          color: #5c6673;
+          cursor: not-allowed;
         }
       }
     }
@@ -241,22 +261,32 @@
       .relation-input {
         width: 100%;
         box-sizing: border-box;
+        min-height: 42px;
         padding: 0.45rem 0.75rem;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        background: #fafafa;
-        font-size: 0.9rem;
-        color: #444;
+        border: 1px solid var(--field-border);
+        border-radius: 10px;
+        background: var(--field-bg);
+        font-size: var(--fs-sm);
+        color: var(--text-main);
 
         &:focus {
           outline: none;
-          border-color: #7c3aed;
-          box-shadow: 0 2px 8px rgba(124, 58, 237, 0.12);
+          border-color: var(--brand);
+          box-shadow: 0 0 0 3px rgba(156, 90, 45, 0.16);
           background: #fff;
         }
 
         &::placeholder {
           color: #9f9f9f;
+        }
+
+        &:disabled {
+          opacity: 1;
+          cursor: not-allowed;
+          background: #edf1f5;
+          color: #6b7280;
+          border-color: #cdd5df;
+          box-shadow: none;
         }
       }
 
@@ -266,9 +296,9 @@
         left: 0;
         right: 0;
         background: #fff;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--field-border);
+        border-radius: 10px;
+        box-shadow: 0 8px 18px rgba(106, 62, 30, 0.14);
         z-index: 10;
         max-height: 180px;
         overflow-y: auto;
@@ -278,6 +308,7 @@
 
         li button {
           width: 100%;
+          min-height: 38px;
           padding: 8px 14px;
           border: none;
           background: none;
@@ -289,8 +320,8 @@
 
           &:hover,
           &:focus {
-            background: #f3f3ff;
-            color: #7c3aed;
+            background: rgba(249, 227, 203, 0.64);
+            color: #7e4520;
           }
         }
       }

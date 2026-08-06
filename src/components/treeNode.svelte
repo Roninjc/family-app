@@ -233,7 +233,7 @@
   .family-node-column {
     display: flex;
     flex-direction: column;
-    gap: 70px;
+    gap: 74px;
   }
 
   .family-node-row {
@@ -241,12 +241,28 @@
     flex-direction: row;
     justify-content: center;
     align-items: flex-start;
-    gap: 40px;
+    gap: 42px;
   }
 
   // Only badges (fixed height) and absolutely positioned SVGs: the row always
   // measures one generation band, the anchor for the connection lines
   .badges-row {
     position: relative;
+  }
+
+  .member-node {
+    animation: node-reveal 0.4s var(--motion-standard) both;
+  }
+
+  @keyframes node-reveal {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
   }
 </style>

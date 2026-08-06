@@ -210,17 +210,31 @@
     position: absolute;
     overflow: visible;
     fill: none;
-    stroke: #555555;
-    stroke-width: 3;
+    stroke: var(--tree-line-main);
+    stroke-width: 2.8;
     stroke-linecap: round;
     stroke-linejoin: round;
-    filter: drop-shadow(0px 0px 4px #ffffff);
+    filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.72));
     pointer-events: none;
+
+    &.couple-line,
+    &.couple-children-lines {
+      stroke: var(--tree-line-main);
+    }
+
+    &.single-parent-lines {
+      stroke: #7f5a43;
+    }
+
+    &.previous-couple-family-lines {
+      stroke: var(--tree-line-soft);
+    }
 
     &.no-children-previous-couple-svg,
     &.previous-couple-join {
       stroke-dasharray: 9 7;
-      stroke-width: 2.5;
+      stroke-width: 2.2;
+      stroke: #b38261;
     }
   }
 </style>

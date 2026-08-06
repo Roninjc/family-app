@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { FamilyMember } from '$lib/types/familyTypes'
+  import { fade } from 'svelte/transition'
   import { suggestedChildren } from '$lib/utils/relationSuggestions'
   import { matchesSearch } from '$lib/utils/text'
   import { enhance } from '$app/forms'
@@ -17,22 +18,27 @@
   $: familyMembers = ($page.data.familyData?.members ?? []) as FamilyMember[]
 
   let formStep = 1
+  let showSummary = false
   let error = ''
   let submitting = false
+  let step1Valid = false
+  let step2Valid = false
 
   function validateStep1() {
     return name.trim() && familyName.trim() && birthDate
   }
 
   function validateStep2() {
-    // Parents are optional, but any typed text must resolve to a selected member
-    return (!fatherSearch.trim() || fatherId !== '') && (!motherSearch.trim() || motherId !== '')
+    // Relations are optional, but any typed text must resolve to a selected member
+    return (
+      (!fatherSearch.trim() || fatherId !== '') &&
+      (!motherSearch.trim() || motherId !== '') &&
+      (!actualPartnerSearch.trim() || actualPartnerId !== '')
+    )
   }
 
-  function validateStep3() {
-    // Partner is optional, but any typed text must resolve to a selected member
-    return !actualPartnerSearch.trim() || actualPartnerId !== ''
-  }
+  $: step1Valid = Boolean(validateStep1())
+  $: step2Valid = Boolean(validateStep2())
 
   function nextStep() {
     if (formStep === 1) {
@@ -44,14 +50,7 @@
       }
     } else if (formStep === 2) {
       if (validateStep2()) {
-        formStep++
-        error = ''
-      } else {
-        error = 'Selecciona un miembro válido desde las sugerencias.'
-      }
-    } else if (formStep === 3) {
-      if (validateStep3()) {
-        formStep++
+        // Final step: the same button submits from step 2
         error = ''
       } else {
         error = 'Selecciona un miembro válido desde las sugerencias.'
@@ -59,11 +58,18 @@
     }
   }
 
-  // Enter advances steps; the real submit only happens from step 4.
+  // Enter advances only from step 1. On step 2, Enter should submit naturally.
   function handleFormKeydown(event: KeyboardEvent) {
-    if (event.key === 'Enter' && formStep < 4) {
+    if (event.key === 'Enter' && formStep < 2) {
       event.preventDefault()
       nextStep()
+    }
+  }
+
+  function handleSubmit(event: SubmitEvent) {
+    if (formStep === 2 && !validateStep2()) {
+      event.preventDefault()
+      error = 'Selecciona un miembro válido desde las sugerencias.'
     }
   }
 
@@ -86,6 +92,7 @@
 
   function resetForm() {
     formStep = 1
+    showSummary = false
     error = ''
     name = ''
     familyName = ''
@@ -232,6 +239,10 @@
     return member ? member.name + ' ' + member.familyName : ''
   }
 
+  const valueOrFallback = (value: string) => value || 'Sin indicar'
+  const listOrFallback = (ids: string[]) =>
+    ids.length > 0 ? ids.map((id) => getMemberName(id)).join(', ') : 'Sin datos'
+
   // Siblings of the selected children: one-click suggestion to add them as
   // children of the new member too
   $: suggestedChildrenList = suggestedChildren(
@@ -254,19 +265,29 @@
   >
     <!-- svelte-ignore a11y-click-events-have-key-events -->
     <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-    <div class="add-member-modal" role="banner" on:click|stopPropagation>
+    <div
+      class="add-member-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-member-title"
+      on:click|stopPropagation
+    >
       <LiquidGlassWrapper>
-        <h2>Nuevo miembro familiar</h2>
+        <h2 id="add-member-title">Nuevo miembro familiar</h2>
+        <p class="step-caption">
+          Paso {formStep} de 2 · {formStep === 1 ? 'Datos básicos' : 'Conexiones familiares'}
+        </p>
         <form
           method="POST"
           action="?/addMember"
           use:enhance={enhanceAddMember}
           on:keydown={handleFormKeydown}
+          on:submit={handleSubmit}
         >
           {#if formStep === 1}
             <section>
               <h3>Datos personales</h3>
-              <div class="input-wrapper">
+              <div class="input-wrapper floating-input-wrapper">
                 <input
                   id="newMemberName"
                   class="modern-input"
@@ -277,7 +298,7 @@
                 />
                 <label for="newMemberName" class:label-active={name.length > 0}>Nombre</label>
               </div>
-              <div class="input-wrapper">
+              <div class="input-wrapper floating-input-wrapper">
                 <input
                   id="newMemberFamilyName"
                   class="modern-input"
@@ -290,7 +311,7 @@
                   >Apellidos</label
                 >
               </div>
-              <div class="input-wrapper">
+              <div class="input-wrapper floating-input-wrapper">
                 <input
                   id="newMemberBirthDate"
                   class="modern-input"
@@ -305,12 +326,14 @@
                   class:label-active={birthDate && birthDate.length > 0}>Fecha de nacimiento</label
                 >
               </div>
-              <button type="button" on:click={nextStep}>Siguiente</button>
+              <button type="button" on:click={nextStep} disabled={!step1Valid || submitting}>
+                Siguiente
+              </button>
             </section>
           {:else if formStep === 2}
             <section>
               <h3>Conexiones</h3>
-              <div class="input-wrapper autocomplete-wrapper">
+              <div class="input-wrapper floating-input-wrapper autocomplete-wrapper">
                 <input
                   id="fatherAutocomplete"
                   class="modern-input"
@@ -345,7 +368,7 @@
                   </ul>
                 {/if}
               </div>
-              <div class="input-wrapper autocomplete-wrapper">
+              <div class="input-wrapper floating-input-wrapper autocomplete-wrapper">
                 <input
                   id="motherAutocomplete"
                   class="modern-input"
@@ -381,7 +404,7 @@
                 {/if}
               </div>
               <h3>Hermanos</h3>
-              <div class="input-wrapper autocomplete-wrapper">
+              <div class="input-wrapper floating-input-wrapper autocomplete-wrapper">
                 <input
                   id="siblingsAutocomplete"
                   class="modern-input"
@@ -414,11 +437,12 @@
               </div>
               {#if siblingsIds.length > 0}
                 <div class="selected-list">
-                  Hermanos: {siblingsIds.map((id) => getMemberName(id)).join(', ')}
+                  <b>Hermanos añadidos</b>
+                  <span>{listOrFallback(siblingsIds)}</span>
                 </div>
               {/if}
               <h3>Hijos</h3>
-              <div class="input-wrapper autocomplete-wrapper">
+              <div class="input-wrapper floating-input-wrapper autocomplete-wrapper">
                 <input
                   id="childrenAutocomplete"
                   class="modern-input"
@@ -451,7 +475,8 @@
               </div>
               {#if childrenIds.length > 0}
                 <div class="selected-list">
-                  Hijos: {childrenIds.map((id) => getMemberName(id)).join(', ')}
+                  <b>Hijos añadidos</b>
+                  <span>{listOrFallback(childrenIds)}</span>
                 </div>
               {/if}
               {#if suggestedChildrenList.length > 0}
@@ -469,15 +494,8 @@
                   {/each}
                 </div>
               {/if}
-              <div class="step-actions">
-                <button type="button" on:click={() => formStep--}>Atrás</button>
-                <button type="button" on:click={nextStep}>Siguiente</button>
-              </div>
-            </section>
-          {:else if formStep === 3}
-            <section>
               <h3>Pareja actual</h3>
-              <div class="input-wrapper autocomplete-wrapper">
+              <div class="input-wrapper floating-input-wrapper autocomplete-wrapper">
                 <input
                   id="partnerAutocomplete"
                   class="modern-input"
@@ -488,7 +506,10 @@
                     showActualPartnerSuggestions = true
                   }}
                   on:focus={() => (showActualPartnerSuggestions = true)}
-                  on:blur={() => setTimeout(() => (showActualPartnerSuggestions = false), 100)}
+                  on:blur={() => {
+                    setTimeout(() => (showActualPartnerSuggestions = false), 100)
+                    reportMemberValidity(actualPartnerInputEl, actualPartnerSearch, actualPartnerId)
+                  }}
                   autocomplete="off"
                   bind:this={actualPartnerInputEl}
                 />
@@ -512,7 +533,7 @@
                 {/if}
               </div>
               <h3>Exparejas</h3>
-              <div class="input-wrapper autocomplete-wrapper">
+              <div class="input-wrapper floating-input-wrapper autocomplete-wrapper">
                 <input
                   id="previousPartnersAutocomplete"
                   class="modern-input"
@@ -545,31 +566,32 @@
               </div>
               {#if previousPartnersIds.length > 0}
                 <div class="selected-list">
-                  Exparejas: {previousPartnersIds.map((id) => getMemberName(id)).join(', ')}
+                  <b>Exparejas añadidas</b>
+                  <span>{listOrFallback(previousPartnersIds)}</span>
                 </div>
               {/if}
-              <div class="step-actions">
-                <button type="button" on:click={() => formStep--}>Atrás</button>
-                <button type="button" on:click={nextStep}>Siguiente</button>
-              </div>
-            </section>
-          {:else if formStep === 4}
-            <section>
-              <h3>Resumen</h3>
-              <ul>
-                <li><b>Nombre:</b> {name}</li>
-                <li><b>Apellidos:</b> {familyName}</li>
-                <li><b>Fecha de nacimiento:</b> {birthDate}</li>
-                <li><b>Padre:</b> {getMemberName(fatherId)}</li>
-                <li><b>Madre:</b> {getMemberName(motherId)}</li>
-                <li><b>Hermanos:</b> {siblingsIds.map((id) => getMemberName(id)).join(', ')}</li>
-                <li><b>Hijos:</b> {childrenIds.map((id) => getMemberName(id)).join(', ')}</li>
-                <li><b>Pareja:</b> {getMemberName(actualPartnerId)}</li>
-                <li>
-                  <b>Exparejas:</b>
-                  {previousPartnersIds.map((id) => getMemberName(id)).join(', ')}
-                </li>
-              </ul>
+
+              <button type="button" class="summary-toggle" on:click={() => (showSummary = !showSummary)}>
+                {showSummary ? 'Ocultar resumen' : 'Ver resumen antes de guardar'}
+              </button>
+
+              {#if showSummary}
+                <div class="summary-panel" transition:fade={{ duration: 140 }}>
+                  <h3>Resumen antes de guardar</h3>
+                  <ul>
+                    <li><b>Nombre:</b> {valueOrFallback(name)}</li>
+                    <li><b>Apellidos:</b> {valueOrFallback(familyName)}</li>
+                    <li><b>Fecha de nacimiento:</b> {valueOrFallback(birthDate)}</li>
+                    <li><b>Padre:</b> {valueOrFallback(getMemberName(fatherId))}</li>
+                    <li><b>Madre:</b> {valueOrFallback(getMemberName(motherId))}</li>
+                    <li><b>Hermanos:</b> {listOrFallback(siblingsIds)}</li>
+                    <li><b>Hijos:</b> {listOrFallback(childrenIds)}</li>
+                    <li><b>Pareja:</b> {valueOrFallback(getMemberName(actualPartnerId))}</li>
+                    <li><b>Exparejas:</b> {listOrFallback(previousPartnersIds)}</li>
+                  </ul>
+                </div>
+              {/if}
+
               <input type="hidden" name="name" value={name} />
               <input type="hidden" name="familyName" value={familyName} />
               <input type="hidden" name="birthDate" value={birthDate} />
@@ -585,10 +607,14 @@
               {#each previousPartnersIds as previousPartnerId}
                 <input type="hidden" name="previousPartnersIds" value={previousPartnerId} />
               {/each}
+
               <div class="step-actions">
                 <button type="button" on:click={() => formStep--}>Atrás</button>
-                <button type="submit" disabled={submitting}>
-                  {submitting ? 'Guardando...' : 'Confirmar y añadir'}
+                <button
+                  type="submit"
+                  disabled={submitting || !step2Valid}
+                >
+                  {submitting ? 'Guardando...' : 'Guardar miembro'}
                 </button>
               </div>
             </section>
@@ -678,8 +704,14 @@
 
       h2 {
         margin-top: 0;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.35rem;
         text-wrap: nowrap;
+      }
+
+      .step-caption {
+        margin: 0 0 1rem;
+        font-size: var(--fs-xs);
+        color: var(--text-muted);
       }
 
       form {
@@ -687,97 +719,17 @@
         flex-direction: column;
 
         .input-wrapper {
-          position: relative;
           margin-bottom: 1.5rem;
-          display: flex;
-
-          .modern-input {
-            width: 100%;
-            height: 18px;
-            padding: 0.6rem 0.75rem 0.4rem;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            background: #fafafa;
-            font-size: 1rem;
-            transition:
-              border-color 0.2s,
-              box-shadow 0.2s;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-            color: #8f8f8f;
-
-            &[type='date']:not(:focus) {
-              color: transparent;
-            }
-
-            &[type='date']:open,
-            &[type='date']:has(+ label.label-active) {
-              color: #8f8f8f;
-            }
-
-            &::-webkit-calendar-picker-indicator {
-              filter: invert(38%) brightness(95%) contrast(80%);
-            }
-
-            &:focus {
-              outline: none;
-              border-color: #7c3aed;
-              box-shadow: 0 2px 8px rgba(124, 58, 237, 0.12);
-              background: #fff;
-            }
-
-            &:focus,
-            &:valid {
-              color: #444;
-            }
-          }
-
-          label {
-            position: absolute;
-            left: 0.5rem;
-            top: 0.5rem;
-            padding: 0 6px;
-            color: #8f8f8f;
-            font-size: 1.1rem;
-            pointer-events: none;
-            background: transparent;
-            transition:
-              0.2s cubic-bezier(0.4, 0, 0.2, 1) transform,
-              0.2s cubic-bezier(0.4, 0, 0.2, 1) font-size,
-              0.2s cubic-bezier(0.4, 0, 0.2, 1) color,
-              0.2s cubic-bezier(0.4, 0, 0.2, 1) top,
-              0.2s cubic-bezier(0.4, 0, 0.2, 1) background;
-          }
-
-          .modern-input:focus + label,
-          .modern-input[type='date']:open + label,
-          label.label-active {
-            top: 2px;
-            left: 12px;
-            font-size: 0.8rem;
-            color: #7c3aed;
-            background: #fafafa;
-            transform: translateY(-60%);
-            padding: 0 6px;
-            border-radius: 6px;
-          }
-
-          .modern-input:valid:not(:focus) + label.label-active {
-            color: #5eb47e;
-          }
-
-          .modern-input:invalid:not(:focus):not(:placeholder-shown) + label.label-active {
-            color: #dc2626;
-          }
 
           .autocomplete-suggestions {
             position: absolute;
             top: 110%;
             left: 0;
             right: 0;
-            background: #fff;
-            border: 1px solid #e0e0e0;
+            background: #fffdf9;
+            border: 1px solid rgba(220, 191, 162, 0.6);
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 8px 18px rgba(106, 62, 30, 0.14);
             z-index: 10;
             max-height: 180px;
             overflow-y: auto;
@@ -792,8 +744,8 @@
           }
           .autocomplete-suggestions li:hover,
           .autocomplete-suggestions li.active {
-            background: #f3f3ff;
-            color: #7c3aed;
+            background: rgba(246, 225, 203, 0.58);
+            color: #8a4a22;
           }
         }
 
@@ -801,25 +753,47 @@
           width: 100%;
           min-height: 44px;
           padding: 10px;
-          background-color: #096bc1bb;
-          color: white;
           border: none;
-          border-radius: 9px;
-          transition: ease 0.3s;
+          border-radius: 10px;
           cursor: pointer;
-          transition: scale 0.2s;
+          font-size: var(--fs-sm);
+          font-weight: 700;
+          color: #fffaf6;
+          background: linear-gradient(140deg, #b46a3a, #c77c43);
+          transition:
+            transform 0.22s var(--motion-standard),
+            box-shadow 0.22s var(--motion-standard),
+            background-color 0.22s var(--motion-standard);
 
           &:hover {
-            background-color: #096bc1e5;
-            scale: 1.15;
+            transform: translateY(-1px);
+            box-shadow: 0 10px 18px rgba(106, 61, 28, 0.18);
+            background: linear-gradient(140deg, #9f5d31, #b86f3a);
           }
 
           &[type='submit'] {
-            background-color: #16a31aa0;
+            background: linear-gradient(140deg, #2f7b61, #3b8f71);
 
             &:hover {
-              background-color: #0bbe11b3;
+              background: linear-gradient(140deg, #2b6f57, #367f65);
             }
+
+            &:disabled,
+            &:disabled:hover {
+              background-color: #c3ccd6;
+              color: #5c6673;
+              border: 1px solid #aeb8c5;
+            }
+          }
+
+          &:disabled {
+            opacity: 1;
+            cursor: not-allowed;
+            scale: 1;
+            background: #c3ccd6;
+            color: #5c6673;
+            border: 1px solid #aeb8c5;
+            box-shadow: none;
           }
         }
 
@@ -833,28 +807,79 @@
           }
         }
 
+        .summary-toggle {
+          margin-top: 0.3rem;
+          background: rgba(255, 247, 236, 0.72);
+          border: 1px solid rgba(156, 90, 45, 0.28);
+          color: #8a4a22;
+          font-weight: 600;
+        }
+
+        .summary-panel {
+          margin: 0.75rem 0;
+          padding: 10px 12px;
+          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.5);
+          border: 1px solid rgba(255, 235, 214, 0.72);
+
+          h3 {
+            margin: 0 0 0.45rem;
+          }
+
+          ul {
+            margin: 0;
+            padding-left: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+            font-size: 0.88rem;
+            color: var(--text-main);
+          }
+        }
+
+        .selected-list {
+          margin: 0.25rem 0 0.95rem;
+          padding: 8px 10px;
+          border-radius: 10px;
+          border: 1px solid rgba(223, 194, 165, 0.58);
+          background: rgba(255, 248, 239, 0.7);
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+
+          b {
+            font-size: var(--fs-xs);
+            color: #7e4724;
+          }
+
+          span {
+            font-size: var(--fs-sm);
+            color: var(--text-main);
+          }
+        }
+
         .suggested-children {
           display: flex;
           flex-wrap: wrap;
           align-items: center;
           gap: 0.4rem;
           margin-bottom: 1rem;
-          font-size: 0.8rem;
-          color: #7c3aed;
+          font-size: var(--fs-xs);
+          color: #8a4a22;
 
           .suggested-chip {
             width: auto;
             padding: 3px 10px;
-            border: 1px dashed #7c3aed88;
+            border: 1px dashed rgba(156, 90, 45, 0.48);
             border-radius: 999px;
-            background: #f3f3ff;
-            font-size: 0.8rem;
-            color: #7c3aed;
+            background: rgba(255, 243, 228, 0.72);
+            font-size: var(--fs-xs);
+            color: #8a4a22;
             cursor: pointer;
             transition: background 0.2s;
 
             &:hover {
-              background: #e6e6ff;
+              background: rgba(250, 229, 205, 0.82);
               scale: 1;
             }
           }

@@ -44,6 +44,12 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 export const actions: Actions = {
   addMember: async ({ request, locals: { supabase, user } }) => {
     if (!user) redirect(303, '/login')
+    if (isMockFamilyMode()) {
+      return fail(400, {
+        addError:
+          'Estás en modo mock. Las altas/ediciones no se guardan. Usa el modo normal para persistir cambios.'
+      })
+    }
 
     const form = await request.formData()
     const name = String(form.get('name') ?? '').trim()
@@ -108,6 +114,12 @@ export const actions: Actions = {
 
   updateMember: async ({ request, locals: { supabase, user } }) => {
     if (!user) redirect(303, '/login')
+    if (isMockFamilyMode()) {
+      return fail(400, {
+        editError:
+          'Estás en modo mock. Las altas/ediciones no se guardan. Usa el modo normal para persistir cambios.'
+      })
+    }
 
     const form = await request.formData()
     const memberId = String(form.get('memberId') ?? '')
@@ -135,6 +147,12 @@ export const actions: Actions = {
 
   deleteMember: async ({ request, locals: { supabase, user } }) => {
     if (!user) redirect(303, '/login')
+    if (isMockFamilyMode()) {
+      return fail(400, {
+        editError:
+          'Estás en modo mock. Las altas/ediciones no se guardan. Usa el modo normal para persistir cambios.'
+      })
+    }
 
     const form = await request.formData()
     const memberId = String(form.get('memberId') ?? '')
@@ -156,6 +174,12 @@ export const actions: Actions = {
 
   addRelation: async ({ request, locals: { supabase, user } }) => {
     if (!user) redirect(303, '/login')
+    if (isMockFamilyMode()) {
+      return fail(400, {
+        relationError:
+          'Estás en modo mock. Las altas/ediciones no se guardan. Usa el modo normal para persistir cambios.'
+      })
+    }
 
     const form = await request.formData()
     const memberId = String(form.get('memberId') ?? '')
@@ -185,6 +209,12 @@ export const actions: Actions = {
 
   removeRelation: async ({ request, locals: { supabase, user } }) => {
     if (!user) redirect(303, '/login')
+    if (isMockFamilyMode()) {
+      return fail(400, {
+        relationError:
+          'Estás en modo mock. Las altas/ediciones no se guardan. Usa el modo normal para persistir cambios.'
+      })
+    }
 
     const form = await request.formData()
     const memberId = String(form.get('memberId') ?? '')
