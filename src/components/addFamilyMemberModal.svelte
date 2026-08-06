@@ -40,21 +40,21 @@
         formStep++
         error = ''
       } else {
-        error = 'Please fill in all required fields.'
+        error = 'Completa todos los campos obligatorios.'
       }
     } else if (formStep === 2) {
       if (validateStep2()) {
         formStep++
         error = ''
       } else {
-        error = 'Please select a valid family member from the suggestions.'
+        error = 'Selecciona un miembro válido desde las sugerencias.'
       }
     } else if (formStep === 3) {
       if (validateStep3()) {
         formStep++
         error = ''
       } else {
-        error = 'Please select a valid family member from the suggestions.'
+        error = 'Selecciona un miembro válido desde las sugerencias.'
       }
     }
   }
@@ -136,7 +136,7 @@
     if (!element) return
     const match = familyMembers.some((m) => m.id === selectedId)
     if (!match && search.trim() !== '') {
-      element.setCustomValidity('Please select a valid family member.')
+      element.setCustomValidity('Selecciona un miembro familiar válido.')
     } else {
       element.setCustomValidity('')
     }
@@ -246,7 +246,7 @@
     class="add-member-modal-backdrop"
     role="button"
     tabindex="0"
-    aria-label="Close add family member modal"
+    aria-label="Cerrar modal de nuevo miembro"
     on:click|stopPropagation={() => showAddMemberModal.set(false)}
     on:keydown={(e) => {
       if (e.key === 'Escape') showAddMemberModal.set(false)
@@ -256,7 +256,7 @@
     <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
     <div class="add-member-modal" role="banner" on:click|stopPropagation>
       <LiquidGlassWrapper>
-        <h2>New Family Member</h2>
+        <h2>Nuevo miembro familiar</h2>
         <form
           method="POST"
           action="?/addMember"
@@ -265,7 +265,7 @@
         >
           {#if formStep === 1}
             <section>
-              <h3>Personal Information</h3>
+              <h3>Datos personales</h3>
               <div class="input-wrapper">
                 <input
                   id="newMemberName"
@@ -275,7 +275,7 @@
                   required
                   autocomplete="off"
                 />
-                <label for="newMemberName" class:label-active={name.length > 0}>Name</label>
+                <label for="newMemberName" class:label-active={name.length > 0}>Nombre</label>
               </div>
               <div class="input-wrapper">
                 <input
@@ -287,7 +287,7 @@
                   autocomplete="off"
                 />
                 <label for="newMemberFamilyName" class:label-active={familyName.length > 0}
-                  >Family name</label
+                  >Apellidos</label
                 >
               </div>
               <div class="input-wrapper">
@@ -302,14 +302,14 @@
                 />
                 <label
                   for="newMemberBirthDate"
-                  class:label-active={birthDate && birthDate.length > 0}>Birth date</label
+                  class:label-active={birthDate && birthDate.length > 0}>Fecha de nacimiento</label
                 >
               </div>
-              <button type="button" on:click={nextStep}>Next</button>
+              <button type="button" on:click={nextStep}>Siguiente</button>
             </section>
           {:else if formStep === 2}
             <section>
-              <h3>Connections</h3>
+              <h3>Conexiones</h3>
               <div class="input-wrapper autocomplete-wrapper">
                 <input
                   id="fatherAutocomplete"
@@ -329,7 +329,7 @@
                   bind:this={fatherInputEl}
                 />
                 <label for="fatherAutocomplete" class:label-active={fatherSearch.length > 0}
-                  >Father</label
+                  >Padre</label
                 >
                 {#if showFatherSuggestions && filteredFatherSuggestions.length > 0}
                   <ul class="autocomplete-suggestions">
@@ -364,7 +364,7 @@
                   bind:this={motherInputEl}
                 />
                 <label for="motherAutocomplete" class:label-active={motherSearch.length > 0}
-                  >Mother</label
+                  >Madre</label
                 >
                 {#if showMotherSuggestions && filteredMotherSuggestions.length > 0}
                   <ul class="autocomplete-suggestions">
@@ -380,7 +380,7 @@
                   </ul>
                 {/if}
               </div>
-              <h3>Siblings</h3>
+              <h3>Hermanos</h3>
               <div class="input-wrapper autocomplete-wrapper">
                 <input
                   id="siblingsAutocomplete"
@@ -396,7 +396,7 @@
                 <label
                   for="siblingsAutocomplete"
                   class:label-active={siblingsSearch && siblingsSearch.length > 0}
-                  >Add sibling</label
+                  >Añadir hermano/a</label
                 >
                 {#if showSiblingsSuggestions && filteredSiblingSuggestions.length > 0}
                   <ul class="autocomplete-suggestions">
@@ -414,7 +414,7 @@
               </div>
               {#if siblingsIds.length > 0}
                 <div class="selected-list">
-                  Siblings: {siblingsIds.map((id) => getMemberName(id)).join(', ')}
+                  Hermanos: {siblingsIds.map((id) => getMemberName(id)).join(', ')}
                 </div>
               {/if}
               <h3>Hijos</h3>
@@ -469,14 +469,14 @@
                   {/each}
                 </div>
               {/if}
-              <div style="display: flex; gap: 1rem;">
-                <button type="button" on:click={() => formStep--}>Back</button>
-                <button type="button" on:click={nextStep}>Next</button>
+              <div class="step-actions">
+                <button type="button" on:click={() => formStep--}>Atrás</button>
+                <button type="button" on:click={nextStep}>Siguiente</button>
               </div>
             </section>
           {:else if formStep === 3}
             <section>
-              <h3>Current Partner</h3>
+              <h3>Pareja actual</h3>
               <div class="input-wrapper autocomplete-wrapper">
                 <input
                   id="partnerAutocomplete"
@@ -495,7 +495,7 @@
                 <label
                   for="partnerAutocomplete"
                   class:label-active={actualPartnerSearch && actualPartnerSearch.length > 0}
-                  >Add partner</label
+                  >Añadir pareja</label
                 >
                 {#if showActualPartnerSuggestions && filteredActualPartnerSuggestions.length > 0}
                   <ul class="autocomplete-suggestions">
@@ -511,7 +511,7 @@
                   </ul>
                 {/if}
               </div>
-              <h3>Previous Partners</h3>
+              <h3>Exparejas</h3>
               <div class="input-wrapper autocomplete-wrapper">
                 <input
                   id="previousPartnersAutocomplete"
@@ -527,7 +527,7 @@
                 <label
                   for="previousPartnersAutocomplete"
                   class:label-active={previousPartnersSearch && previousPartnersSearch.length > 0}
-                  >Add previous partner</label
+                  >Añadir expareja</label
                 >
                 {#if showPreviousPartnersSuggestions && filteredPreviousPartnerSuggestions.length > 0}
                   <ul class="autocomplete-suggestions">
@@ -545,28 +545,28 @@
               </div>
               {#if previousPartnersIds.length > 0}
                 <div class="selected-list">
-                  Previous partners: {previousPartnersIds.map((id) => getMemberName(id)).join(', ')}
+                  Exparejas: {previousPartnersIds.map((id) => getMemberName(id)).join(', ')}
                 </div>
               {/if}
-              <div style="display: flex; gap: 1rem;">
-                <button type="button" on:click={() => formStep--}>Back</button>
-                <button type="button" on:click={nextStep}>Next</button>
+              <div class="step-actions">
+                <button type="button" on:click={() => formStep--}>Atrás</button>
+                <button type="button" on:click={nextStep}>Siguiente</button>
               </div>
             </section>
           {:else if formStep === 4}
             <section>
-              <h3>Summary</h3>
+              <h3>Resumen</h3>
               <ul>
-                <li><b>Name:</b> {name}</li>
-                <li><b>Family Name:</b> {familyName}</li>
-                <li><b>Birth Date:</b> {birthDate}</li>
-                <li><b>Father:</b> {getMemberName(fatherId)}</li>
-                <li><b>Mother:</b> {getMemberName(motherId)}</li>
-                <li><b>Siblings:</b> {siblingsIds.map((id) => getMemberName(id)).join(', ')}</li>
+                <li><b>Nombre:</b> {name}</li>
+                <li><b>Apellidos:</b> {familyName}</li>
+                <li><b>Fecha de nacimiento:</b> {birthDate}</li>
+                <li><b>Padre:</b> {getMemberName(fatherId)}</li>
+                <li><b>Madre:</b> {getMemberName(motherId)}</li>
+                <li><b>Hermanos:</b> {siblingsIds.map((id) => getMemberName(id)).join(', ')}</li>
                 <li><b>Hijos:</b> {childrenIds.map((id) => getMemberName(id)).join(', ')}</li>
-                <li><b>Partner:</b> {getMemberName(actualPartnerId)}</li>
+                <li><b>Pareja:</b> {getMemberName(actualPartnerId)}</li>
                 <li>
-                  <b>Previous Partners:</b>
+                  <b>Exparejas:</b>
                   {previousPartnersIds.map((id) => getMemberName(id)).join(', ')}
                 </li>
               </ul>
@@ -585,10 +585,10 @@
               {#each previousPartnersIds as previousPartnerId}
                 <input type="hidden" name="previousPartnersIds" value={previousPartnerId} />
               {/each}
-              <div style="display: flex; gap: 1rem;">
-                <button type="button" on:click={() => formStep--}>Back</button>
+              <div class="step-actions">
+                <button type="button" on:click={() => formStep--}>Atrás</button>
                 <button type="submit" disabled={submitting}>
-                  {submitting ? 'Saving…' : 'Confirm & Add'}
+                  {submitting ? 'Guardando...' : 'Confirmar y añadir'}
                 </button>
               </div>
             </section>
@@ -799,6 +799,7 @@
 
         button {
           width: 100%;
+          min-height: 44px;
           padding: 10px;
           background-color: #096bc1bb;
           color: white;
@@ -819,6 +820,16 @@
             &:hover {
               background-color: #0bbe11b3;
             }
+          }
+        }
+
+        .step-actions {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 0.75rem;
+
+          @media (min-width: 640px) {
+            grid-template-columns: 1fr 1fr;
           }
         }
 

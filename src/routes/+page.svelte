@@ -64,7 +64,7 @@
         <TreeNode memberId={rootMemberId} />
       {/each}
     {:else}
-      It seem as you still have not added any member of this family.
+        Todavía no has añadido ningún miembro al árbol familiar.
     {/if}
   {/key}
 </main>
@@ -73,23 +73,24 @@
 <EditMemberModal />
 
 <style lang="scss">
-  :global(body) {
-    margin: 0;
-    width: 100vw;
-    height: 100vh;
-    background: #e0e0e0;
-  }
-
   #family-tree-wrapper {
     position: relative;
     display: flex;
     flex-direction: row;
     // Gap between root trees (main family, in-law branches...)
     gap: 120px;
-    background-color: #e0e0e0;
+    background: transparent;
     height: 100%;
-    padding: 40px;
+    min-height: 100vh;
+    padding: 24px;
+    padding-top: max(24px, env(safe-area-inset-top));
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
     overflow: scroll;
     scroll-behavior: smooth;
+
+    @media (max-width: 720px) {
+      gap: 80px;
+      padding: 16px;
+    }
   }
 </style>

@@ -186,28 +186,25 @@
 </main>
 
 <style lang="scss">
-  :global(body) {
-    margin: 0;
-    background: #e0e0e0;
-  }
-
   main {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    padding: 2rem 0;
+    padding: max(16px, env(safe-area-inset-top)) 14px max(20px, env(safe-area-inset-bottom));
   }
 
   .admin-card {
-    border-radius: 16px;
-    background-color: rgba(255, 255, 255, 0.3);
+    width: min(980px, 100%);
+    border-radius: 18px;
+    background-color: var(--surface-soft);
   }
 
   .admin-content {
     display: flex;
     flex-direction: column;
-    width: min(960px, 92vw);
+    width: 100%;
+    gap: 2px;
 
     h1 {
       margin: 0 0 1rem;
@@ -215,27 +212,29 @@
     }
 
     h2 {
-      margin: 1.25rem 0 0.5rem;
-      font-size: 1.05rem;
+      margin: 1.15rem 0 0.5rem;
+      font-size: 1.04rem;
     }
 
     .invite-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 10px;
 
       .modern-input {
-        flex: 1 1 180px;
-        padding: 0.5rem 0.75rem;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        background: #fafafa;
+        flex: 1 1 220px;
+        min-height: 44px;
+        padding: 0.52rem 0.76rem;
+        border: 1px solid var(--field-border);
+        border-radius: 10px;
+        background: var(--field-bg);
         font-size: 0.95rem;
-        color: #444;
+        color: var(--text-main);
 
         &:focus {
           outline: none;
-          border-color: #7c3aed;
+          border-color: var(--brand);
+          box-shadow: 0 0 0 3px rgba(31, 79, 123, 0.16);
         }
       }
 
@@ -247,27 +246,29 @@
     }
 
     select {
-      min-width: 150px;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      background: #fafafa;
-      color: #444;
-      padding: 0.4rem 0.5rem;
+      min-width: 170px;
+      min-height: 44px;
+      border: 1px solid var(--field-border);
+      border-radius: 10px;
+      background: var(--field-bg);
+      color: var(--text-main);
+      padding: 0.4rem 0.6rem;
       font-size: 0.9rem;
     }
 
     button {
+      min-height: 42px;
       padding: 8px 12px;
       border: none;
-      border-radius: 9px;
+      border-radius: 10px;
       cursor: pointer;
-      background-color: #16a31aa0;
+      background-color: #2c7a60;
       color: white;
       font-size: 0.9rem;
       transition: ease 0.3s;
 
       &:hover {
-        background-color: #0bbe11b3;
+        background-color: #24654f;
       }
 
       &.small {
@@ -276,10 +277,10 @@
       }
 
       &.danger {
-        background-color: #dc2626aa;
+        background-color: #b63e3e;
 
         &:hover {
-          background-color: #dc2626;
+          background-color: #9d2f2f;
         }
       }
     }
@@ -294,12 +295,14 @@
 
       li {
         display: flex;
+        flex-wrap: wrap;
         justify-content: space-between;
         align-items: center;
         gap: 10px;
-        background: #fafafa88;
-        border-radius: 8px;
-        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.44);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 10px;
+        padding: 10px 12px;
 
         span {
           display: flex;
@@ -317,6 +320,7 @@
           display: flex;
           gap: 6px;
           align-items: center;
+          flex-wrap: wrap;
         }
       }
     }
@@ -355,6 +359,27 @@
 
   :global(.admin-card .liquid-glass-text-container) {
     flex-direction: column;
-    padding: 30px 24px 24px;
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: 24px 18px 18px;
+  }
+
+  @media (max-width: 720px) {
+    .admin-content {
+      .invite-row {
+        > * {
+          width: 100%;
+        }
+      }
+
+      .list li form {
+        width: 100%;
+
+        select,
+        button {
+          flex: 1 1 auto;
+        }
+      }
+    }
   }
 </style>

@@ -39,11 +39,11 @@
         <p class="eyebrow">Hub familiar</p>
         <h1>Hola, {data.displayName}</h1>
         <p class="subtitle">
-          Este es tu punto de entrada. Desde aqui puedes abrir el arbol, revisar novedades y gestionar
-          accesos segun tu rol.
+          Este es tu punto de entrada. Desde aquí puedes abrir el árbol, revisar novedades y gestionar
+          accesos según tu rol.
         </p>
         <div class="hero-actions">
-          <a class="cta cta-primary" href="/">Abrir arbol</a>
+          <a class="cta cta-primary" href="/">Abrir árbol</a>
           <a class="cta cta-secondary" href="/profile">Mi perfil</a>
         </div>
         <p class="role-chip">Rol: {roleLabels[data.role]}</p>
@@ -56,7 +56,7 @@
       <LiquidGlassWrapper>
         <div class="module-content">
           <div class="module-header">
-            <h2>Tus arboles</h2>
+            <h2>Tus árboles</h2>
             <span class="tag">MVP</span>
           </div>
           <ul class="tree-list">
@@ -74,7 +74,7 @@
               </li>
             {/each}
           </ul>
-          <p class="module-note">Pronto podras alternar entre varios arboles familiares.</p>
+          <p class="module-note">Pronto podrás alternar entre varios árboles familiares.</p>
         </div>
       </LiquidGlassWrapper>
     </article>
@@ -92,7 +92,7 @@
                 No hay invitaciones activas en este momento.
               {/if}
             </p>
-            <a class="inline-link" href="/admin">Ir a administracion</a>
+            <a class="inline-link" href="/admin">Ir a administración</a>
           </div>
         </LiquidGlassWrapper>
       </article>
@@ -120,7 +120,7 @@
       <a href="/admin">Administracion</a>
     {/if}
     <a href="/profile">Perfil</a>
-    <a href="/">Arbol</a>
+    <a href="/">Árbol</a>
   </nav>
 </main>
 

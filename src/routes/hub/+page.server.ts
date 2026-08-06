@@ -9,12 +9,12 @@ const defaultNotes = [
   {
     id: 'n1',
     title: 'Bienvenida al nuevo hub familiar',
-    body: 'Desde aqui podras entrar a tus arboles, revisar invitaciones y ver avisos importantes.'
+    body: 'Desde aquí podrás entrar a tus árboles, revisar invitaciones y ver avisos importantes.'
   },
   {
     id: 'n2',
-    title: 'Proxima mejora: multiarbol',
-    body: 'En esta etapa el selector muestra un arbol principal, y estamos preparando soporte para varios arboles.'
+    title: 'Próxima mejora: multiárbol',
+    body: 'En esta etapa el selector muestra un árbol principal, y estamos preparando soporte para varios árboles.'
   }
 ]
 
@@ -23,7 +23,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, user } }) => {
     return {
       displayName: 'Modo mock',
       role: 'editor' as Role,
-      trees: [{ id: 'main', name: 'Arbol principal', membersCount: null, isPrimary: true }],
+      trees: [{ id: 'main', name: 'Árbol principal', membersCount: null, isPrimary: true }],
       pendingInvitations: 0,
       showPendingInvitations: true,
       notes: defaultNotes
@@ -62,7 +62,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, user } }) => {
     trees: [
       {
         id: 'main',
-        name: 'Arbol principal',
+        name: 'Árbol principal',
         membersCount,
         isPrimary: true
       }

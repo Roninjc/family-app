@@ -111,31 +111,28 @@
 </main>
 
 <style lang="scss">
-  :global(body) {
-    margin: 0;
-    background: #e0e0e0;
-  }
-
   main {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    padding: max(16px, env(safe-area-inset-top)) 14px max(16px, env(safe-area-inset-bottom));
   }
 
   .profile-card {
-    border-radius: 16px;
-    background-color: rgba(255, 255, 255, 0.3);
+    width: min(460px, 100%);
+    border-radius: 18px;
+    background-color: var(--surface-soft);
   }
 
   .profile-content {
     display: flex;
     flex-direction: column;
-    width: 300px;
+    width: 100%;
 
     h1 {
       margin: 0 0 1rem;
-      font-size: 1.4rem;
+      font-size: clamp(1.3rem, 4vw, 1.55rem);
     }
 
     h2 {
@@ -152,10 +149,10 @@
 
       .role-badge {
         align-self: flex-start;
-        background: #096bc122;
-        color: #096bc1;
-        border-radius: 6px;
-        padding: 2px 8px;
+        background: rgba(172, 232, 199, 0.45);
+        color: #285e4a;
+        border-radius: 999px;
+        padding: 3px 9px;
         font-size: 0.8rem;
       }
     }
@@ -175,11 +172,12 @@
     .member-select {
       width: 100%;
       margin-bottom: 0.75rem;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      background: #fafafa;
-      color: #444;
-      padding: 0.55rem 0.65rem;
+      min-height: 44px;
+      border: 1px solid var(--field-border);
+      border-radius: 10px;
+      background: var(--field-bg);
+      color: var(--text-main);
+      padding: 0.55rem 0.72rem;
       font-size: 0.95rem;
     }
 
@@ -190,22 +188,21 @@
 
       .modern-input {
         width: 100%;
-        height: 18px;
-        padding: 0.6rem 0.75rem 0.4rem;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        background: #fafafa;
+        min-height: 48px;
+        padding: 1rem 0.75rem 0.4rem;
+        border: 1px solid var(--field-border);
+        border-radius: 10px;
+        background: var(--field-bg);
         font-size: 1rem;
         transition:
           border-color 0.2s,
           box-shadow 0.2s;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-        color: #444;
+        color: var(--text-main);
 
         &:focus {
           outline: none;
-          border-color: #7c3aed;
-          box-shadow: 0 2px 8px rgba(124, 58, 237, 0.12);
+          border-color: var(--brand);
+          box-shadow: 0 0 0 3px rgba(31, 79, 123, 0.16);
           background: #fff;
         }
       }
@@ -232,8 +229,8 @@
         top: 2px;
         left: 12px;
         font-size: 0.8rem;
-        color: #7c3aed;
-        background: #fafafa;
+        color: var(--brand);
+        background: var(--field-bg);
         transform: translateY(-60%);
         padding: 0 6px;
         border-radius: 6px;
@@ -241,18 +238,19 @@
     }
 
     button {
+      min-height: 42px;
       padding: 8px 12px;
       border: none;
-      border-radius: 9px;
+      border-radius: 10px;
       cursor: pointer;
-      background-color: #16a31aa0;
+      background-color: #2c7a60;
       color: white;
       font-size: 0.9rem;
       transition: ease 0.3s;
       align-self: flex-start;
 
       &:hover {
-        background-color: #0bbe11b3;
+        background-color: #24654f;
       }
     }
 
@@ -281,8 +279,10 @@
 
     .footer-actions {
       display: flex;
+      flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
+      gap: 10px;
       margin-top: 2rem;
 
       a {
@@ -296,10 +296,10 @@
       }
 
       .logout-button {
-        background-color: #dc2626aa;
+        background-color: #b63e3e;
 
         &:hover {
-          background-color: #dc2626;
+          background-color: #9d2f2f;
         }
       }
     }
@@ -307,6 +307,8 @@
 
   :global(.profile-card .liquid-glass-text-container) {
     flex-direction: column;
-    padding: 30px 24px 24px;
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: 24px 18px 18px;
   }
 </style>
