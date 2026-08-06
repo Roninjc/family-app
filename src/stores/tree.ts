@@ -60,9 +60,9 @@ const initFamilyTree = () => {
     })
 
     if (relation > 0) {
-      const fileterdRelationships = relationships.filter((r) => r.weight === relation)
+      const filteredRelationships = relationships.filter((r) => r.weight === relation)
 
-      return fileterdRelationships
+      return filteredRelationships
     }
 
     return relationships
@@ -71,7 +71,6 @@ const initFamilyTree = () => {
   function* dfsLevels(initialNodeId: string) {
     const visitedNodes = new Set<string>()
     const stack: { nodeId: string; level: number }[] = []
-    // const levels = new Map<string, number>()
 
     stack.push({ nodeId: initialNodeId, level: 0 })
 
@@ -82,7 +81,6 @@ const initFamilyTree = () => {
         yield { nodeId, level }
 
         visitedNodes.add(nodeId)
-        // levels.set(nodeId, level)
 
         const relationships = getNodeRelationships(nodeId)
 
@@ -115,8 +113,8 @@ const initFamilyTree = () => {
     const visitedNodes = new Set<string>()
     const generations: { nodeId: string; generation: number }[] = []
 
-    // Una pasada por componente conexo; cada componente se normaliza por
-    // separado para que su generación más antigua sea la 1.
+    // One pass per connected component; each component is normalized
+    // separately so its oldest generation becomes 1.
     for (const startNodeId of adjList.keys()) {
       if (visitedNodes.has(startNodeId)) continue
 
@@ -132,8 +130,8 @@ const initFamilyTree = () => {
     return generations
   }
 
-  // Nodos que el render recursivo alcanza desde una raíz: todo lo conectado
-  // por aristas que no sean Parent (el árbol solo se dibuja hacia abajo).
+  // Nodes the recursive render reaches from a root: everything connected
+  // through non-Parent edges (the tree is only drawn downward).
   function getDownwardReach(rootNodeId: string): Set<string> {
     const reached = new Set<string>([rootNodeId])
     const pending = [rootNodeId]
@@ -152,10 +150,9 @@ const initFamilyTree = () => {
     return reached
   }
 
-  // Raíces desde las que renderizar para que todos los miembros aparezcan:
-  // mientras queden nodos sin cubrir, elige el de generación más antigua que
-  // más nodos pendientes alcance. Los ancestros de consortes y los
-  // componentes desconectados generan raíces extra.
+  // Roots to render from so every member appears: while nodes remain
+  // uncovered, pick the oldest-generation node that reaches the most pending
+  // nodes. In-law ancestors and disconnected components produce extra roots.
   function getRenderRoots(
     nodesGeneration: { nodeId: string; generation: number }[] | undefined
   ): string[] {
@@ -196,7 +193,7 @@ const initFamilyTree = () => {
     const stack: string[] = []
     const parentsChildren: ParentsChildren[] = []
 
-    // Recorre todos los componentes conexos, no solo el del primer nodo.
+    // Walk every connected component, not just the first node's.
     for (const initialNodeId of adjList.keys()) {
       if (visitedNodes.has(initialNodeId)) continue
 
@@ -324,7 +321,7 @@ const buildTree = (familyData: FamilyData) => {
       if (parent) {
         familyTree.addEdge(member, parent, Relation.Parent)
       }
-      // TODO: comporbar si hay hermanos de los mismos padres para actualizarlos en el momento.
+      // TODO: check for siblings sharing both parents and update them immediately.
     })
 
     member.siblings?.forEach((siblingId: string) => {

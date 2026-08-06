@@ -1,9 +1,9 @@
 import type { FamilyMember } from '$lib/types/familyTypes'
 
-// Hijos "probables" de un miembro: hermanos de sus hijos, ya sea por relación
-// sibling explícita o por compartir el otro progenitor. NO es inequívoco (los
-// medio hermanos comparten solo un progenitor), así que esto solo alimenta
-// sugerencias que la persona confirma con un clic — nunca se escribe solo.
+// "Probable" children of a member: siblings of their children, either via an
+// explicit sibling relation or by sharing the other parent. NOT unambiguous
+// (half-siblings share only one parent), so this only feeds suggestions the
+// person confirms with a click — it is never written automatically.
 export const suggestedChildren = (
   childrenIds: string[],
   excludedIds: string[],
@@ -38,9 +38,9 @@ export const suggestedChildren = (
   return [...suggested.values()]
 }
 
-// Padres "probables" de un miembro: los padres de sus hermanos (explícitos o
-// por compartir un progenitor) que no constan como padres suyos. Misma
-// salvedad que arriba: con medio hermanos no es cierto, así que solo sugiere.
+// "Probable" parents of a member: the parents of their siblings (explicit or
+// via a shared parent) not already recorded as theirs. Same caveat as above:
+// wrong for half-siblings, so it only suggests.
 export const suggestedParents = (
   member: FamilyMember,
   excludedIds: string[],

@@ -1,21 +1,21 @@
-// Geometría de las líneas del árbol. Todas las coordenadas son relativas al
-// couple-wrapper del miembro (se las da connectionLines.svelte tras medir el
-// DOM), así que aquí no hay ninguna suposición sobre tamaños de badge ni gaps.
+// Geometry of the tree lines. All coordinates are relative to the member's
+// couple-wrapper (supplied by connectionLines.svelte after measuring the
+// DOM), so nothing here assumes badge sizes or gaps.
 
 export interface Point {
   x: number
   y: number
 }
 
-// Caja medida de un badge: centro + bordes verticales
+// Measured box of a badge: center + vertical edges
 export interface MemberBox {
   center: Point
   top: number
   bottom: number
 }
 
-// Un SVG posicionado en absoluto dentro del couple-wrapper, con su path en
-// coordenadas locales
+// An absolutely positioned SVG inside the couple-wrapper, with its path in
+// local coordinates
 export interface LineSpec {
   left: number
   top: number
@@ -46,15 +46,15 @@ const specFromSegments = (segments: Segment[]): LineSpec => {
   }
 }
 
-// Altura de la línea horizontal de hijos: punto medio del hueco entre la fila
-// de los padres y la de los hijos
+// Height of the horizontal children line: midpoint of the gap between the
+// parents' row and the children's row
 export const midGapY = (parentsBottomY: number, childrenTopY: number) =>
   (parentsBottomY + childrenTopY) / 2
 
-// Un badge puede tener varias "salidas" hacia hijos (stubs de exparejas y la
-// bajada de progenitor único). Para poder seguir cada línea, se reparten
-// simétricamente alrededor del centro del badge: exparejas a la izquierda
-// (en orden) y la salida de progenitor único la más a la derecha.
+// A badge can have several "exits" toward children (previous-partner stubs
+// and the single-parent drop). To keep each line traceable, they are spread
+// symmetrically around the badge center: previous partners on the left (in
+// order) and the single-parent exit rightmost.
 export const memberExitOffsets = (
   previousFamiliesCount: number,
   hasSingleParentExit: boolean,
@@ -72,14 +72,14 @@ export const memberExitOffsets = (
   }
 }
 
-// Línea horizontal entre los centros de una pareja (la discontinua de
-// expareja usa esta misma spec con otra clase CSS)
+// Horizontal line between a couple's centers (the dashed previous-partner
+// line uses this same spec with a different CSS class)
 export const coupleLineSpec = (memberCenter: Point, partnerCenter: Point): LineSpec =>
   specFromSegments([{ from: memberCenter, to: partnerCenter }])
 
-// Bajada desde junction, línea horizontal (bus) a la altura busY y una bajada
-// hasta el centro de cada hijo. junction es el punto medio de la pareja (a la
-// altura de su línea) o el centro del progenitor único.
+// Drop from junction, horizontal line (bus) at busY and a drop to each
+// child's center. junction is the couple's midpoint (at their line's height)
+// or the single parent's center.
 export const childrenLinesSpec = (
   junction: Point,
   childrenCenters: Point[],
@@ -99,9 +99,9 @@ export const childrenLinesSpec = (
   ])
 }
 
-// Alturas escalonadas de una ex-familia dentro del hueco entre filas: la
-// unión de la pareja baja desde arriba y el bus de sus hijos sube desde
-// abajo, con un paso por expareja para que varias no se solapen.
+// Staggered heights of a previous family within the inter-row gap: the
+// couple junction comes down from the top and their children's bus comes up
+// from the bottom, one step per previous partner so several don't overlap.
 export const previousPartnerHeights = (
   gapTop: number,
   childrenTopY: number,
@@ -115,9 +115,9 @@ export const previousPartnerHeights = (
   return { coupleY: gapTop + offset, busY: childrenTopY - offset }
 }
 
-// Familia de una expareja, en dos trazos: sólido del miembro hasta sus hijos
-// (la filiación no caduca) y discontinuo solo desde la intersección hasta la
-// expareja (relación pasada).
+// A previous partner's family, in two strokes: solid from the member to
+// their children (parenthood does not expire) and dashed only from the
+// intersection to the previous partner (past relationship).
 export const previousPartnerFamilySpecs = (
   member: MemberBox,
   previousPartner: MemberBox,
@@ -125,7 +125,7 @@ export const previousPartnerFamilySpecs = (
   childrenTopY: number,
   previousPartnerIndex: number,
   amountOfPreviousPartners: number,
-  // Separación horizontal de la salida en el badge (ver memberExitOffsets)
+  // Horizontal offset of the exit on the badge (see memberExitOffsets)
   memberStubOffset = 0
 ): { memberToChildren: LineSpec; toPreviousPartner: LineSpec } => {
   const { coupleY, busY } = previousPartnerHeights(
@@ -137,9 +137,9 @@ export const previousPartnerFamilySpecs = (
   const memberX = member.center.x + memberStubOffset
   const dropX = (member.center.x + previousPartner.center.x) / 2
   const busXs = [dropX, ...childrenCenters.map(({ x }) => x)]
-  // El stub que sube al badge de la expareja se desplaza hacia el lado del
-  // miembro: las salidas propias de la expareja hacia sus otros hijos parten
-  // de su centro exacto (las dibuja su propio nodo) y se solaparían.
+  // The stub rising to the previous partner's badge is shifted toward the
+  // member's side: the previous partner's own exits to their other children
+  // start at their exact center (drawn by their own node) and would overlap.
   const previousPartnerX =
     previousPartner.center.x + 10 * Math.sign(member.center.x - previousPartner.center.x)
 

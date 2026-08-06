@@ -8,17 +8,17 @@
   export let label: string
   export let addPlaceholder: string
   export let memberId: string
-  // Tipo de relación visto desde el miembro editado (el servidor lo traduce
-  // a la fila normalizada de la tabla)
+  // Relation kind as seen from the edited member (the server translates it
+  // to the normalized table row)
   export let kind: 'parent' | 'child' | 'sibling' | 'partner' | 'previous_partner'
   export let relatedIds: string[] = []
-  // Ids no seleccionables: el propio miembro y quienes ya tienen otra relación con él
+  // Non-selectable ids: the member itself and anyone already related to them
   export let excludedIds: string[] = []
   export let members: FamilyMember[] = []
   export let editable = false
   export let maxItems: number | undefined = undefined
-  // Relaciones probables (p. ej. hermanos de un hijo como posibles hijos):
-  // se ofrecen como chips de un clic, nunca se aplican solas
+  // Probable relations (e.g. a child's siblings as likely children): offered
+  // as one-click chips, never applied automatically
   export let suggested: FamilyMember[] = []
   export let suggestedLabel = ''
 
@@ -65,7 +65,7 @@
     pendingOtherId = candidate.id
     search = ''
     showSuggestions = false
-    // Espera a que el hidden input tenga el valor antes de enviar
+    // Wait until the hidden input holds the value before submitting
     await tick()
     addFormEl.requestSubmit()
   }
@@ -119,7 +119,7 @@
           <ul class="autocomplete-suggestions">
             {#each suggestions as candidate (candidate.id)}
               <li>
-                <!-- mousedown|preventDefault: selecciona antes del blur del input -->
+                <!-- mousedown|preventDefault: selects before the input's blur fires -->
                 <button
                   type="button"
                   on:mousedown|preventDefault={() => selectCandidate(candidate)}

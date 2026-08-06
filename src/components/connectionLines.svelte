@@ -23,9 +23,9 @@
   let previousPartnerFamilyLines: { memberToChildren: LineSpec; toPreviousPartner: LineSpec }[] = []
   let previousPartnerDashedLines: LineSpec[] = []
 
-  // Todo se mide una vez montado el árbol (el resize re-monta y re-mide).
-  // Las coordenadas son relativas al couple-wrapper (padre del member-node),
-  // así que el resultado no depende del scroll ni de anchos de subárboles.
+  // Everything is measured once the tree has mounted (resize re-mounts and
+  // re-measures). Coordinates are relative to the couple-wrapper (parent of
+  // the member-node), so the result is independent of scroll and subtree widths.
   onMount(() => {
     const memberElement = document.getElementById(memberId)
     const wrapperRect = memberElement?.parentElement?.getBoundingClientRect()
@@ -40,9 +40,9 @@
       top: rect.top - wrapperRect.top,
       bottom: rect.bottom - wrapperRect.top
     })
-    // Se mide el badge (primer hijo del div #id), no el propio .member-node:
-    // ese div se estira verticalmente con el align-items: stretch del flex
-    // cuando comparte fila con columnas más altas y falsearía el centro.
+    // Measure the badge (first child of the #id div), not .member-node itself:
+    // that div stretches vertically (flex align-items: stretch) when sharing a
+    // row with taller columns, which would skew the center.
     const measure = (id: string): MemberBox | undefined => {
       const node = document.getElementById(id)
       const element = node?.firstElementChild ?? node
@@ -55,16 +55,15 @@
       (memberElement.firstElementChild ?? memberElement).getBoundingClientRect()
     )
 
-    // Alto estándar del hueco entre generaciones (el gap de 70px del árbol).
-    // Si un hijo midiera excepcionalmente más abajo (saltos de varias bandas),
-    // las líneas horizontales se quedan a la altura normal del primer hueco y
-    // solo se alargan las bajadas verticales.
+    // Standard inter-generation gap height (the tree's 70px gap). If a child
+    // exceptionally measures further down (multi-band jumps), horizontal lines
+    // stay at the first gap's normal height and only the vertical drops lengthen.
     const standardGenerationGap = 70
     const clampedChildrenTop = (parentsBottomY: number, childrenTopY: number) =>
       Math.min(childrenTopY, parentsBottomY + standardGenerationGap)
 
-    // Separa las salidas hacia hijos que parten del mismo badge (stubs de
-    // exparejas + bajada de progenitor único) para poder seguir cada línea
+    // Spread apart the child-bound exits leaving the same badge (previous-partner
+    // stubs + single-parent drop) so each line can be followed
     const { previousPartnerOffsets, singleParentOffset } = memberExitOffsets(
       previousPartnersChildren.length,
       SPCChildren.length > 0
@@ -73,8 +72,8 @@
     const partner = actualPartner.length > 0 ? measure(actualPartner[0].nodeId) : undefined
     const coupleChildren = partner ? measureAll(APCChildren) : []
     const spcChildren = measureAll(SPCChildren)
-    // Si conviven hijos de la pareja actual y de progenitor único, sus buses
-    // (a la misma altura del hueco) se separan unos px para no confundirse
+    // When current-partner and single-parent children coexist, their buses
+    // (at the same gap height) are offset a few px so they don't blend together
     const busSplit = coupleChildren.length > 0 && spcChildren.length > 0 ? 5 : 0
 
     if (partner) {
@@ -178,7 +177,7 @@
 {/if}
 
 {#each previousPartnerFamilyLines as familyLines}
-  <!-- Del miembro a los hijos sólido; discontinuo solo hacia la expareja -->
+  <!-- Solid from the member to the children; dashed only towards the previous partner -->
   <svg
     xmlns="http://www.w3.org/2000/svg"
     class="previous-couple-family-lines"
@@ -195,7 +194,7 @@
   </svg>
 {/each}
 
-<!-- Expareja sin hijos comunes: línea discontinua entre ambos badges -->
+<!-- Previous partner with no common children: dashed line between both badges -->
 {#each previousPartnerDashedLines as dashedLine}
   <svg
     xmlns="http://www.w3.org/2000/svg"

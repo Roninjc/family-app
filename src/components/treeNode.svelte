@@ -7,7 +7,7 @@
 
   export let memberId: string
 
-  // Props de líneas de un miembro de la fila (contrato de ConnectionLines)
+  // Line props for one row member (ConnectionLines' prop contract)
   interface RowMemberLines {
     memberId: string
     render: boolean
@@ -33,12 +33,12 @@
       .getNodeRelationships(nodeId)
       .filter((relationship: Relationship) => relationship.weight === weight)
 
-  // Encadena en una única fila de badges (de altura fija: una banda de
-  // generación) a todos los parientes del mismo nivel conectados entre sí:
-  // [exparejas..., miembro, pareja, hermanos...], recursivamente. Antes cada
-  // pariente anidaba su subárbol completo dentro de la fila, y una expareja
-  // con hijos propios la hacía más alta de una banda, empujando a los hijos
-  // del miembro una generación visual hacia abajo.
+  // Chains every connected same-level relative into a single badges row of
+  // fixed height (one generation band): [previous partners..., member,
+  // partner, siblings...], recursively. Previously each relative nested its
+  // full subtree inside the row, so a previous partner with children of their
+  // own made the row taller than one band, pushing the member's children a
+  // visual generation down.
   function claimRow(nodeId: string): string[] {
     actualVisitedMembers.push(nodeId)
 
@@ -61,9 +61,9 @@
         (parent1 === memberA && parent2 === memberB) || (parent2 === memberA && parent1 === memberB)
     )
 
-  // Orden de los hijos de un miembro dentro de la fila de hijos: primero los
-  // de cada expareja (en su orden), después el resto de grupos — el mismo
-  // orden horizontal que siguen las salidas de las líneas
+  // Order of a member's children within the children row: each previous
+  // partner's children first (in their order), then the remaining groups —
+  // the same horizontal order the line exits follow
   function sortChildrenByFamily(rowMemberId: string, childIds: string[]): string[] {
     const order = new Map<string, number>()
     let nextOrder = 0
@@ -94,8 +94,8 @@
     const rowSet = new Set(rowMemberIds)
     const rowIndex = new Map(rowMemberIds.map((id, index) => [id, index]))
 
-    // Reclama los hijos de todos los miembros de la fila (cada hijo una vez),
-    // recorriendo la fila en orden para que queden cerca de sus padres
+    // Claim the children of every row member (each child once), walking the
+    // row in order so they end up close to their parents
     const claimedChildren = new Set<string>()
     for (const rowMemberId of rowMemberIds) {
       const freeChildIds = relationsOf(rowMemberId, 1)
@@ -108,10 +108,10 @@
       })
     }
 
-    // Grupos de líneas por miembro de la fila. Cada relación de pareja se
-    // dibuja una sola vez: la de pareja actual desde el miembro de la
-    // izquierda y las de expareja desde el de la derecha (las exparejas se
-    // colocan a su izquierda), que así acumula sus salidas y las escalona.
+    // Line groups per row member. Each couple relation is drawn exactly once:
+    // the current-partner line from the left member and previous-partner lines
+    // from the right one (exes sit to its left), which thus accumulates its
+    // exits and staggers them.
     rowLines = rowMemberIds.map((rowMemberId) => {
       const memberRowIndex = rowIndex.get(rowMemberId)!
       const renderedChildIds = new Set(
@@ -170,7 +170,7 @@
       }
     })
 
-    // Los hijos reclamados se apilan para que otras ramas no los rendericen
+    // Claimed children go on the stack so other branches don't render them
     for (const childId of clusterChildrenIds) {
       actualStack.push(childId)
     }
@@ -223,8 +223,8 @@
     gap: 40px;
   }
 
-  // Solo badges (altura fija) y SVGs absolutos: la fila mide siempre una
-  // banda de generación, ancla de las líneas de conexión
+  // Only badges (fixed height) and absolutely positioned SVGs: the row always
+  // measures one generation band, the anchor for the connection lines
   .badges-row {
     position: relative;
   }

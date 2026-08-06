@@ -71,8 +71,7 @@ const main = async () => {
     idMap.set(member.id, data.id)
   }
 
-  // 2. Build deduplicated edges. Unknown references (e.g. the commented-out
-  //    member '25') are skipped and reported.
+  // 2. Build deduplicated edges. Unknown references are skipped and reported.
   const edges = new Map<string, Edge>()
   const skipped = new Set<string>()
 

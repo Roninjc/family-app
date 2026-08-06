@@ -245,16 +245,6 @@ export const seedFamilyData: FamilyData = {
       partner: [],
       previousPartners: []
     },
-    // {
-    //   id: '25',
-    //   name: 'Ignacio',
-    //   familyName: 'Padre',
-    //   parents: [],
-    //   children: ['19'],
-    //   siblings: [],
-    //   partner: [],
-    //   previousPartners: ['4']
-    // },
     {
       id: '26',
       name: 'Cristina',

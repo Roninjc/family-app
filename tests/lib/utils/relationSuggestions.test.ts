@@ -15,7 +15,7 @@ const member = (id: string, partial: Partial<FamilyMember> = {}): FamilyMember =
 })
 
 describe('suggestedChildren', () => {
-  it('sugiere a los hermanos explícitos de un hijo registrado', () => {
+  it('suggests the explicit siblings of a registered child', () => {
     const members = [
       member('maribel', { siblings: ['javier', 'eva'] }),
       member('javier', { siblings: ['maribel', 'eva'] }),
@@ -27,7 +27,7 @@ describe('suggestedChildren', () => {
     expect(suggested.map(({ id }) => id).sort()).toEqual(['eva', 'javier'])
   })
 
-  it('sugiere a los hijos del otro progenitor aunque no haya relación sibling explícita', () => {
+  it("suggests the other parent's children even without an explicit sibling relation", () => {
     const members = [
       member('luisa', { children: ['maribel', 'javier'] }),
       member('maribel', { parents: ['luisa'] }),
@@ -39,7 +39,7 @@ describe('suggestedChildren', () => {
     expect(suggested.map(({ id }) => id)).toEqual(['javier'])
   })
 
-  it('no sugiere a quien ya es hijo, ni a excluidos, ni al propio hijo', () => {
+  it('does not suggest existing children, excluded members or the child itself', () => {
     const members = [
       member('luisa', { children: ['maribel', 'javier', 'eva'] }),
       member('maribel', { parents: ['luisa'], siblings: ['javier', 'eva'] }),
@@ -47,22 +47,22 @@ describe('suggestedChildren', () => {
       member('eva', { parents: ['luisa'] })
     ]
 
-    // javier ya es hijo; eva está excluida (p. ej. seleccionada como pareja)
+    // javier is already a child; eva is excluded (e.g. selected as partner)
     const suggested = suggestedChildren(['maribel', 'javier'], ['eva'], members)
 
     expect(suggested).toEqual([])
   })
 
-  it('sin hijos seleccionados no sugiere nada', () => {
+  it('suggests nothing without selected children', () => {
     expect(suggestedChildren([], [], [member('a', { siblings: ['b'] }), member('b')])).toEqual([])
   })
 
-  it('deduplica sugerencias que llegan por varios hijos', () => {
+  it('deduplicates suggestions reached through several children', () => {
     const members = [
-      member('madre', { children: ['a', 'b', 'c'] }),
-      member('a', { parents: ['madre'] }),
-      member('b', { parents: ['madre'] }),
-      member('c', { parents: ['madre'] })
+      member('mother', { children: ['a', 'b', 'c'] }),
+      member('a', { parents: ['mother'] }),
+      member('b', { parents: ['mother'] }),
+      member('c', { parents: ['mother'] })
     ]
 
     const suggested = suggestedChildren(['a', 'b'], [], members)
@@ -72,7 +72,7 @@ describe('suggestedChildren', () => {
 })
 
 describe('suggestedParents', () => {
-  it('sugiere al padre de los hermanos estructurales (caso Maribel/Jesús María)', () => {
+  it("suggests the structural siblings' father (Maribel/Jesús María case)", () => {
     const members = [
       member('luisa', { children: ['maribel', 'javier', 'eva'] }),
       member('jm', { children: ['javier', 'eva'] }),
@@ -87,7 +87,7 @@ describe('suggestedParents', () => {
     expect(suggested.map(({ id }) => id)).toEqual(['jm'])
   })
 
-  it('sugiere a los padres de hermanos con relación sibling explícita', () => {
+  it('suggests the parents of siblings with an explicit sibling relation', () => {
     const members = [
       member('ana', { siblings: ['berto'] }),
       member('berto', { siblings: ['ana'], parents: ['carlos'] }),
@@ -98,7 +98,7 @@ describe('suggestedParents', () => {
     expect(suggestedParents(ana, ['ana'], members).map(({ id }) => id)).toEqual(['carlos'])
   })
 
-  it('no sugiere a padres ya registrados ni a excluidos', () => {
+  it('does not suggest already registered parents or excluded members', () => {
     const members = [
       member('luisa', { children: ['maribel', 'javier'] }),
       member('jm', { children: ['javier'] }),
@@ -107,17 +107,17 @@ describe('suggestedParents', () => {
     ]
     const maribel = members.find(({ id }) => id === 'maribel')!
 
-    // luisa ya es su madre; jm excluido (p. ej. ya relacionado de otra forma)
+    // luisa is already her mother; jm is excluded (e.g. already related some other way)
     expect(suggestedParents(maribel, ['maribel', 'luisa', 'jm'], members)).toEqual([])
   })
 
-  it('sin hermanos no sugiere nada', () => {
+  it('suggests nothing without siblings', () => {
     const members = [
-      member('sola', { parents: ['madre'] }),
-      member('madre', { children: ['sola'] })
+      member('onlychild', { parents: ['mother'] }),
+      member('mother', { children: ['onlychild'] })
     ]
-    const sola = members.find(({ id }) => id === 'sola')!
+    const onlyChild = members.find(({ id }) => id === 'onlychild')!
 
-    expect(suggestedParents(sola, ['sola', 'madre'], members)).toEqual([])
+    expect(suggestedParents(onlyChild, ['onlychild', 'mother'], members)).toEqual([])
   })
 })

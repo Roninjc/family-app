@@ -21,14 +21,14 @@
   $: member = $editingMemberId ? familyMembers.find((m) => m.id === $editingMemberId) : undefined
   $: editable = canEdit($page.data.profile)
 
-  // Precarga los campos al abrir el modal o cambiar de miembro. Se compara por
-  // id (no por referencia) para no pisar los campos personales a medio editar
-  // cuando invalidateAll refresca los datos tras guardar una relación.
+  // Preload the fields when the modal opens or the member changes. Compared by
+  // id (not by reference) so half-edited personal fields aren't clobbered when
+  // invalidateAll refreshes the data after saving a relation.
   $: if ($showEditMemberModal && member && member.id !== loadedMemberId) loadMember(member)
   $: if (!$showEditMemberModal) loadedMemberId = null
 
-  // Quien ya tiene una relación con el miembro (o es el propio miembro) no es
-  // seleccionable en ningún otro grupo de relaciones
+  // Anyone already related to the member (or the member itself) is not
+  // selectable in any other relation group
   $: relatedOrSelfIds = member
     ? [
         member.id,
@@ -40,11 +40,11 @@
       ]
     : []
 
-  // Hermanos de sus hijos que no constan como hijos suyos: sugerencia de un clic
+  // Siblings of the member's children not recorded as their children: one-click suggestion
   $: suggestedChildrenList = member
     ? suggestedChildren(member.children, relatedOrSelfIds, familyMembers)
     : []
-  // Padres de sus hermanos que no constan como padres suyos: ídem
+  // Parents of the member's siblings not recorded as their parents: likewise
   $: suggestedParentsList = member ? suggestedParents(member, relatedOrSelfIds, familyMembers) : []
 
   function loadMember(m: FamilyMember) {
@@ -397,13 +397,13 @@
   :global(.edit-member-modal .liquid-glass-text-container) {
     flex-direction: column;
     align-items: stretch;
-    // flex-start: con justify-content center (el default del wrapper) el
-    // contenido que desborda por arriba queda cortado e inaccesible al scroll
+    // flex-start: with justify-content center (the wrapper's default), content
+    // overflowing at the top gets clipped and unreachable by scrolling
     justify-content: flex-start;
     padding: 30px 20px 20px;
     box-sizing: border-box;
     width: 340px;
-    // El modal crece con las relaciones: scroll interno en pantallas bajas
+    // The modal grows with the relations: internal scroll on short screens
     max-height: 80vh;
     overflow-y: auto;
   }

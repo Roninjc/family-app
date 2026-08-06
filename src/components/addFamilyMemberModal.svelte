@@ -25,12 +25,12 @@
   }
 
   function validateStep2() {
-    // Los padres son opcionales, pero si hay texto tiene que ser un miembro seleccionado
+    // Parents are optional, but any typed text must resolve to a selected member
     return (!fatherSearch.trim() || fatherId !== '') && (!motherSearch.trim() || motherId !== '')
   }
 
   function validateStep3() {
-    // La pareja es opcional, pero si hay texto tiene que ser un miembro seleccionado
+    // Partner is optional, but any typed text must resolve to a selected member
     return !actualPartnerSearch.trim() || actualPartnerId !== ''
   }
 
@@ -134,7 +134,6 @@
 
   function reportMemberValidity(element: HTMLInputElement, search: string, selectedId: string) {
     if (!element) return
-    // Si está invalid, ahora sí muestra el mensaje real
     const match = familyMembers.some((m) => m.id === selectedId)
     if (!match && search.trim() !== '') {
       element.setCustomValidity('Please select a valid family member.')
@@ -233,8 +232,8 @@
     return member ? member.name + ' ' + member.familyName : ''
   }
 
-  // Hermanos de los hijos seleccionados: sugerencia de un clic para añadirlos
-  // también como hijos del nuevo miembro
+  // Siblings of the selected children: one-click suggestion to add them as
+  // children of the new member too
   $: suggestedChildrenList = suggestedChildren(
     childrenIds,
     [fatherId, motherId, actualPartnerId, ...siblingsIds, ...previousPartnersIds].filter(Boolean),
@@ -256,7 +255,6 @@
     <!-- svelte-ignore a11y-click-events-have-key-events -->
     <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
     <div class="add-member-modal" role="banner" on:click|stopPropagation>
-      <!-- <button class="close-modal" on:click={() => showAddMemberModal.set(false)}>⨯</button> -->
       <LiquidGlassWrapper>
         <h2>New Family Member</h2>
         <form
@@ -850,18 +848,14 @@
             }
           }
         }
-
-        // .autocomplete-wrapper {
-        //   position: relative;
-        // }
       }
     }
   }
 
   :global(.add-member-modal .liquid-glass-text-container) {
     flex-direction: column;
-    // flex-start: con justify-content center (el default del wrapper) el
-    // contenido que desborda por arriba queda cortado e inaccesible al scroll
+    // flex-start: with justify-content center (the wrapper's default), content
+    // overflowing at the top gets clipped and unreachable by scrolling
     justify-content: flex-start;
     align-items: stretch;
     padding: 30px 20px 20px;

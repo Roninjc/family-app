@@ -2,14 +2,14 @@ import { error, fail, redirect } from '@sveltejs/kit'
 import { rowsToFamilyData } from '$lib/server/familyAdapter'
 import type { Actions, PageServerLoad } from './$types'
 
-// Relaciones vistas desde el miembro editado, tal y como las manda el modal
+// Relations as seen from the edited member, exactly as the modal sends them
 const RELATION_KINDS = ['parent', 'child', 'sibling', 'partner', 'previous_partner'] as const
 type RelationKind = (typeof RELATION_KINDS)[number]
 
-// Traduce (miembro, otro, tipo-desde-el-miembro) a la fila normalizada de la
-// tabla: 'parent' es dirigida member_a→member_b y el resto se guardan una vez
-// con member_a < member_b (el orden de strings coincide con el orden uuid de
-// Postgres para uuids canónicos en minúsculas).
+// Maps (member, other, kind-from-the-member) to the normalized table row:
+// 'parent' is directed member_a→member_b and the rest are stored once with
+// member_a < member_b (string order matches Postgres uuid order for
+// canonical lowercase uuids).
 const relationRow = (memberId: string, otherId: string, kind: RelationKind) => {
   if (kind === 'parent') return { member_a: otherId, member_b: memberId, type: 'parent' }
   if (kind === 'child') return { member_a: memberId, member_b: otherId, type: 'parent' }
@@ -58,7 +58,7 @@ export const actions: Actions = {
       ...[fatherId, motherId]
         .filter(Boolean)
         .map((other) => ({ other, type: 'parent', direction: 'child_of' })),
-      // Hijos ya existentes del nuevo miembro: permite añadir ancestros
+      // Existing members as children of the new one: allows adding ancestors
       ...childrenIds.map((other) => ({ other, type: 'parent', direction: 'parent_of' })),
       ...siblingsIds.map((other) => ({ other, type: 'sibling' })),
       ...(partnerId ? [{ other: partnerId, type: 'partner' }] : []),
@@ -76,14 +76,13 @@ export const actions: Actions = {
       return fail(403, { addError: message })
     }
 
-    // El árbol solo agrupa a un hijo bajo sus dos progenitores si entre ellos
-    // existe un vínculo partner/previous_partner, así que si no consta ninguno
-    // lo creamos como pareja actual. Si esta inserción extra falla no anulamos
-    // el alta (el miembro ya existe); simplemente quedaría sin línea, como antes.
+    // The tree only groups a child under both parents if a partner/
+    // previous_partner edge exists between them, so if none is recorded we
+    // create one as current partners. If this extra insert fails we don't
+    // undo the add (the member already exists); it would just lack a line.
     if (fatherId && motherId && fatherId !== motherId) {
-      // Mismo orden member_a < member_b que impone el check de la tabla; la
-      // comparación de strings coincide con el orden uuid de Postgres para
-      // uuids canónicos en minúsculas.
+      // Same member_a < member_b order the table check enforces; string
+      // comparison matches Postgres uuid order for canonical lowercase uuids.
       const [memberA, memberB] = fatherId < motherId ? [fatherId, motherId] : [motherId, fatherId]
       const { data: existingCouple } = await supabase
         .from('relationships')
@@ -138,7 +137,7 @@ export const actions: Actions = {
 
     if (!memberId) return fail(400, { editError: 'Falta el miembro a eliminar.' })
 
-    // Las relaciones caen en cascada (FK on delete cascade)
+    // Relationships are removed in cascade (FK on delete cascade)
     const { error: deleteError } = await supabase.from('members').delete().eq('id', memberId)
 
     if (deleteError) {

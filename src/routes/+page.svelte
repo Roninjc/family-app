@@ -20,8 +20,8 @@
 
   function resetTreeRender(version: number) {
     visitedMembers.set([])
-    // Una raíz por árbol a renderizar: la familia principal primero y después
-    // los ancestros de consortes / componentes desconectados (ver renderRoots).
+    // One root per tree to render: the main family first, then in-law
+    // ancestors / disconnected components (see renderRoots).
     roots = renderRoots
     stack.set([...roots])
 
@@ -45,8 +45,8 @@
     treeWrapper.scrollLeft = scrollLeft
   }
 
-  // Las líneas se miden una sola vez al montar cada nodo, así que al cambiar
-  // el tamaño de la ventana se re-monta el árbol (con debounce) para re-medir.
+  // Lines are measured once when each node mounts, so on window resize the
+  // tree is re-mounted (debounced) to re-measure.
   let resizeTimer: ReturnType<typeof setTimeout>
   function handleResize() {
     clearTimeout(resizeTimer)
@@ -84,7 +84,7 @@
     position: relative;
     display: flex;
     flex-direction: row;
-    // Separación entre árboles raíz (familia principal, ramas políticas...)
+    // Gap between root trees (main family, in-law branches...)
     gap: 120px;
     background-color: #e0e0e0;
     height: 100%;

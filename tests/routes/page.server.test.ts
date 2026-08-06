@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { actions } from '../../src/routes/+page.server'
 
-// Mock mínimo del cliente supabase: solo lo que usan las acciones de la página
+// Minimal supabase client mock: only what the page actions use
 const makeSupabase = ({
   existingCoupleRows = [] as { id: string }[],
   insertError = null as { code?: string; message: string } | null
@@ -48,8 +48,8 @@ const makeSupabase = ({
         deleteCount++
         return builder
       },
-      // Las cadenas update(...).eq(...) / delete().match(...) se await-ean
-      // directamente, así que el builder tiene que ser thenable
+      // update(...).eq(...) / delete().match(...) chains are awaited directly,
+      // so the builder has to be thenable
       then: (resolve: (value: { data: null; error: null }) => void) =>
         resolve({ data: null, error: null })
     }
@@ -59,7 +59,7 @@ const makeSupabase = ({
   const supabase = {
     rpc: async (fn: string, args: unknown) => {
       rpcCalls.push({ fn, args })
-      return { data: 'nuevo-id', error: null }
+      return { data: 'new-id', error: null }
     },
     from: () => makeBuilder()
   }
@@ -99,13 +99,13 @@ const callAction = (
   return (actions[action] as any)(event)
 }
 
-describe('acción addMember', () => {
-  it('manda al RPC las relaciones del nuevo miembro, incluidos hijos existentes', async () => {
+describe('addMember action', () => {
+  it("sends the new member's relations to the RPC, including existing children", async () => {
     const mock = makeSupabase()
     const result = await callAction(
       'addMember',
       {
-        name: 'Abuelo',
+        name: 'Grandpa',
         familyName: 'Test',
         birthDate: '1940-01-01',
         fatherId: 'aaa',
@@ -118,7 +118,7 @@ describe('acción addMember', () => {
       mock
     )
 
-    expect(result).toEqual({ added: true, newMemberId: 'nuevo-id' })
+    expect(result).toEqual({ added: true, newMemberId: 'new-id' })
     expect(mock.rpcCalls).toHaveLength(1)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = mock.rpcCalls[0].args as any
@@ -133,23 +133,23 @@ describe('acción addMember', () => {
     ])
   })
 
-  it('crea el vínculo de pareja padre-madre si no consta ninguno', async () => {
+  it('creates the father-mother partner edge if none is recorded', async () => {
     const mock = makeSupabase({ existingCoupleRows: [] })
     await callAction(
       'addMember',
-      { name: 'Hijo', familyName: 'Test', birthDate: '', fatherId: 'bbb', motherId: 'aaa' },
+      { name: 'Child', familyName: 'Test', birthDate: '', fatherId: 'bbb', motherId: 'aaa' },
       mock
     )
 
-    // Normalizado member_a < member_b aunque el padre llegue "después"
+    // Normalized member_a < member_b even though the father comes "later"
     expect(mock.inserted).toEqual([{ member_a: 'aaa', member_b: 'bbb', type: 'partner' }])
   })
 
-  it('no duplica el vínculo si ya existe pareja o expareja entre ellos', async () => {
+  it('does not duplicate the edge if a partner or previous-partner row already exists', async () => {
     const mock = makeSupabase({ existingCoupleRows: [{ id: 'rel-1' }] })
     await callAction(
       'addMember',
-      { name: 'Hijo', familyName: 'Test', birthDate: '', fatherId: 'aaa', motherId: 'bbb' },
+      { name: 'Child', familyName: 'Test', birthDate: '', fatherId: 'aaa', motherId: 'bbb' },
       mock
     )
 
@@ -157,11 +157,11 @@ describe('acción addMember', () => {
     expect(mock.coupleLookups).toHaveLength(1)
   })
 
-  it('no toca relationships si solo hay un progenitor', async () => {
+  it('does not touch relationships when there is only one parent', async () => {
     const mock = makeSupabase()
     await callAction(
       'addMember',
-      { name: 'Hijo', familyName: 'Test', birthDate: '', fatherId: 'aaa', motherId: '' },
+      { name: 'Child', familyName: 'Test', birthDate: '', fatherId: 'aaa', motherId: '' },
       mock
     )
 
@@ -170,8 +170,8 @@ describe('acción addMember', () => {
   })
 })
 
-describe('acción updateMember', () => {
-  it('actualiza nombre, apellidos y fecha del miembro indicado', async () => {
+describe('updateMember action', () => {
+  it("updates the given member's name, family name and birth date", async () => {
     const mock = makeSupabase()
     const result = await callAction(
       'updateMember',
@@ -186,7 +186,7 @@ describe('acción updateMember', () => {
     expect(mock.eqCalls).toContainEqual({ column: 'id', value: 'm1' })
   })
 
-  it('guarda birth_date null cuando la fecha se deja vacía', async () => {
+  it('stores birth_date null when the date is left empty', async () => {
     const mock = makeSupabase()
     await callAction(
       'updateMember',
@@ -197,7 +197,7 @@ describe('acción updateMember', () => {
     expect(mock.updated[0].birth_date).toBeNull()
   })
 
-  it('rechaza la edición sin nombre', async () => {
+  it('rejects the edit without a name', async () => {
     const mock = makeSupabase()
     const result = await callAction(
       'updateMember',
@@ -210,27 +210,27 @@ describe('acción updateMember', () => {
   })
 })
 
-describe('acción addRelation', () => {
-  it("'parent' inserta la fila dirigida otro→miembro", async () => {
+describe('addRelation action', () => {
+  it("'parent' inserts the directed other→member row", async () => {
     const mock = makeSupabase()
     const result = await callAction(
       'addRelation',
-      { memberId: 'hijo', otherId: 'padre', kind: 'parent' },
+      { memberId: 'child', otherId: 'father', kind: 'parent' },
       mock
     )
 
     expect(result).toEqual({ relationAdded: true })
-    expect(mock.inserted).toEqual([{ member_a: 'padre', member_b: 'hijo', type: 'parent' }])
+    expect(mock.inserted).toEqual([{ member_a: 'father', member_b: 'child', type: 'parent' }])
   })
 
-  it("'child' inserta la fila dirigida miembro→otro", async () => {
+  it("'child' inserts the directed member→other row", async () => {
     const mock = makeSupabase()
-    await callAction('addRelation', { memberId: 'padre', otherId: 'hijo', kind: 'child' }, mock)
+    await callAction('addRelation', { memberId: 'father', otherId: 'child', kind: 'child' }, mock)
 
-    expect(mock.inserted).toEqual([{ member_a: 'padre', member_b: 'hijo', type: 'parent' }])
+    expect(mock.inserted).toEqual([{ member_a: 'father', member_b: 'child', type: 'parent' }])
   })
 
-  it('las relaciones no dirigidas se normalizan con member_a < member_b', async () => {
+  it('undirected relations are normalized with member_a < member_b', async () => {
     const mock = makeSupabase()
     await callAction('addRelation', { memberId: 'zzz', otherId: 'aaa', kind: 'partner' }, mock)
     await callAction('addRelation', { memberId: 'aaa', otherId: 'zzz', kind: 'sibling' }, mock)
@@ -241,7 +241,7 @@ describe('acción addRelation', () => {
     ])
   })
 
-  it('una relación duplicada devuelve error amigable', async () => {
+  it('a duplicate relation returns a friendly error', async () => {
     const mock = makeSupabase({ insertError: { code: '23505', message: 'duplicate key' } })
     const result = await callAction(
       'addRelation',
@@ -253,7 +253,7 @@ describe('acción addRelation', () => {
     expect(result.data.relationError).toBe('Esa relación ya existe.')
   })
 
-  it('rechaza relacionarse consigo mismo y tipos desconocidos', async () => {
+  it('rejects relating a member to themselves and unknown kinds', async () => {
     const selfResult = await callAction('addRelation', {
       memberId: 'aaa',
       otherId: 'aaa',
@@ -262,7 +262,7 @@ describe('acción addRelation', () => {
     const kindResult = await callAction('addRelation', {
       memberId: 'aaa',
       otherId: 'bbb',
-      kind: 'enemigo'
+      kind: 'enemy'
     })
 
     expect(selfResult.status).toBe(400)
@@ -270,21 +270,21 @@ describe('acción addRelation', () => {
   })
 })
 
-describe('acción removeRelation', () => {
-  it('borra la fila normalizada correspondiente', async () => {
+describe('removeRelation action', () => {
+  it('deletes the corresponding normalized row', async () => {
     const mock = makeSupabase()
     const result = await callAction(
       'removeRelation',
-      { memberId: 'hijo', otherId: 'padre', kind: 'parent' },
+      { memberId: 'child', otherId: 'father', kind: 'parent' },
       mock
     )
 
     expect(result).toEqual({ relationRemoved: true })
     expect(mock.getDeleteCount()).toBe(1)
-    expect(mock.matchCalls).toEqual([{ member_a: 'padre', member_b: 'hijo', type: 'parent' }])
+    expect(mock.matchCalls).toEqual([{ member_a: 'father', member_b: 'child', type: 'parent' }])
   })
 
-  it("'previous_partner' borra la fila normalizada con member_a < member_b", async () => {
+  it("'previous_partner' deletes the normalized row with member_a < member_b", async () => {
     const mock = makeSupabase()
     await callAction(
       'removeRelation',
@@ -298,8 +298,8 @@ describe('acción removeRelation', () => {
   })
 })
 
-describe('acción deleteMember', () => {
-  it('borra el miembro indicado', async () => {
+describe('deleteMember action', () => {
+  it('deletes the given member', async () => {
     const mock = makeSupabase()
     const result = await callAction('deleteMember', { memberId: 'm1' }, mock)
 
@@ -308,7 +308,7 @@ describe('acción deleteMember', () => {
     expect(mock.eqCalls).toContainEqual({ column: 'id', value: 'm1' })
   })
 
-  it('rechaza el borrado sin id', async () => {
+  it('rejects the deletion without an id', async () => {
     const mock = makeSupabase()
     const result = await callAction('deleteMember', {}, mock)
 

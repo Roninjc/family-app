@@ -10,7 +10,7 @@ const row = (id: string): MemberRow => ({
 })
 
 describe('rowsToFamilyData', () => {
-  it('reconstruye arrays bidireccionales para los cuatro tipos de relación', () => {
+  it('rebuilds bidirectional arrays for the four relation types', () => {
     const members = [row('a'), row('b'), row('c'), row('d'), row('e')]
     const relationships: RelationshipRow[] = [
       { member_a: 'a', member_b: 'b', type: 'parent' },
@@ -32,16 +32,16 @@ describe('rowsToFamilyData', () => {
     expect(byId.get('e')?.siblings).toEqual(['b'])
   })
 
-  it('ignora relaciones que apuntan a miembros inexistentes', () => {
+  it('ignores relationships pointing at nonexistent members', () => {
     const { members } = rowsToFamilyData(
       [row('a')],
-      [{ member_a: 'a', member_b: 'fantasma', type: 'partner' }]
+      [{ member_a: 'a', member_b: 'ghost', type: 'partner' }]
     )
 
     expect(members[0].partner).toEqual([])
   })
 
-  it('no duplica ids si llegan filas repetidas', () => {
+  it('does not duplicate ids when duplicate rows arrive', () => {
     const { members } = rowsToFamilyData(
       [row('a'), row('b')],
       [
@@ -53,7 +53,7 @@ describe('rowsToFamilyData', () => {
     expect(members.find((m) => m.id === 'a')?.partner).toEqual(['b'])
   })
 
-  it('convierte birth_date null en undefined', () => {
+  it('converts birth_date null into undefined', () => {
     const withDate = { ...row('a'), birth_date: '1950-01-01' }
     const { members } = rowsToFamilyData([withDate, row('b')], [])
 

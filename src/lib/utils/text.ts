@@ -1,5 +1,5 @@
-// Búsqueda laxa para los autocompletados: ignora mayúsculas y diacríticos
-// (tildes, diéresis...), de forma que "jesus" encuentre a "Jesús".
+// Loose matching for the autocompletes: ignores case and diacritics
+// (accents, umlauts...), so "jesus" finds "Jesús".
 export const normalizeSearchText = (text: string) =>
   text
     .normalize('NFD')
