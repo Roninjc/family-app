@@ -179,7 +179,7 @@
           {#if form?.roleError}<p class="error-note">{form.roleError}</p>{/if}
         {/if}
 
-        <a class="back-link" href="/">← Volver al árbol</a>
+        <a class="back-link" href="/hub">← Volver al hub</a>
       </div>
     </LiquidGlassWrapper>
   </div>

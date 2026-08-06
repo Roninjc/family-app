@@ -19,14 +19,14 @@ const requireManager = async (locals: App.Locals) => {
     .eq('id', locals.user.id)
     .single()
 
-  if (!profile || (profile.role !== 'admin' && profile.role !== 'editor')) redirect(303, '/')
+  if (!profile || (profile.role !== 'admin' && profile.role !== 'editor')) redirect(303, '/hub')
 
   return profile as Profile
 }
 
 const requireAdmin = async (locals: App.Locals) => {
   const profile = await requireManager(locals)
-  if (profile.role !== 'admin') redirect(303, '/')
+  if (profile.role !== 'admin') redirect(303, '/hub')
   return profile
 }
 

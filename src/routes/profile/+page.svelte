@@ -100,7 +100,7 @@
         {/if}
 
         <div class="footer-actions">
-          <a href="/">← Volver al árbol</a>
+          <a href="/hub">← Volver al hub</a>
           <form method="POST" action="?/logout" use:enhance>
             <button type="submit" class="logout-button">Cerrar sesión</button>
           </form>

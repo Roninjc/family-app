@@ -61,7 +61,7 @@ export const actions: Actions = {
 
     if (error) return fail(error.status ?? 400, { error: friendlyAuthError(error), email })
 
-    redirect(303, '/')
+    redirect(303, '/hub')
   },
 
   google: async ({ url, locals: { supabase } }) => {

@@ -55,7 +55,7 @@ const authGuard: Handle = async ({ event, resolve }) => {
   }
 
   if (session && event.url.pathname === '/login') {
-    redirect(303, '/')
+    redirect(303, '/hub')
   }
 
   return resolve(event)
