@@ -71,8 +71,8 @@
           {#if form?.passwordError}<div class="form-error">{form.passwordError}</div>{/if}
         </form>
 
-        {#if data.profile?.role === 'admin'}
-          <a class="admin-link" href="/admin">Gestionar usuarios e invitaciones →</a>
+        {#if data.profile?.role === 'admin' || data.profile?.role === 'editor'}
+          <a class="admin-link" href="/admin">Gestionar invitaciones y usuarios →</a>
         {/if}
 
         <div class="footer-actions">

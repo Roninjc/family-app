@@ -29,12 +29,16 @@ export const actions: Actions = {
     const email = String(form.get('email') ?? '')
       .trim()
       .toLowerCase()
+    const inviteToken = String(form.get('inviteToken') ?? '').trim()
 
     if (!email) return fail(400, { error: 'Escribe tu email.', email })
 
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${url.origin}/auth/confirm` }
+      options: {
+        emailRedirectTo: `${url.origin}/auth/confirm`,
+        data: inviteToken ? { invite_token: inviteToken } : undefined
+      }
     })
 
     if (error) return fail(error.status ?? 400, { error: friendlyAuthError(error), email })
@@ -61,6 +65,15 @@ export const actions: Actions = {
   },
 
   google: async ({ url, locals: { supabase } }) => {
+    const inviteToken = url.searchParams.get('invite')?.trim() ?? ''
+
+    if (inviteToken) {
+      return fail(400, {
+        error:
+          'Esta invitación requiere registro por enlace mágico. Usa el formulario de email de arriba.'
+      })
+    }
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${url.origin}/auth/callback`, skipBrowserRedirect: true }

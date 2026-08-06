@@ -1,4 +1,5 @@
 import { redirect } from '@sveltejs/kit'
+import { withSignupNotice } from '$lib/server/signupNotice'
 import type { EmailOtpType } from '@supabase/supabase-js'
 import type { RequestHandler } from './$types'
 
@@ -15,13 +16,19 @@ export const GET: RequestHandler = async ({ url, locals: { supabase } }) => {
   if (tokenHash && type) {
     const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type })
 
-    if (!error) redirect(303, next)
+    if (!error) {
+      const nextWithNotice = await withSignupNotice(supabase, next)
+      redirect(303, nextWithNotice)
+    }
   }
 
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
-    if (!error) redirect(303, next)
+    if (!error) {
+      const nextWithNotice = await withSignupNotice(supabase, next)
+      redirect(303, nextWithNotice)
+    }
   }
 
   redirect(303, `/login?error=${LINK_ERROR}`)

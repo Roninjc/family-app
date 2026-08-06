@@ -11,6 +11,7 @@
   let submitting = false
 
   $: urlError = $page.url.searchParams.get('error')
+  $: inviteToken = $page.url.searchParams.get('invite') ?? ''
 </script>
 
 <svelte:head>
@@ -40,6 +41,10 @@
               }
             }}
           >
+            {#if inviteToken}
+              <input type="hidden" name="inviteToken" value={inviteToken} />
+            {/if}
+
             <div class="input-wrapper">
               <input
                 id="loginEmail"
@@ -89,9 +94,15 @@
 
           <div class="divider"><span>o</span></div>
 
-          <form method="POST" action="?/google" use:enhance>
-            <button type="submit" class="google-button">Continuar con Google</button>
-          </form>
+          {#if inviteToken}
+            <p class="invite-hint">
+              Esta invitación se valida con el enlace mágico al email indicado.
+            </p>
+          {:else}
+            <form method="POST" action="?/google" use:enhance>
+              <button type="submit" class="google-button">Continuar con Google</button>
+            </form>
+          {/if}
         {/if}
 
         {#if form?.error || urlError}
@@ -263,6 +274,14 @@
       span {
         padding: 0 10px;
       }
+    }
+
+    .invite-hint {
+      margin: 0;
+      text-align: center;
+      color: #666;
+      font-size: 0.85rem;
+      line-height: 1.4;
     }
 
     .form-error {

@@ -1,4 +1,5 @@
 import { redirect } from '@sveltejs/kit'
+import { withSignupNotice } from '$lib/server/signupNotice'
 import type { RequestHandler } from './$types'
 
 // OAuth (Google) code exchange.
@@ -9,7 +10,10 @@ export const GET: RequestHandler = async ({ url, locals: { supabase } }) => {
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
-    if (!error) redirect(303, next)
+    if (!error) {
+      const nextWithNotice = await withSignupNotice(supabase, next)
+      redirect(303, nextWithNotice)
+    }
   }
 
   redirect(303, `/login?error=${encodeURIComponent('No se pudo completar el inicio de sesión.')}`)

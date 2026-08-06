@@ -6,6 +6,7 @@ export interface Profile {
   display_name: string | null
   role: Role
   member_id: string | null
+  pending_notice?: string | null
   created_at: string
 }
 

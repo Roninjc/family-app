@@ -5,7 +5,14 @@
   export let data
   export let form
 
-  let inviteEmail = ''
+  let generalRole = 'viewer'
+  let generalExpiry = 'none'
+  let generalMaxUses = ''
+
+  let memberEmail = ''
+  let memberId = ''
+  let memberRole = 'viewer'
+  let memberExpiry = 'none'
 
   const roleLabels: Record<string, string> = {
     admin: 'Administrador',
@@ -13,8 +20,25 @@
     viewer: 'Solo lectura'
   }
 
-  $: pendingInvites = data.invites.filter(
-    (invite) => !data.profiles.some((profile) => profile.email === invite.email)
+  const inviteTypeLabels: Record<string, string> = {
+    general: 'General (enlace)',
+    member_linked: 'Vinculada a miembro'
+  }
+
+  const formatDate = (value: string | null) => {
+    if (!value) return 'Sin caducidad'
+
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return 'Fecha inválida'
+
+    return date.toLocaleString('es-ES', {
+      dateStyle: 'short',
+      timeStyle: 'short'
+    })
+  }
+
+  $: memberNameById = new Map(
+    data.members.map((member) => [member.id, `${member.name} ${member.family_name}`])
   )
 </script>
 
@@ -28,61 +52,127 @@
       <div class="admin-content">
         <h1>Administración</h1>
 
-        <h2>Invitar a la familia</h2>
-        <form method="POST" action="?/invite" use:enhance>
+        <h2>Invitación general</h2>
+        <form method="POST" action="?/inviteGeneral" use:enhance>
           <div class="invite-row">
+            <select name="role" bind:value={generalRole}>
+              <option value="viewer">Solo lectura</option>
+              <option value="editor">Editor</option>
+              {#if data.manager.role === 'admin'}<option value="admin">Administrador</option>{/if}
+            </select>
+            <select name="expiryPreset" bind:value={generalExpiry}>
+              <option value="none">Sin caducidad</option>
+              <option value="7d">Caduca en 7 días</option>
+              <option value="30d">Caduca en 30 días</option>
+            </select>
+            <input
+              class="modern-input"
+              type="number"
+              min="1"
+              name="maxUses"
+              placeholder="Usos (vacío = sin límite)"
+              bind:value={generalMaxUses}
+            />
+            <button type="submit">Invitar</button>
+          </div>
+        </form>
+        {#if form?.invitedGeneral}<p class="ok-note">Invitación general creada.</p>{/if}
+        {#if form?.inviteLink}
+          <p class="ok-note invite-link">
+            Enlace: <a href={form.inviteLink}>{form.inviteLink}</a>
+          </p>
+        {/if}
+        {#if form?.inviteError}<p class="error-note">{form.inviteError}</p>{/if}
+
+        <h2>Invitación vinculada a miembro</h2>
+        <form method="POST" action="?/inviteMember" use:enhance>
+          <div class="invite-row member-row">
             <input
               class="modern-input"
               type="email"
               name="email"
               placeholder="email@ejemplo.com"
-              bind:value={inviteEmail}
+              bind:value={memberEmail}
               required
             />
-            <select name="role">
-              <option value="editor">Editor</option>
+            <select name="memberId" bind:value={memberId} required>
+              <option value="" disabled selected>Selecciona miembro…</option>
+              {#each data.members as member (member.id)}
+                <option value={member.id}>{member.name} {member.family_name}</option>
+              {/each}
+            </select>
+            <select name="role" bind:value={memberRole}>
               <option value="viewer">Solo lectura</option>
-              <option value="admin">Administrador</option>
+              <option value="editor">Editor</option>
+              {#if data.manager.role === 'admin'}<option value="admin">Administrador</option>{/if}
+            </select>
+            <select name="expiryPreset" bind:value={memberExpiry}>
+              <option value="none">Sin caducidad</option>
+              <option value="7d">Caduca en 7 días</option>
+              <option value="30d">Caduca en 30 días</option>
             </select>
             <button type="submit">Invitar</button>
           </div>
         </form>
-        {#if form?.invited}<p class="ok-note">Invitación creada para {form.invited}.</p>{/if}
-        {#if form?.inviteError}<p class="error-note">{form.inviteError}</p>{/if}
+        {#if form?.invitedMember}
+          <p class="ok-note">Invitación vinculada creada para {form.invitedMember}.</p>
+        {/if}
 
-        {#if pendingInvites.length > 0}
-          <h2>Invitaciones pendientes</h2>
+        {#if data.invites.length > 0}
+          <h2>Invitaciones</h2>
           <ul class="list">
-            {#each pendingInvites as invite (invite.email)}
+            {#each data.invites as invite (invite.id)}
               <li>
-                <span>{invite.email} — {roleLabels[invite.role_on_signup]}</span>
-                <form method="POST" action="?/uninvite" use:enhance>
-                  <input type="hidden" name="email" value={invite.email} />
-                  <button type="submit" class="danger small">Retirar</button>
-                </form>
+                <span>
+                  {inviteTypeLabels[invite.type]}
+                  <small>Rol: {roleLabels[invite.role_on_signup]}</small>
+                  {#if invite.email}<small>Email: {invite.email}</small>{/if}
+                  {#if invite.member_id}
+                    <small>Miembro: {memberNameById.get(invite.member_id) ?? invite.member_id}</small>
+                  {/if}
+                  <small>Creada: {formatDate(invite.created_at)}</small>
+                  <small>Caduca: {formatDate(invite.expires_at)}</small>
+                  <small>
+                    Usos: {invite.uses_count}
+                    {#if invite.max_uses !== null}/ {invite.max_uses}{/if}
+                  </small>
+                  {#if invite.revoked_at}
+                    <small>Estado: Revocada</small>
+                  {:else}
+                    <small>Estado: Activa</small>
+                  {/if}
+                </span>
+                {#if !invite.revoked_at}
+                  <form method="POST" action="?/revokeInvite" use:enhance>
+                    <input type="hidden" name="inviteId" value={invite.id} />
+                    <button type="submit" class="danger small">Revocar</button>
+                  </form>
+                {/if}
               </li>
             {/each}
           </ul>
         {/if}
 
-        <h2>Usuarios</h2>
-        <ul class="list">
-          {#each data.profiles as profile (profile.id)}
-            <li>
-              <span>{profile.display_name ?? profile.email}<small>{profile.email}</small></span>
-              <form method="POST" action="?/setRole" use:enhance>
-                <input type="hidden" name="profileId" value={profile.id} />
-                <select name="role" value={profile.role}>
-                  <option value="admin">Administrador</option>
-                  <option value="editor">Editor</option>
-                  <option value="viewer">Solo lectura</option>
-                </select>
-                <button type="submit" class="small">Guardar</button>
-              </form>
-            </li>
-          {/each}
-        </ul>
-        {#if form?.roleError}<p class="error-note">{form.roleError}</p>{/if}
+        {#if data.canManageRoles}
+          <h2>Usuarios</h2>
+          <ul class="list">
+            {#each data.profiles as profile (profile.id)}
+              <li>
+                <span>{profile.display_name ?? profile.email}<small>{profile.email}</small></span>
+                <form method="POST" action="?/setRole" use:enhance>
+                  <input type="hidden" name="profileId" value={profile.id} />
+                  <select name="role" value={profile.role}>
+                    <option value="admin">Administrador</option>
+                    <option value="editor">Editor</option>
+                    <option value="viewer">Solo lectura</option>
+                  </select>
+                  <button type="submit" class="small">Guardar</button>
+                </form>
+              </li>
+            {/each}
+          </ul>
+          {#if form?.roleError}<p class="error-note">{form.roleError}</p>{/if}
+        {/if}
 
         <a class="back-link" href="/">← Volver al árbol</a>
       </div>
@@ -112,8 +202,7 @@
   .admin-content {
     display: flex;
     flex-direction: column;
-    width: 420px;
-    max-width: 85vw;
+      width: min(960px, 92vw);
 
     h1 {
       margin: 0 0 1rem;
@@ -127,10 +216,11 @@
 
     .invite-row {
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
 
       .modern-input {
-        flex: 1;
+        flex: 1 1 180px;
         padding: 0.5rem 0.75rem;
         border: 1px solid #e0e0e0;
         border-radius: 8px;
@@ -143,9 +233,16 @@
           border-color: #7c3aed;
         }
       }
+
+      &.member-row {
+        .modern-input {
+          min-width: 220px;
+        }
+      }
     }
 
     select {
+      min-width: 150px;
       border: 1px solid #e0e0e0;
       border-radius: 8px;
       background: #fafafa;
@@ -223,6 +320,14 @@
       color: #16a31a;
       font-size: 0.85rem;
       margin: 0.5rem 0 0;
+
+      &.invite-link {
+        word-break: break-all;
+
+        a {
+          color: #096bc1;
+        }
+      }
     }
 
     .error-note {
