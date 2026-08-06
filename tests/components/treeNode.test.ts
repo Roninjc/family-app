@@ -121,9 +121,9 @@ describe('treeNode', () => {
 
     await tick()
 
-    // La unión de la expareja va discontinua y sus bajadas a hijos sólidas
+    // Del miembro a los hijos sólido; discontinuo solo hacia la expareja
+    expect(document.querySelector('svg.previous-couple-family-lines')).toBeTruthy()
     expect(document.querySelector('svg.previous-couple-join')).toBeTruthy()
-    expect(document.querySelector('svg.previous-couple-children-lines')).toBeTruthy()
     const singleParentPath = document
       .querySelector('svg.single-parent-lines path')
       ?.getAttribute('d')
@@ -156,6 +156,37 @@ describe('treeNode', () => {
     expect(
       hijoEx!.compareDocumentPosition(hijoActual!) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
+  })
+
+  it('bandas por generación: los hijos exclusivos de una expareja comparten fila con los demás hijos', async () => {
+    // Caso Maribel: hija solo de Luisa (expareja de JM); Javier y Eva hijos de ambos
+    mountTree([
+      member('jm', {
+        partner: ['elena'],
+        previousPartners: ['luisa'],
+        children: ['javier', 'eva']
+      }),
+      member('luisa', { children: ['javier', 'eva', 'maribel'] }),
+      member('elena'),
+      member('maribel'),
+      member('javier'),
+      member('eva')
+    ])
+
+    await tick()
+
+    // Luisa (expareja) comparte la fila de badges con JM y Elena
+    expect(document.getElementById('luisa')?.parentElement).toBe(
+      document.getElementById('jm')?.parentElement
+    )
+    // Maribel comparte la fila de hijos con sus hermanos, aunque solo conste
+    // como hija de Luisa (antes caía una banda por debajo)
+    expect(document.getElementById('maribel')?.closest('.children-wrapper')).toBe(
+      document.getElementById('javier')?.closest('.children-wrapper')
+    )
+    // Y hay líneas tanto de la ex-familia como de progenitor único
+    expect(document.querySelector('svg.previous-couple-family-lines')).toBeTruthy()
+    expect(document.querySelector('svg.single-parent-lines')).toBeTruthy()
   })
 
   it('pulsar el badge de un miembro abre el modal de edición con su id', () => {

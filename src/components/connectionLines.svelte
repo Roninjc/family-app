@@ -6,8 +6,7 @@
     coupleLineSpec,
     memberExitOffsets,
     midGapY,
-    previousPartnerHeights,
-    previousPartnerJoinSpec
+    previousPartnerFamilySpecs
   } from '$lib/utils/connectionLines'
   import { onMount } from 'svelte'
 
@@ -21,7 +20,7 @@
   let coupleLine: LineSpec | undefined
   let coupleChildrenLines: LineSpec | undefined
   let singleParentLines: LineSpec | undefined
-  let previousPartnerFamilyLines: { join: LineSpec; children: LineSpec }[] = []
+  let previousPartnerFamilyLines: { memberToChildren: LineSpec; toPreviousPartner: LineSpec }[] = []
   let previousPartnerDashedLines: LineSpec[] = []
 
   // Todo se mide una vez montado el árbol (el resize re-monta y re-mide).
@@ -41,14 +40,28 @@
       top: rect.top - wrapperRect.top,
       bottom: rect.bottom - wrapperRect.top
     })
+    // Se mide el badge (primer hijo del div #id), no el propio .member-node:
+    // ese div se estira verticalmente con el align-items: stretch del flex
+    // cuando comparte fila con columnas más altas y falsearía el centro.
     const measure = (id: string): MemberBox | undefined => {
-      const element = document.getElementById(id)
+      const node = document.getElementById(id)
+      const element = node?.firstElementChild ?? node
       return element ? toMemberBox(element.getBoundingClientRect()) : undefined
     }
     const measureAll = (relatives: Relationship[]): MemberBox[] =>
       relatives.map(({ nodeId }) => measure(nodeId)).filter((box): box is MemberBox => Boolean(box))
 
-    const member = toMemberBox(memberElement.getBoundingClientRect())
+    const member = toMemberBox(
+      (memberElement.firstElementChild ?? memberElement).getBoundingClientRect()
+    )
+
+    // Alto estándar del hueco entre generaciones (el gap de 70px del árbol).
+    // Si un hijo midiera excepcionalmente más abajo (saltos de varias bandas),
+    // las líneas horizontales se quedan a la altura normal del primer hueco y
+    // solo se alargan las bajadas verticales.
+    const standardGenerationGap = 70
+    const clampedChildrenTop = (parentsBottomY: number, childrenTopY: number) =>
+      Math.min(childrenTopY, parentsBottomY + standardGenerationGap)
 
     // Separa las salidas hacia hijos que parten del mismo badge (stubs de
     // exparejas + bajada de progenitor único) para poder seguir cada línea
@@ -68,10 +81,11 @@
       coupleLine = coupleLineSpec(member.center, partner.center)
 
       if (coupleChildren.length > 0) {
+        const coupleBottom = Math.max(member.bottom, partner.bottom)
         const busY =
           midGapY(
-            Math.max(member.bottom, partner.bottom),
-            Math.min(...coupleChildren.map(({ top }) => top))
+            coupleBottom,
+            clampedChildrenTop(coupleBottom, Math.min(...coupleChildren.map(({ top }) => top)))
           ) - busSplit
         const junction: Point = {
           x: (member.center.x + partner.center.x) / 2,
@@ -86,7 +100,11 @@
     }
 
     if (spcChildren.length > 0) {
-      const busY = midGapY(member.bottom, Math.min(...spcChildren.map(({ top }) => top))) + busSplit
+      const busY =
+        midGapY(
+          member.bottom,
+          clampedChildrenTop(member.bottom, Math.min(...spcChildren.map(({ top }) => top)))
+        ) + busSplit
       singleParentLines = childrenLinesSpec(
         { x: member.center.x + singleParentOffset, y: member.center.y },
         spcChildren.map(({ center }) => center),
@@ -101,27 +119,20 @@
       const childrenBoxes = measureAll(children)
 
       if (previousPartner && childrenBoxes.length > 0) {
-        const { coupleY, busY } = previousPartnerHeights(
-          Math.max(member.bottom, previousPartner.bottom),
-          Math.min(...childrenBoxes.map(({ top }) => top)),
-          index,
-          previousPartnersChildren.length
-        )
-        const dropX = (member.center.x + previousPartner.center.x) / 2
-
-        previousPartnerFamilyLines.push({
-          join: previousPartnerJoinSpec(
+        previousPartnerFamilyLines.push(
+          previousPartnerFamilySpecs(
             member,
             previousPartner,
-            coupleY,
-            previousPartnerOffsets[index]
-          ),
-          children: childrenLinesSpec(
-            { x: dropX, y: coupleY },
             childrenBoxes.map(({ center }) => center),
-            busY
+            clampedChildrenTop(
+              Math.max(member.bottom, previousPartner.bottom),
+              Math.min(...childrenBoxes.map(({ top }) => top))
+            ),
+            index,
+            previousPartnersChildren.length,
+            previousPartnerOffsets[index]
           )
-        })
+        )
       }
     })
     previousPartnerFamilyLines = previousPartnerFamilyLines
@@ -167,20 +178,20 @@
 {/if}
 
 {#each previousPartnerFamilyLines as familyLines}
-  <!-- Unión de la expareja discontinua (relación pasada); bajadas a hijos sólidas -->
+  <!-- Del miembro a los hijos sólido; discontinuo solo hacia la expareja -->
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    class="previous-couple-join"
-    style={specStyle(familyLines.join)}
+    class="previous-couple-family-lines"
+    style={specStyle(familyLines.memberToChildren)}
   >
-    <path d={familyLines.join.d} />
+    <path d={familyLines.memberToChildren.d} />
   </svg>
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    class="previous-couple-children-lines"
-    style={specStyle(familyLines.children)}
+    class="previous-couple-join"
+    style={specStyle(familyLines.toPreviousPartner)}
   >
-    <path d={familyLines.children.d} />
+    <path d={familyLines.toPreviousPartner.d} />
   </svg>
 {/each}
 

@@ -115,25 +115,51 @@ export const previousPartnerHeights = (
   return { coupleY: gapTop + offset, busY: childrenTopY - offset }
 }
 
-// Unión de una expareja (se pinta discontinua: relación pasada): stubs
-// bajando de ambos badges hasta coupleY y horizontal entre ellos. Las bajadas
-// a los hijos comunes son un childrenLinesSpec aparte (sólido) cuyo junction
-// es el punto medio de la unión.
-export const previousPartnerJoinSpec = (
+// Familia de una expareja, en dos trazos: sólido del miembro hasta sus hijos
+// (la filiación no caduca) y discontinuo solo desde la intersección hasta la
+// expareja (relación pasada).
+export const previousPartnerFamilySpecs = (
   member: MemberBox,
   previousPartner: MemberBox,
-  coupleY: number,
+  childrenCenters: Point[],
+  childrenTopY: number,
+  previousPartnerIndex: number,
+  amountOfPreviousPartners: number,
   // Separación horizontal de la salida en el badge (ver memberExitOffsets)
   memberStubOffset = 0
-): LineSpec => {
+): { memberToChildren: LineSpec; toPreviousPartner: LineSpec } => {
+  const { coupleY, busY } = previousPartnerHeights(
+    Math.max(member.bottom, previousPartner.bottom),
+    childrenTopY,
+    previousPartnerIndex,
+    amountOfPreviousPartners
+  )
   const memberX = member.center.x + memberStubOffset
+  const dropX = (member.center.x + previousPartner.center.x) / 2
+  const busXs = [dropX, ...childrenCenters.map(({ x }) => x)]
+  // El stub que sube al badge de la expareja se desplaza hacia el lado del
+  // miembro: las salidas propias de la expareja hacia sus otros hijos parten
+  // de su centro exacto (las dibuja su propio nodo) y se solaparían.
+  const previousPartnerX =
+    previousPartner.center.x + 10 * Math.sign(member.center.x - previousPartner.center.x)
 
-  return specFromSegments([
-    { from: { x: memberX, y: member.bottom }, to: { x: memberX, y: coupleY } },
-    {
-      from: { x: previousPartner.center.x, y: previousPartner.bottom },
-      to: { x: previousPartner.center.x, y: coupleY }
-    },
-    { from: { x: previousPartner.center.x, y: coupleY }, to: { x: memberX, y: coupleY } }
-  ])
+  return {
+    memberToChildren: specFromSegments([
+      { from: { x: memberX, y: member.bottom }, to: { x: memberX, y: coupleY } },
+      { from: { x: memberX, y: coupleY }, to: { x: dropX, y: coupleY } },
+      { from: { x: dropX, y: coupleY }, to: { x: dropX, y: busY } },
+      { from: { x: Math.min(...busXs), y: busY }, to: { x: Math.max(...busXs), y: busY } },
+      ...childrenCenters.map((childCenter) => ({
+        from: { x: childCenter.x, y: busY },
+        to: childCenter
+      }))
+    ]),
+    toPreviousPartner: specFromSegments([
+      { from: { x: dropX, y: coupleY }, to: { x: previousPartnerX, y: coupleY } },
+      {
+        from: { x: previousPartnerX, y: coupleY },
+        to: { x: previousPartnerX, y: previousPartner.bottom }
+      }
+    ])
+  }
 }

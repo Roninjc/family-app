@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { FamilyMember } from '$lib/types/familyTypes'
+  import { matchesSearch } from '$lib/utils/text'
   import { createEventDispatcher, tick } from 'svelte'
   import { enhance } from '$app/forms'
   import { invalidateAll } from '$app/navigation'
@@ -16,6 +17,10 @@
   export let members: FamilyMember[] = []
   export let editable = false
   export let maxItems: number | undefined = undefined
+  // Relaciones probables (p. ej. hermanos de un hijo como posibles hijos):
+  // se ofrecen como chips de un clic, nunca se aplican solas
+  export let suggested: FamilyMember[] = []
+  export let suggestedLabel = ''
 
   const dispatch = createEventDispatcher<{ error: string }>()
 
@@ -30,7 +35,7 @@
     .filter((m): m is FamilyMember => Boolean(m))
   $: suggestions = members.filter(
     (m) =>
-      (m.name + ' ' + m.familyName).toLowerCase().includes(search.toLowerCase()) &&
+      matchesSearch(m.name + ' ' + m.familyName, search) &&
       !relatedIds.includes(m.id) &&
       !excludedIds.includes(m.id)
   )
@@ -128,6 +133,22 @@
         {/if}
       </div>
     </form>
+    {#if suggested.length > 0}
+      <div class="suggested-relations">
+        {#if suggestedLabel}<span>{suggestedLabel}</span>{/if}
+        {#each suggested as candidate (candidate.id)}
+          <button
+            type="button"
+            class="suggested-chip"
+            disabled={saving}
+            on:click={() => selectCandidate(candidate)}
+          >
+            + {candidate.name}
+            {candidate.familyName}
+          </button>
+        {/each}
+      </div>
+    {/if}
   {/if}
 </div>
 
@@ -186,6 +207,30 @@
           &:hover {
             color: #dc2626;
           }
+        }
+      }
+    }
+
+    .suggested-relations {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      color: #7c3aed;
+
+      .suggested-chip {
+        padding: 3px 10px;
+        border: 1px dashed #7c3aed88;
+        border-radius: 999px;
+        background: #f3f3ff;
+        font-size: 0.8rem;
+        color: #7c3aed;
+        cursor: pointer;
+        transition: background 0.2s;
+
+        &:hover {
+          background: #e6e6ff;
         }
       }
     }

@@ -7,165 +7,201 @@
 
   export let memberId: string
 
+  // Props de líneas de un miembro de la fila (contrato de ConnectionLines)
+  interface RowMemberLines {
+    memberId: string
+    render: boolean
+    actualPartner: Relationship[]
+    SPCChildren: Relationship[]
+    APCChildren: Relationship[]
+    previousPartnersNoChildren: Relationship[]
+    previousPartnersChildren: ParentsChildren[][]
+  }
+
   const actualVisitedMembers = get(visitedMembers)
   const actualStack = get(stack)
 
-  let singleParentChildren: ParentsChildren | undefined
-  let actualPartnerChildren: ParentsChildren | undefined
-  let previousPartnersNoChildren: Relationship[] = []
-  const previousPartnersChildren: ParentsChildren[][] = []
-
   let memberToDisplay = false
-  let renderConnectionLine = false
-  let children: Relationship[] = []
-  let siblings: Relationship[] = []
-  let actualPartner: Relationship[] = []
-  let previousPartners: Relationship[] = []
+  let rowLines: RowMemberLines[] = []
+  const clusterChildrenIds: string[] = []
+
+  const isFree = (nodeId: string) =>
+    !actualVisitedMembers.includes(nodeId) && !actualStack.includes(nodeId)
+
+  const relationsOf = (nodeId: string, weight: number): Relationship[] =>
+    familyTree
+      .getNodeRelationships(nodeId)
+      .filter((relationship: Relationship) => relationship.weight === weight)
+
+  // Encadena en una única fila de badges (de altura fija: una banda de
+  // generación) a todos los parientes del mismo nivel conectados entre sí:
+  // [exparejas..., miembro, pareja, hermanos...], recursivamente. Antes cada
+  // pariente anidaba su subárbol completo dentro de la fila, y una expareja
+  // con hijos propios la hacía más alta de una banda, empujando a los hijos
+  // del miembro una generación visual hacia abajo.
+  function claimRow(nodeId: string): string[] {
+    actualVisitedMembers.push(nodeId)
+
+    const claimRelated = (weight: number, limit = Infinity) =>
+      relationsOf(nodeId, weight)
+        .filter(({ nodeId: relatedId }) => isFree(relatedId))
+        .slice(0, limit)
+        .flatMap(({ nodeId: relatedId }) => (isFree(relatedId) ? claimRow(relatedId) : []))
+
+    const previousPartnersRow = claimRelated(5)
+    const partnerRow = claimRelated(4, 1)
+    const siblingsRow = claimRelated(3)
+
+    return [...previousPartnersRow, nodeId, ...partnerRow, ...siblingsRow]
+  }
+
+  const findPairGroup = (memberA: string, memberB: string) =>
+    parentsChildrenArray.find(
+      ({ parent1, parent2 }) =>
+        (parent1 === memberA && parent2 === memberB) || (parent2 === memberA && parent1 === memberB)
+    )
+
+  // Orden de los hijos de un miembro dentro de la fila de hijos: primero los
+  // de cada expareja (en su orden), después el resto de grupos — el mismo
+  // orden horizontal que siguen las salidas de las líneas
+  function sortChildrenByFamily(rowMemberId: string, childIds: string[]): string[] {
+    const order = new Map<string, number>()
+    let nextOrder = 0
+    const claimGroup = (group?: ParentsChildren) =>
+      group?.children.forEach(({ nodeId }) => {
+        if (!order.has(nodeId)) order.set(nodeId, nextOrder++)
+      })
+
+    relationsOf(rowMemberId, 5).forEach(({ nodeId: exId }) =>
+      claimGroup(findPairGroup(rowMemberId, exId))
+    )
+    claimGroup(
+      parentsChildrenArray.find(({ parent1, parent2 }) => parent1 === rowMemberId && !parent2)
+    )
+    parentsChildrenArray
+      .filter(({ parent1, parent2 }) => parent1 === rowMemberId || parent2 === rowMemberId)
+      .forEach((group) => claimGroup(group))
+
+    return [...childIds].sort((a, b) => (order.get(a) ?? Infinity) - (order.get(b) ?? Infinity))
+  }
 
   if (memberId && !actualVisitedMembers.includes(memberId)) {
     const stackIndex = actualStack.findIndex((id) => id === memberId)
     if (stackIndex !== -1) actualStack.splice(stackIndex, 1)
     memberToDisplay = true
 
-    // Add actual member to visitedMembers store
-    actualVisitedMembers.push(memberId)
-    visitedMembers.set(actualVisitedMembers)
+    const rowMemberIds = claimRow(memberId)
+    const rowSet = new Set(rowMemberIds)
+    const rowIndex = new Map(rowMemberIds.map((id, index) => [id, index]))
 
-    const relationships: Relationship[] = familyTree.getNodeRelationships(memberId)
+    // Reclama los hijos de todos los miembros de la fila (cada hijo una vez),
+    // recorriendo la fila en orden para que queden cerca de sus padres
+    const claimedChildren = new Set<string>()
+    for (const rowMemberId of rowMemberIds) {
+      const freeChildIds = relationsOf(rowMemberId, 1)
+        .map(({ nodeId }) => nodeId)
+        .filter((childId) => !claimedChildren.has(childId) && isFree(childId))
 
-    children = relationships.filter(
-      ({ nodeId, weight }) =>
-        weight === 1 && !actualVisitedMembers.includes(nodeId) && !actualStack.includes(nodeId)
-    )
-    siblings = relationships.filter(
-      ({ nodeId, weight }) =>
-        weight === 3 && !actualVisitedMembers.includes(nodeId) && !actualStack.includes(nodeId)
-    )
-    actualPartner = relationships.filter(
-      ({ nodeId, weight }) =>
-        weight === 4 && !actualVisitedMembers.includes(nodeId) && !actualStack.includes(nodeId)
-    )
-    previousPartners = relationships.filter(
-      ({ nodeId, weight }) =>
-        weight === 5 && !actualVisitedMembers.includes(nodeId) && !actualStack.includes(nodeId)
-    )
+      sortChildrenByFamily(rowMemberId, freeChildIds).forEach((childId) => {
+        claimedChildren.add(childId)
+        clusterChildrenIds.push(childId)
+      })
+    }
 
-    if (actualPartner.length > 0 || children.length > 0 || previousPartners.length > 0) {
-      renderConnectionLine = true
-
-      // Solo se dibujan líneas hacia hijos renderizados debajo de este nodo;
-      // un hijo ya dibujado en otra rama (o en otro árbol raíz) conserva su
-      // badge allí y aquí se omite para no cruzar la página con la línea.
-      const renderedChildIds = new Set(children.map(({ nodeId }) => nodeId))
+    // Grupos de líneas por miembro de la fila. Cada relación de pareja se
+    // dibuja una sola vez: la de pareja actual desde el miembro de la
+    // izquierda y las de expareja desde el de la derecha (las exparejas se
+    // colocan a su izquierda), que así acumula sus salidas y las escalona.
+    rowLines = rowMemberIds.map((rowMemberId) => {
+      const memberRowIndex = rowIndex.get(rowMemberId)!
+      const renderedChildIds = new Set(
+        relationsOf(rowMemberId, 1)
+          .map(({ nodeId }) => nodeId)
+          .filter((childId) => claimedChildren.has(childId))
+      )
       const onlyRenderedChildren = (group: ParentsChildren): ParentsChildren => ({
         ...group,
         children: group.children.filter(({ nodeId }) => renderedChildIds.has(nodeId))
       })
 
-      if (children.length > 0) {
-        const singleParentGroup = parentsChildrenArray.find(
-          ({ parent1, parent2 }) => parent1 === memberId && !parent2
-        )
-        if (singleParentGroup) singleParentChildren = onlyRenderedChildren(singleParentGroup)
+      const actualPartner = relationsOf(rowMemberId, 4)
+        .filter(({ nodeId }) => rowSet.has(nodeId) && memberRowIndex < rowIndex.get(nodeId)!)
+        .slice(0, 1)
+      const previousPartners = relationsOf(rowMemberId, 5).filter(
+        ({ nodeId }) => rowSet.has(nodeId) && memberRowIndex > rowIndex.get(nodeId)!
+      )
 
-        if (actualPartner.length > 0) {
-          const coupleGroup = parentsChildrenArray.find(({ parent1, parent2 }) => {
-            return (
-              (parent1 === memberId && parent2 === actualPartner[0].nodeId) ||
-              (parent2 === memberId && parent1 === actualPartner[0].nodeId)
-            )
-          })
-          if (coupleGroup) actualPartnerChildren = onlyRenderedChildren(coupleGroup)
-        }
+      const singleParentGroup = parentsChildrenArray.find(
+        ({ parent1, parent2 }) => parent1 === rowMemberId && !parent2
+      )
+      const SPCChildren = singleParentGroup ? onlyRenderedChildren(singleParentGroup).children : []
+
+      let APCChildren: Relationship[] = []
+      if (actualPartner.length > 0) {
+        const coupleGroup = findPairGroup(rowMemberId, actualPartner[0].nodeId)
+        if (coupleGroup) APCChildren = onlyRenderedChildren(coupleGroup).children
       }
 
+      const previousPartnersChildren: ParentsChildren[][] = []
+      const previousPartnersNoChildren: Relationship[] = []
       previousPartners.forEach((pPartner) => {
-        const pairGroup = parentsChildrenArray.find(({ parent1, parent2 }) => {
-          return (
-            (parent1 === memberId && parent2 === pPartner.nodeId) ||
-            (parent2 === memberId && parent1 === pPartner.nodeId)
-          )
-        })
+        const pairGroup = findPairGroup(rowMemberId, pPartner.nodeId)
         const renderedGroup = pairGroup ? onlyRenderedChildren(pairGroup) : undefined
 
         if (renderedGroup && renderedGroup.children.length > 0) {
           previousPartnersChildren.push([renderedGroup])
         } else {
-          // Sin hijos comunes renderizados debajo: línea discontinua de expareja
           previousPartnersNoChildren.push(pPartner)
         }
       })
 
-      // Ordena la fila de hijos por familia, siguiendo el orden horizontal de
-      // las salidas (exparejas a la izquierda, progenitor único, pareja actual
-      // a la derecha) para que las líneas de cada familia no se crucen
-      const childrenOrder = new Map<string, number>()
-      let nextOrder = 0
-      const claimGroup = (group: ParentsChildren | undefined) =>
-        group?.children.forEach(({ nodeId }) => {
-          if (!childrenOrder.has(nodeId)) childrenOrder.set(nodeId, nextOrder++)
-        })
+      return {
+        memberId: rowMemberId,
+        render:
+          actualPartner.length > 0 ||
+          previousPartners.length > 0 ||
+          SPCChildren.length > 0 ||
+          APCChildren.length > 0,
+        actualPartner,
+        SPCChildren,
+        APCChildren,
+        previousPartnersNoChildren,
+        previousPartnersChildren
+      }
+    })
 
-      previousPartnersChildren.forEach(([group]) => claimGroup(group))
-      claimGroup(singleParentChildren)
-      claimGroup(actualPartnerChildren)
-
-      children = [...children].sort(
-        (a, b) =>
-          (childrenOrder.get(a.nodeId) ?? Infinity) - (childrenOrder.get(b.nodeId) ?? Infinity)
-      )
+    // Los hijos reclamados se apilan para que otras ramas no los rendericen
+    for (const childId of clusterChildrenIds) {
+      actualStack.push(childId)
     }
-
-    for (const { nodeId, weight } of relationships) {
-      // Se apilan los parientes que el render recursivo puede dibujar. Los
-      // padres (weight 2) no: nunca se renderizan hacia abajo y dejarían
-      // entradas muertas en el stack que bloquearían su render (y el de sus
-      // parejas) cuando les toque salir como raíz extra.
-      if (weight !== 2) actualStack.push(nodeId)
-    }
+    visitedMembers.set(actualVisitedMembers)
     stack.set(actualStack)
   }
-
-  $: SPCChildren = singleParentChildren?.children
-  $: APCChildren = actualPartnerChildren?.children
 </script>
 
 {#if memberToDisplay}
   <div class="family-node-column">
-    <div class="family-node-row">
-      {#if previousPartners.length > 0}
-        {#each previousPartners as pPartner}
-          <svelte:self memberId={pPartner.nodeId} />
-        {/each}
-      {/if}
-      <div class="couple-wrapper family-node-row">
-        {#if renderConnectionLine}
+    <div class="badges-row family-node-row">
+      {#each rowLines as rowMember (rowMember.memberId)}
+        {#if rowMember.render}
           <ConnectionLines
-            {memberId}
-            {actualPartner}
-            {SPCChildren}
-            {APCChildren}
-            {previousPartnersNoChildren}
-            {previousPartnersChildren}
+            memberId={rowMember.memberId}
+            actualPartner={rowMember.actualPartner}
+            SPCChildren={rowMember.SPCChildren}
+            APCChildren={rowMember.APCChildren}
+            previousPartnersNoChildren={rowMember.previousPartnersNoChildren}
+            previousPartnersChildren={rowMember.previousPartnersChildren}
           />
         {/if}
-        <div id={memberId} class="member-node">
-          <MemberBadge {memberId} />
+        <div id={rowMember.memberId} class="member-node">
+          <MemberBadge memberId={rowMember.memberId} />
         </div>
-        {#if actualPartner.length > 0}
-          <svelte:self memberId={actualPartner[0].nodeId} />
-        {/if}
-      </div>
-      {#if siblings.length > 0}
-        {#each siblings as sibling}
-          <svelte:self memberId={sibling.nodeId} />
-        {/each}
-      {/if}
+      {/each}
     </div>
-    {#if children.length > 0}
+    {#if clusterChildrenIds.length > 0}
       <div class="children-wrapper family-node-row">
-        {#each children as child}
-          <svelte:self memberId={child.nodeId} />
+        {#each clusterChildrenIds as childId (childId)}
+          <svelte:self memberId={childId} />
         {/each}
       </div>
     {/if}
@@ -183,11 +219,13 @@
     display: flex;
     flex-direction: row;
     justify-content: center;
+    align-items: flex-start;
     gap: 40px;
   }
 
-  .couple-wrapper {
+  // Solo badges (altura fija) y SVGs absolutos: la fila mide siempre una
+  // banda de generación, ancla de las líneas de conexión
+  .badges-row {
     position: relative;
-    gap: 20px;
   }
 </style>

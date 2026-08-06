@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { FamilyMember } from '$lib/types/familyTypes'
+  import { suggestedChildren } from '$lib/utils/relationSuggestions'
+  import { matchesSearch } from '$lib/utils/text'
   import { enhance } from '$app/forms'
   import { invalidateAll } from '$app/navigation'
   import { page } from '$app/stores'
@@ -144,21 +146,21 @@
 
   $: filteredFatherSuggestions = familyMembers.filter(
     (m) =>
-      (m.name + ' ' + m.familyName).toLowerCase().includes(fatherSearch.toLowerCase()) &&
+      matchesSearch(m.name + ' ' + m.familyName, fatherSearch) &&
       m.id !== '' &&
       m.id !== motherId &&
       !childrenIds.includes(m.id)
   )
   $: filteredMotherSuggestions = familyMembers.filter(
     (m) =>
-      (m.name + ' ' + m.familyName).toLowerCase().includes(motherSearch.toLowerCase()) &&
+      matchesSearch(m.name + ' ' + m.familyName, motherSearch) &&
       m.id !== '' &&
       m.id !== fatherId &&
       !childrenIds.includes(m.id)
   )
   $: filteredSiblingSuggestions = familyMembers.filter(
     (m) =>
-      (m.name + ' ' + m.familyName).toLowerCase().includes(siblingsSearch.toLowerCase()) &&
+      matchesSearch(m.name + ' ' + m.familyName, siblingsSearch) &&
       m.id !== '' &&
       !siblingsIds.includes(m.id) &&
       !childrenIds.includes(m.id) &&
@@ -167,7 +169,7 @@
   )
   $: filteredChildrenSuggestions = familyMembers.filter(
     (m) =>
-      (m.name + ' ' + m.familyName).toLowerCase().includes(childrenSearch.toLowerCase()) &&
+      matchesSearch(m.name + ' ' + m.familyName, childrenSearch) &&
       m.id !== '' &&
       !childrenIds.includes(m.id) &&
       !siblingsIds.includes(m.id) &&
@@ -178,7 +180,7 @@
   )
   $: filteredActualPartnerSuggestions = familyMembers.filter(
     (m) =>
-      (m.name + ' ' + m.familyName).toLowerCase().includes(actualPartnerSearch.toLowerCase()) &&
+      matchesSearch(m.name + ' ' + m.familyName, actualPartnerSearch) &&
       m.id !== '' &&
       m.id !== fatherId &&
       m.id !== motherId &&
@@ -186,7 +188,7 @@
   )
   $: filteredPreviousPartnerSuggestions = familyMembers.filter(
     (m) =>
-      (m.name + ' ' + m.familyName).toLowerCase().includes(previousPartnersSearch.toLowerCase()) &&
+      matchesSearch(m.name + ' ' + m.familyName, previousPartnersSearch) &&
       m.id !== '' &&
       !previousPartnersIds.includes(m.id) &&
       !childrenIds.includes(m.id) &&
@@ -230,6 +232,14 @@
     const member = familyMembers.find((m) => m.id === id)
     return member ? member.name + ' ' + member.familyName : ''
   }
+
+  // Hermanos de los hijos seleccionados: sugerencia de un clic para añadirlos
+  // también como hijos del nuevo miembro
+  $: suggestedChildrenList = suggestedChildren(
+    childrenIds,
+    [fatherId, motherId, actualPartnerId, ...siblingsIds, ...previousPartnersIds].filter(Boolean),
+    familyMembers
+  )
 </script>
 
 {#if showAddMemberModalValue}
@@ -444,6 +454,21 @@
               {#if childrenIds.length > 0}
                 <div class="selected-list">
                   Hijos: {childrenIds.map((id) => getMemberName(id)).join(', ')}
+                </div>
+              {/if}
+              {#if suggestedChildrenList.length > 0}
+                <div class="suggested-children">
+                  <span>¿Son también hijos/as?</span>
+                  {#each suggestedChildrenList as suggestedChild (suggestedChild.id)}
+                    <button
+                      type="button"
+                      class="suggested-chip"
+                      on:click={() => addChild(suggestedChild)}
+                    >
+                      + {suggestedChild.name}
+                      {suggestedChild.familyName}
+                    </button>
+                  {/each}
                 </div>
               {/if}
               <div style="display: flex; gap: 1rem;">
@@ -795,6 +820,33 @@
 
             &:hover {
               background-color: #0bbe11b3;
+            }
+          }
+        }
+
+        .suggested-children {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 0.4rem;
+          margin-bottom: 1rem;
+          font-size: 0.8rem;
+          color: #7c3aed;
+
+          .suggested-chip {
+            width: auto;
+            padding: 3px 10px;
+            border: 1px dashed #7c3aed88;
+            border-radius: 999px;
+            background: #f3f3ff;
+            font-size: 0.8rem;
+            color: #7c3aed;
+            cursor: pointer;
+            transition: background 0.2s;
+
+            &:hover {
+              background: #e6e6ff;
+              scale: 1;
             }
           }
         }

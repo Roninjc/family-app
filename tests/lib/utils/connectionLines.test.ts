@@ -5,8 +5,8 @@ import {
   coupleLineSpec,
   memberExitOffsets,
   midGapY,
-  previousPartnerHeights,
-  previousPartnerJoinSpec
+  previousPartnerFamilySpecs,
+  previousPartnerHeights
 } from '$lib/utils/connectionLines'
 
 // Coordenadas relativas al couple-wrapper, como las produce el componente
@@ -96,23 +96,60 @@ describe('previousPartnerHeights', () => {
   })
 })
 
-describe('previousPartnerJoinSpec', () => {
+describe('previousPartnerFamilySpecs', () => {
   const member = box(75, 60)
   const previousPartner = box(-115, 60)
+  const children = [{ x: -20, y: 250 }]
 
-  it('une ambos badges con stubs hasta coupleY y una horizontal entre ellos', () => {
-    const spec = previousPartnerJoinSpec(member, previousPartner, 137.5, -6)
-    const local = (x: number) => x - spec.left
-
-    // Stub del miembro, desplazado por el offset de salida (75 - 6 = 69)
-    expect(spec.d).toContain(`M${local(69)} ${120 - spec.top} L${local(69)} ${137.5 - spec.top}`)
-    // Stub de la expareja desde el borde inferior de su badge
-    expect(spec.d).toContain(
-      `M${local(-115)} ${120 - spec.top} L${local(-115)} ${137.5 - spec.top}`
+  it('trazo sólido continuo desde el miembro hasta los hijos', () => {
+    const { memberToChildren } = previousPartnerFamilySpecs(
+      member,
+      previousPartner,
+      children,
+      190,
+      0,
+      1,
+      -6
     )
-    // Horizontal entre ambos a la altura de la unión
-    expect(spec.d).toContain(
-      `M${local(-115)} ${137.5 - spec.top} L${local(69)} ${137.5 - spec.top}`
+    const local = (x: number) => x - memberToChildren.left
+    const localY = (y: number) => y - memberToChildren.top
+
+    // Stub del miembro (75 - 6 = 69) hasta la altura de la unión (137.5)
+    expect(memberToChildren.d).toContain(
+      `M${local(69)} ${localY(120)} L${local(69)} ${localY(137.5)}`
+    )
+    // Horizontal hasta la intersección (punto medio, -20) y bajada al bus
+    expect(memberToChildren.d).toContain(
+      `M${local(69)} ${localY(137.5)} L${local(-20)} ${localY(137.5)}`
+    )
+    expect(memberToChildren.d).toContain(
+      `M${local(-20)} ${localY(137.5)} L${local(-20)} ${localY(172.5)}`
+    )
+    // Bajada hasta el centro del hijo
+    expect(memberToChildren.d).toContain(
+      `M${local(-20)} ${localY(172.5)} L${local(-20)} ${localY(250)}`
+    )
+  })
+
+  it('trazo discontinuo solo desde la intersección hasta la expareja', () => {
+    const { toPreviousPartner } = previousPartnerFamilySpecs(
+      member,
+      previousPartner,
+      children,
+      190,
+      0,
+      1,
+      -6
+    )
+    const local = (x: number) => x - toPreviousPartner.left
+    const localY = (y: number) => y - toPreviousPartner.top
+
+    // Horizontal intersección→expareja y stub subiendo a su badge, nada más.
+    // El stub queda 10px desplazado hacia el miembro (-115 + 10 = -105) para
+    // no solaparse con las salidas propias de la expareja hacia otros hijos.
+    expect(toPreviousPartner.d).toBe(
+      `M${local(-20)} ${localY(137.5)} L${local(-105)} ${localY(137.5)} ` +
+        `M${local(-105)} ${localY(137.5)} L${local(-105)} ${localY(120)}`
     )
   })
 })

@@ -4,6 +4,7 @@
   import { invalidateAll } from '$app/navigation'
   import { page } from '$app/stores'
   import { canEdit } from '$lib/types/auth'
+  import { suggestedChildren, suggestedParents } from '$lib/utils/relationSuggestions'
   import { editingMemberId, showEditMemberModal } from '../stores/modals'
   import LiquidGlassWrapper from './liquidGlassWrapper.svelte'
   import RelationChipsEditor from './relationChipsEditor.svelte'
@@ -38,6 +39,13 @@
         ...member.previousPartners
       ]
     : []
+
+  // Hermanos de sus hijos que no constan como hijos suyos: sugerencia de un clic
+  $: suggestedChildrenList = member
+    ? suggestedChildren(member.children, relatedOrSelfIds, familyMembers)
+    : []
+  // Padres de sus hermanos que no constan como padres suyos: ídem
+  $: suggestedParentsList = member ? suggestedParents(member, relatedOrSelfIds, familyMembers) : []
 
   function loadMember(m: FamilyMember) {
     loadedMemberId = m.id
@@ -150,6 +158,8 @@
             members={familyMembers}
             {editable}
             maxItems={2}
+            suggested={suggestedParentsList}
+            suggestedLabel="¿Son sus padres?"
             on:error={(e) => (error = e.detail)}
           />
           <RelationChipsEditor
@@ -161,6 +171,8 @@
             excludedIds={relatedOrSelfIds}
             members={familyMembers}
             {editable}
+            suggested={suggestedChildrenList}
+            suggestedLabel="¿Son también hijos/as?"
             on:error={(e) => (error = e.detail)}
           />
           <RelationChipsEditor
