@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { redirect, type Handle } from '@sveltejs/kit'
 import { sequence } from '@sveltejs/kit/hooks'
 import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public'
+import { isMockFamilyMode } from '$lib/server/mockMode'
 
 const supabase: Handle = async ({ event, resolve }) => {
   event.locals.supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
@@ -49,7 +50,7 @@ const authGuard: Handle = async ({ event, resolve }) => {
   const isAuthRoute =
     event.url.pathname.startsWith('/login') || event.url.pathname.startsWith('/auth')
 
-  if (!session && !isAuthRoute) {
+  if (!session && !isAuthRoute && !isMockFamilyMode()) {
     redirect(303, '/login')
   }
 

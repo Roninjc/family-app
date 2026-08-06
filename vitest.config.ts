@@ -9,6 +9,13 @@ export default defineConfig({
   plugins: [svelte({ hot: false })],
   resolve: {
     alias: {
+      // SvelteKit virtual modules stubbed for tests
+      '$app/environment': fileURLToPath(
+        new URL('./tests/mocks/app-environment.ts', import.meta.url)
+      ),
+      '$env/dynamic/private': fileURLToPath(
+        new URL('./tests/mocks/env-dynamic-private.ts', import.meta.url)
+      ),
       $lib: fileURLToPath(new URL('./src/lib', import.meta.url))
     },
     // Los tests de componente montan Svelte en jsdom: hay que resolver el

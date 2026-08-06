@@ -1,5 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit'
+import { mockFamilyData } from '$lib/data/mockFamily'
 import { rowsToFamilyData } from '$lib/server/familyAdapter'
+import { isMockFamilyMode } from '$lib/server/mockMode'
 import type { Actions, PageServerLoad } from './$types'
 
 // Relations as seen from the edited member, exactly as the modal sends them
@@ -19,6 +21,8 @@ const relationRow = (memberId: string, otherId: string, kind: RelationKind) => {
 }
 
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
+  if (isMockFamilyMode()) return { familyData: mockFamilyData }
+
   const [membersRes, relationshipsRes] = await Promise.all([
     supabase
       .from('members')

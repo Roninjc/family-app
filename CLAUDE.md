@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Uses yarn (yarn.lock is present).
 
 - `yarn dev` — start dev server (`yarn dev -- --open` to open browser)
+- `yarn dev:mock` — dev server with the mock family from `src/lib/data/mockFamily.ts` and no auth (skips Supabase reads entirely; editor-role stub profile). Use this for all layout/visual work — never real family data. Dev-only (`isMockFamilyMode()` in `src/lib/server/mockMode.ts` gates on `dev`). Mutating actions are not mocked and will fail against RLS.
 - `yarn build` / `yarn preview` — production build (adapter-node) / preview it
 - `yarn run check` — type-check with svelte-check (must be `yarn run check`; plain `yarn check` runs yarn's builtin integrity check instead).
 - `yarn test` / `yarn test:watch` — Vitest. Tests live in `tests/`, mirroring the `src/` structure (config in `vitest.config.ts`, separate from vite.config; component tests run in jsdom via `// @vitest-environment jsdom`). Covers the tree engine, the DB adapter, connection-line math, treeNode rendering and the page actions.
