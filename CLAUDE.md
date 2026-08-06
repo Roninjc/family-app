@@ -42,7 +42,7 @@ Family tree web app for the Castaño family, backed by a Supabase cloud project 
 
 ## Deploy
 
-Runs on the owner's home server (docker compose + Cloudflare Tunnel). `Dockerfile` is multi-stage; PUBLIC_ env vars are inlined at **build** time (`$env/static/public`), passed as build args — see `docker-compose.example.yml`. `ORIGIN` env var must match the public URL or form actions fail CSRF checks.
+Runs on the owner's home server (docker compose + Cloudflare Tunnel). `Dockerfile` is multi-stage; PUBLIC\_ env vars are inlined at **build** time (`$env/static/public`), passed as build args — see `docker-compose.example.yml`. `ORIGIN` env var must match the public URL or form actions fail CSRF checks.
 
 ## Other notes
 
@@ -52,8 +52,8 @@ Runs on the owner's home server (docker compose + Cloudflare Tunnel). `Dockerfil
 - `src/lib/data/seedFamily.ts` is the original hardcoded family — only used by `scripts/migrate-seed.ts` now; the app reads exclusively from Supabase.
 - `src/components/liquidGlassWrapper.svelte` provides the "Liquid Glass" visual effect (SVG turbulence filter + layered divs) used by modals/cards; wrap content in it via slot.
 - Test users may exist in Supabase (`familia.castano.test.*@gmail.com`, passwords in gitignored `scripts/.tmp-*`); delete them before inviting real family.
-- Some code comments and all user-facing new UI text are in Spanish.
+- Code, comments and tests are in English; all user-facing UI text is in Spanish.
 
 ## Style
 
-Prettier is enforced: no semicolons, single quotes, no trailing commas, 100-char width, 2-space indent (existing `.svelte`/`.ts` files follow this even though some root config files use tabs).
+Prettier is enforced repo-wide (`yarn lint` must pass): no semicolons, single quotes, no trailing commas, 100-char width, 2-space indent.

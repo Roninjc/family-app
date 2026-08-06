@@ -1,4 +1,3 @@
-
 # Family App
 
 Welcome to the **Family App** repository! This project is built with [SvelteKit](https://kit.svelte.dev/) and provides a modern foundation for developing family tree web applications.
@@ -6,7 +5,6 @@ Welcome to the **Family App** repository! This project is built with [SvelteKit]
 ## 🚀 Getting Started
 
 ### Project Setup
-
 
 If you haven't created your project yet, you can start with:
 
@@ -18,7 +16,6 @@ yarn create svelte my-app
 
 ### Install Dependencies
 
-
 Install all required dependencies:
 
 ```bash
@@ -26,7 +23,6 @@ yarn install
 ```
 
 ### Development
-
 
 Start the development server:
 
@@ -37,7 +33,6 @@ yarn dev -- --open
 ```
 
 ### Production Build
-
 
 Create an optimized production build:
 
