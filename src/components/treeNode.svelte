@@ -61,26 +61,47 @@
         (parent1 === memberA && parent2 === memberB) || (parent2 === memberA && parent1 === memberB)
     )
 
-  // Order of a member's children within the children row: each previous
-  // partner's children first (in their order), then the remaining groups —
-  // the same horizontal order the line exits follow
-  function sortChildrenByFamily(rowMemberId: string, childIds: string[]): string[] {
+  // Order of the children row, following the horizontal position of their
+  // parents in the badges row: while walking each row member (left to right),
+  // first their exclusive children (no second parent, or second parent
+  // outside this row) and then the children shared with each partner or
+  // previous partner placed to their right, nearest first. Net result:
+  // first ex's exclusive children → children shared with that ex → ... →
+  // member's exclusive children → children shared with the current partner →
+  // partner's exclusive children, so every line drops almost vertically
+  // without crossing other families.
+  function sortChildrenByFamily(
+    rowMemberId: string,
+    childIds: string[],
+    rowIndex: Map<string, number>
+  ): string[] {
     const order = new Map<string, number>()
     let nextOrder = 0
-    const claimGroup = (group?: ParentsChildren) =>
-      group?.children.forEach(({ nodeId }) => {
+    const claimGroup = (group: ParentsChildren) =>
+      group.children.forEach(({ nodeId }) => {
         if (!order.has(nodeId)) order.set(nodeId, nextOrder++)
       })
 
-    relationsOf(rowMemberId, 5).forEach(({ nodeId: exId }) =>
-      claimGroup(findPairGroup(rowMemberId, exId))
+    const memberGroups = parentsChildrenArray.filter(
+      ({ parent1, parent2 }) => parent1 === rowMemberId || parent2 === rowMemberId
     )
-    claimGroup(
-      parentsChildrenArray.find(({ parent1, parent2 }) => parent1 === rowMemberId && !parent2)
-    )
-    parentsChildrenArray
-      .filter(({ parent1, parent2 }) => parent1 === rowMemberId || parent2 === rowMemberId)
-      .forEach((group) => claimGroup(group))
+    const coParentOf = ({ parent1, parent2 }: ParentsChildren) =>
+      parent1 === rowMemberId ? parent2 : parent1
+
+    memberGroups
+      .filter((group) => {
+        const coParent = coParentOf(group)
+        return !coParent || !rowIndex.has(coParent)
+      })
+      .forEach(claimGroup)
+
+    memberGroups
+      .filter((group) => {
+        const coParent = coParentOf(group)
+        return coParent !== undefined && rowIndex.has(coParent)
+      })
+      .sort((a, b) => rowIndex.get(coParentOf(a)!)! - rowIndex.get(coParentOf(b)!)!)
+      .forEach(claimGroup)
 
     return [...childIds].sort((a, b) => (order.get(a) ?? Infinity) - (order.get(b) ?? Infinity))
   }
@@ -102,7 +123,7 @@
         .map(({ nodeId }) => nodeId)
         .filter((childId) => !claimedChildren.has(childId) && isFree(childId))
 
-      sortChildrenByFamily(rowMemberId, freeChildIds).forEach((childId) => {
+      sortChildrenByFamily(rowMemberId, freeChildIds, rowIndex).forEach((childId) => {
         claimedChildren.add(childId)
         clusterChildrenIds.push(childId)
       })

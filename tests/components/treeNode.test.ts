@@ -197,6 +197,14 @@ describe('treeNode', () => {
     expect(document.getElementById('maribel')?.closest('.children-wrapper')).toBe(
       document.getElementById('javier')?.closest('.children-wrapper')
     )
+    // Luisa's exclusive child renders leftmost (before the shared children),
+    // mirroring Luisa's position in the badges row, so her line stays short
+    expect(
+      document
+        .getElementById('maribel')!
+        .compareDocumentPosition(document.getElementById('javier')!) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
     // And there are lines for both the ex-family and the single parent
     expect(document.querySelector('svg.previous-couple-family-lines')).toBeTruthy()
     expect(document.querySelector('svg.single-parent-lines')).toBeTruthy()
