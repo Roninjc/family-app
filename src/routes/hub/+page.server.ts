@@ -28,6 +28,32 @@ const notesForFamily = (familyName: string, membersCount: number) => [
   }
 ]
 
+type HubNote = {
+  id: string
+  title: string
+  body: string
+  noteType: 'news' | 'note'
+  createdAt: string | null
+}
+
+const noteTypeRank = (noteType: HubNote['noteType']) => (noteType === 'news' ? 0 : 1)
+
+const toMillis = (createdAt: string | null) => {
+  if (!createdAt) return 0
+  const time = new Date(createdAt).getTime()
+  return Number.isFinite(time) ? time : 0
+}
+
+const compareHubNotes = (left: HubNote, right: HubNote) => {
+  const typeDiff = noteTypeRank(left.noteType) - noteTypeRank(right.noteType)
+  if (typeDiff !== 0) return typeDiff
+
+  const dateDiff = toMillis(right.createdAt) - toMillis(left.createdAt)
+  if (dateDiff !== 0) return dateDiff
+
+  return left.title.localeCompare(right.title, 'es')
+}
+
 const resolveFamilyForAction = async (options: {
   supabase: App.Locals['supabase']
   userId: string
@@ -131,19 +157,21 @@ export const load: PageServerLoad = async ({ locals: { supabase, user }, cookies
     previewByFamily.set(member.family_id, preview)
   }
 
-  const notesByFamily = new Map<
-    string,
-    Array<{ id: string; title: string; body: string; noteType: 'news' | 'note' }>
-  >()
+  const notesByFamily = new Map<string, HubNote[]>()
   for (const note of notesRes.data ?? []) {
     const collection = notesByFamily.get(note.family_id) ?? []
     collection.push({
       id: note.id,
       title: note.title,
       body: note.body,
-      noteType: note.note_type === 'news' ? 'news' : 'note'
+      noteType: note.note_type === 'news' ? 'news' : 'note',
+      createdAt: note.created_at ?? null
     })
     notesByFamily.set(note.family_id, collection)
+  }
+
+  for (const [familyId, notes] of notesByFamily) {
+    notesByFamily.set(familyId, [...notes].sort(compareHubNotes))
   }
 
   const families = userFamilies.map((family) => ({
@@ -153,7 +181,9 @@ export const load: PageServerLoad = async ({ locals: { supabase, user }, cookies
     linksCount: 0,
     previewMembers: previewByFamily.get(family.id) ?? [],
     canManageNotes: family.role === 'admin' || family.role === 'editor',
-    notes: notesByFamily.get(family.id) ?? notesForFamily(family.name, countByFamily.get(family.id) ?? 0),
+    notes:
+      notesByFamily.get(family.id)?.map(({ createdAt: _createdAt, ...note }) => note) ??
+      notesForFamily(family.name, countByFamily.get(family.id) ?? 0),
     treeHref: `/?family=${encodeURIComponent(family.id)}`
   }))
 

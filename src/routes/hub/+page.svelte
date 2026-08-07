@@ -158,6 +158,43 @@
     selectFamily(family.id)
   }
 
+  const focusDotAt = (index: number) => {
+    const dots = Array.from(document.querySelectorAll<HTMLButtonElement>('.carousel-dots .dot'))
+    dots[index]?.focus()
+  }
+
+  const handleDotKeydown = (event: KeyboardEvent, index: number) => {
+    if (event.key === 'ArrowRight') {
+      event.preventDefault()
+      const nextIndex = (index + 1) % data.families.length
+      goToFamilyAt(nextIndex)
+      focusDotAt(nextIndex)
+      return
+    }
+
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault()
+      const prevIndex = (index - 1 + data.families.length) % data.families.length
+      goToFamilyAt(prevIndex)
+      focusDotAt(prevIndex)
+      return
+    }
+
+    if (event.key === 'Home') {
+      event.preventDefault()
+      goToFamilyAt(0)
+      focusDotAt(0)
+      return
+    }
+
+    if (event.key === 'End') {
+      event.preventDefault()
+      const lastIndex = data.families.length - 1
+      goToFamilyAt(lastIndex)
+      focusDotAt(lastIndex)
+    }
+  }
+
   onMount(() => {
     if (selectedFamily?.id) {
       const selectedCard = cards.get(selectedFamily.id)
@@ -371,15 +408,21 @@
     </div>
 
     {#if data.families.length > 1}
-      <div class="carousel-dots" aria-label="Indicador de familia activa">
+      <div class="carousel-dots" role="tablist" aria-label="Indicador de familia activa">
         {#each data.families as family, index (family.id)}
           <button
             type="button"
             class="dot"
             class:active={family.id === selectedFamily?.id}
+            role="tab"
+            aria-selected={family.id === selectedFamily?.id}
+            tabindex={family.id === selectedFamily?.id ? 0 : -1}
             aria-label={`Ir a ${family.name}`}
             on:click={() => {
               goToFamilyAt(index)
+            }}
+            on:keydown={(event) => {
+              handleDotKeydown(event, index)
             }}
           ></button>
         {/each}
@@ -550,6 +593,14 @@
 
   .panel-tree-link {
     white-space: nowrap;
+  }
+
+  .panel-tree-link:focus-visible,
+  .note-create-toggle:focus-visible,
+  .note-action-btn:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--brand) 86%, #fff 14%);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 5px rgba(223, 203, 182, 0.38);
   }
 
   .preview-card,
@@ -783,6 +834,12 @@
       transform 0.22s var(--motion-standard),
       background-color 0.22s var(--motion-standard);
     cursor: pointer;
+  }
+
+  .dot:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--brand) 84%, #fff 16%);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 4px rgba(198, 171, 139, 0.4);
   }
 
   .dot.active {

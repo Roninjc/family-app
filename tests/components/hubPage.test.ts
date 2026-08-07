@@ -59,6 +59,48 @@ describe('hub page carousel', () => {
     expect(document.querySelector('.dot.active')?.getAttribute('aria-label')).toContain('Luna')
     expect(document.cookie).toContain('active_family_id=f2')
     expect(window.location.search).toContain('family=f2')
+
+    const dots = [...document.querySelectorAll('.dot')] as HTMLButtonElement[]
+    expect(dots[0].getAttribute('aria-selected')).toBe('false')
+    expect(dots[1].getAttribute('aria-selected')).toBe('true')
+  })
+
+  it('supports keyboard navigation in dot indicator', async () => {
+    new HubPage({
+      target: document.body,
+      props: { data: baseData }
+    })
+
+    await tick()
+
+    const firstDot = [...document.querySelectorAll('.dot')][0] as HTMLButtonElement
+    firstDot.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    await tick()
+
+    expect(document.querySelector('.dot.active')?.getAttribute('aria-label')).toContain('Luna')
+    let dots = [...document.querySelectorAll('.dot')] as HTMLButtonElement[]
+    expect(dots[0].getAttribute('tabindex')).toBe('-1')
+    expect(dots[1].getAttribute('tabindex')).toBe('0')
+
+    const secondDot = [...document.querySelectorAll('.dot')][1] as HTMLButtonElement
+    secondDot.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+    await tick()
+
+    expect(document.querySelector('.dot.active')?.getAttribute('aria-label')).toContain('Castaño')
+
+    const firstDotAgain = [...document.querySelectorAll('.dot')][0] as HTMLButtonElement
+    firstDotAgain.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }))
+    await tick()
+    expect(document.querySelector('.dot.active')?.getAttribute('aria-label')).toContain('Luna')
+
+    const lastDot = [...document.querySelectorAll('.dot')][1] as HTMLButtonElement
+    lastDot.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }))
+    await tick()
+    expect(document.querySelector('.dot.active')?.getAttribute('aria-label')).toContain('Castaño')
+
+    dots = [...document.querySelectorAll('.dot')] as HTMLButtonElement[]
+    expect(dots[0].getAttribute('tabindex')).toBe('0')
+    expect(dots[1].getAttribute('tabindex')).toBe('-1')
   })
 
   it('shows note create and edit controls only when family allows note management', async () => {
@@ -166,4 +208,5 @@ describe('hub page carousel', () => {
       'Error de prueba'
     )
   })
+
 })

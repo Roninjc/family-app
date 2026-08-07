@@ -15,7 +15,30 @@ describe('hub load', () => {
       { id: 'c', name: 'Cris', family_id: 'f2' }
     ]
     const notes = [
-      { id: 'n1', family_id: 'f2', title: 'Aviso', body: 'Nota persistida', note_type: 'news' }
+      {
+        id: 'n1',
+        family_id: 'f2',
+        title: 'Nota antigua',
+        body: 'Texto 1',
+        note_type: 'note',
+        created_at: '2026-08-01T10:00:00.000Z'
+      },
+      {
+        id: 'n2',
+        family_id: 'f2',
+        title: 'Aviso nuevo',
+        body: 'Texto 2',
+        note_type: 'news',
+        created_at: '2026-08-02T10:00:00.000Z'
+      },
+      {
+        id: 'n3',
+        family_id: 'f2',
+        title: 'Aviso antiguo',
+        body: 'Texto 3',
+        note_type: 'news',
+        created_at: '2026-08-01T09:00:00.000Z'
+      }
     ]
     const memberships = [
       { family_id: 'f1', role: 'editor', families: { id: 'f1', name: 'Familia Castaño' } },
@@ -90,9 +113,11 @@ describe('hub load', () => {
     expect(data.activeFamilyId).toBe('f2')
     expect(data.activeFamilyName).toContain('Luna')
     expect(data.families[0].treeHref).toContain('/?family=f1')
-    expect(data.families.find((family: { id: string }) => family.id === 'f2')?.notes[0].title).toBe(
-      'Aviso'
-    )
+    expect(
+      data.families.find((family: { id: string }) => family.id === 'f2')?.notes.map(
+        (note: { title: string }) => note.title
+      )
+    ).toEqual(['Aviso nuevo', 'Aviso antiguo', 'Nota antigua'])
     expect(cookieWrites).toContainEqual({ name: 'active_family_id', value: 'f2' })
   })
 
