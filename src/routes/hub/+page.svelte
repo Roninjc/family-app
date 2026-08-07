@@ -145,10 +145,6 @@
 
   const persistActiveFamily = (familyId: string) => {
     document.cookie = `active_family_id=${encodeURIComponent(familyId)}; path=/; max-age=15552000; samesite=lax`
-
-    const nextUrl = new URL(window.location.href)
-    nextUrl.searchParams.set('family', familyId)
-    window.history.replaceState(window.history.state, '', nextUrl)
   }
 
   const selectFamily = (familyId: string, scroll = true) => {

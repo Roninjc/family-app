@@ -61,7 +61,6 @@ describe('hub page carousel', () => {
 
     expect(document.querySelector('.dot.active')?.getAttribute('aria-label')).toContain('Luna')
     expect(document.cookie).toContain('active_family_id=f2')
-    expect(window.location.search).toContain('family=f2')
 
     const dots = [...document.querySelectorAll('.dot')] as HTMLButtonElement[]
     expect(dots[0].getAttribute('aria-selected')).toBe('false')

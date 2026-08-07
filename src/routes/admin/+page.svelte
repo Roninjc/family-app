@@ -46,11 +46,18 @@
   $: if (!memberId && preselectedMemberId && memberNameById.has(preselectedMemberId)) {
     memberId = preselectedMemberId
   }
+  $: activeFamilyId = data.activeFamily?.id ?? ''
 
   let openSection: 'general' | 'member' | 'invites' | 'users' | null = 'general'
 
   const toggleSection = (section: 'general' | 'member' | 'invites' | 'users') => {
     openSection = openSection === section ? null : section
+  }
+
+  const handleFamilySelectChange = (event: Event) => {
+    const target = event.currentTarget
+    if (!(target instanceof HTMLSelectElement)) return
+    if (target.value) target.form?.requestSubmit()
   }
 </script>
 
@@ -63,6 +70,30 @@
     <LiquidGlassWrapper>
       <div class="admin-content">
         <h1>Administración</h1>
+
+        <section class="admin-section open reveal-fade-up reveal-delay-1">
+          <div class="section-body family-scope-row">
+            <div class="scope-copy">
+              <strong>Familia activa:</strong> {data.activeFamily?.name}
+              <small>Tu rol aquí: {roleLabels[data.activeFamily?.role ?? 'viewer']}</small>
+            </div>
+            {#if data.families.length > 1}
+              <form method="GET" class="family-picker-form">
+                <label for="family-select">Cambiar familia</label>
+                <select
+                  id="family-select"
+                  name="family"
+                  value={activeFamilyId}
+                  on:change={handleFamilySelectChange}
+                >
+                  {#each data.families as family}
+                    <option value={family.id}>{family.name}</option>
+                  {/each}
+                </select>
+              </form>
+            {/if}
+          </div>
+        </section>
 
         <section class="admin-section reveal-fade-up reveal-delay-1" class:open={openSection === 'general'}>
           <button
@@ -80,10 +111,11 @@
             <div class="section-body" transition:fade={{ duration: 140 }}>
               <form method="POST" action="?/inviteGeneral" use:enhance>
                 <div class="invite-row">
+                  <input type="hidden" name="familyId" value={activeFamilyId} />
                   <select name="role" bind:value={generalRole}>
                     <option value="viewer">Solo lectura</option>
                     <option value="editor">Editor</option>
-                    {#if data.manager.role === 'admin'}
+                    {#if data.activeFamily.role === 'admin'}
                       <option value="admin">Administrador</option>
                     {/if}
                   </select>
@@ -130,6 +162,7 @@
             <div class="section-body" transition:fade={{ duration: 140 }}>
               <form method="POST" action="?/inviteMember" use:enhance>
                 <div class="invite-row member-row">
+                  <input type="hidden" name="familyId" value={activeFamilyId} />
                   <input
                     class="modern-input"
                     type="email"
@@ -147,7 +180,7 @@
                   <select name="role" bind:value={memberRole}>
                     <option value="viewer">Solo lectura</option>
                     <option value="editor">Editor</option>
-                    {#if data.manager.role === 'admin'}
+                    {#if data.activeFamily.role === 'admin'}
                       <option value="admin">Administrador</option>
                     {/if}
                   </select>
@@ -207,6 +240,7 @@
                       </span>
                       {#if !invite.revoked_at}
                         <form method="POST" action="?/revokeInvite" use:enhance>
+                          <input type="hidden" name="familyId" value={activeFamilyId} />
                           <input type="hidden" name="inviteId" value={invite.id} />
                           <button type="submit" class="app-btn app-btn--danger small">Revocar</button>
                         </form>
@@ -241,6 +275,7 @@
                     <li>
                       <span>{profile.display_name ?? profile.email}<small>{profile.email}</small></span>
                       <form method="POST" action="?/setRole" use:enhance>
+                        <input type="hidden" name="familyId" value={activeFamilyId} />
                         <input type="hidden" name="profileId" value={profile.id} />
                         <select name="role" value={profile.role}>
                           <option value="admin">Administrador</option>
@@ -364,6 +399,37 @@
       &.member-row {
         .modern-input {
           min-width: 220px;
+        }
+      }
+    }
+
+    .family-scope-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 12px;
+      flex-wrap: wrap;
+
+      .scope-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+
+        small {
+          color: var(--text-muted);
+          font-size: var(--fs-xs);
+        }
+      }
+
+      .family-picker-form {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+
+        label {
+          font-size: var(--fs-2xs);
+          color: var(--text-muted);
+          font-weight: 600;
         }
       }
     }
