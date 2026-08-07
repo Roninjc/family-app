@@ -13,7 +13,8 @@ const baseData = {
       membersCount: 5,
       linksCount: 4,
       previewMembers: ['Ana', 'Beto'],
-      notes: [{ id: 'n1', title: 'Nota 1', body: 'Texto 1' }],
+      canManageNotes: true,
+      notes: [{ id: 'n1', title: 'Nota 1', body: 'Texto 1', noteType: 'note' as const }],
       treeHref: '/?family=f1'
     },
     {
@@ -22,7 +23,8 @@ const baseData = {
       membersCount: 2,
       linksCount: 1,
       previewMembers: ['Cris'],
-      notes: [{ id: 'n2', title: 'Nota 2', body: 'Texto 2' }],
+      canManageNotes: true,
+      notes: [{ id: 'n2', title: 'Nota 2', body: 'Texto 2', noteType: 'news' as const }],
       treeHref: '/?family=f2'
     }
   ],
@@ -57,5 +59,111 @@ describe('hub page carousel', () => {
     expect(document.querySelector('.dot.active')?.getAttribute('aria-label')).toContain('Luna')
     expect(document.cookie).toContain('active_family_id=f2')
     expect(window.location.search).toContain('family=f2')
+  })
+
+  it('shows note create and edit controls only when family allows note management', async () => {
+    const data = {
+      ...baseData,
+      families: [
+        {
+          ...baseData.families[0],
+          canManageNotes: true
+        },
+        {
+          ...baseData.families[1],
+          canManageNotes: false
+        }
+      ]
+    }
+
+    new HubPage({
+      target: document.body,
+      props: { data }
+    })
+
+    await tick()
+
+    expect(document.querySelector('.family-panel.active .note-create-toggle')?.textContent).toContain(
+      'Nueva nota'
+    )
+    expect(document.querySelector('.family-panel.active .note-action-btn')?.textContent).toContain(
+      'Editar'
+    )
+
+    const secondDot = [...document.querySelectorAll('.dot')][1] as HTMLButtonElement
+    secondDot.click()
+    await tick()
+
+    expect(document.querySelector('.family-panel.active .note-create-toggle')).toBeNull()
+    expect(document.querySelector('.family-panel.active .note-action-btn')).toBeNull()
+  })
+
+  it('opens create form, opens edit form, and closes edit form on cancel', async () => {
+    new HubPage({
+      target: document.body,
+      props: { data: baseData }
+    })
+
+    await tick()
+
+    const createToggle = document.querySelector('.note-create-toggle') as HTMLButtonElement
+    expect(createToggle).toBeTruthy()
+    createToggle.click()
+    await tick()
+
+    expect(document.querySelector('form[action="?/createNote"]')).toBeTruthy()
+
+    const editButton = document.querySelector('.note-action-btn') as HTMLButtonElement
+    expect(editButton).toBeTruthy()
+    editButton.click()
+    await tick()
+
+    expect(document.querySelector('form[action="?/updateNote"]')).toBeTruthy()
+
+    const cancelButton = [...document.querySelectorAll('button')].find(
+      (button) => button.textContent?.trim() === 'Cancelar'
+    ) as HTMLButtonElement | undefined
+    expect(cancelButton).toBeTruthy()
+    cancelButton?.click()
+    await tick()
+
+    expect(document.querySelector('form[action="?/updateNote"]')).toBeNull()
+  })
+
+  it('shows note feedback messages only for the matching family panel', async () => {
+    new HubPage({
+      target: document.body,
+      props: {
+        data: baseData,
+        form: {
+          noteCreated: true,
+          noteUpdated: true,
+          noteDeleted: true,
+          noteError: 'Error de prueba',
+          familyId: 'f2'
+        }
+      }
+    })
+
+    await tick()
+
+    // Active panel is f1 at start: no feedback should be visible there
+    expect(document.querySelector('.family-panel.active .note-ok')).toBeNull()
+    expect(document.querySelector('.family-panel.active .note-error')).toBeNull()
+
+    const secondDot = [...document.querySelectorAll('.dot')][1] as HTMLButtonElement
+    secondDot.click()
+    await tick()
+
+    const statusMessages = [...document.querySelectorAll('.family-panel.active .note-ok')].map((node) =>
+      node.textContent?.trim()
+    )
+
+    expect(statusMessages).toContain('Nota creada.')
+    expect(statusMessages).toContain('Nota actualizada.')
+    expect(statusMessages).toContain('Nota eliminada.')
+    expect(document.querySelector('.family-panel.active .note-error')?.textContent).toContain(
+      'Error de prueba'
+    )
   })
 })

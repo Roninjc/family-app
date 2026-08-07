@@ -1,4 +1,5 @@
-import { redirect } from '@sveltejs/kit'
+import { fail, redirect } from '@sveltejs/kit'
+import type { Cookies } from '@sveltejs/kit'
 import { mockFamilyData } from '$lib/data/mockFamily'
 import {
   ACTIVE_FAMILY_COOKIE,
@@ -8,7 +9,7 @@ import {
 import { buildFamilyGroups, resolveActiveFamilyId, toRowsFromFamilyData } from '$lib/server/familyGroups'
 import { isMockFamilyMode } from '$lib/server/mockMode'
 import type { Role } from '$lib/types/auth'
-import type { PageServerLoad } from './$types'
+import type { Actions, PageServerLoad } from './$types'
 
 const isManagerRole = (role: Role) => role === 'admin' || role === 'editor'
 
@@ -16,14 +17,39 @@ const notesForFamily = (familyName: string, membersCount: number) => [
   {
     id: 'n1',
     title: `Resumen de ${familyName}`,
-    body: `${membersCount} miembros en esta rama. Puedes abrir su árbol para revisar relaciones.`
+    body: `${membersCount} miembros en esta rama. Puedes abrir su árbol para revisar relaciones.`,
+    noteType: 'news' as const
   },
   {
     id: 'n2',
     title: 'Notas internas',
-    body: 'Comparte acuerdos, pendientes y recordatorios importantes para esta familia.'
+    body: 'Comparte acuerdos, pendientes y recordatorios importantes para esta familia.',
+    noteType: 'note' as const
   }
 ]
+
+const resolveFamilyForAction = async (options: {
+  supabase: App.Locals['supabase']
+  userId: string
+  cookies: Cookies
+  requestedFamilyId: string | null
+}) => {
+  const families = await loadUserFamilies(options.supabase, options.userId)
+  const activeFamilyId = resolveAndPersistActiveFamily({
+    families,
+    requestedFamilyId: options.requestedFamilyId,
+    cookieFamilyId: options.cookies.get(ACTIVE_FAMILY_COOKIE) ?? null,
+    cookies: options.cookies
+  })
+
+  const activeFamily = families.find((family) => family.id === activeFamilyId) ?? null
+
+  return {
+    families,
+    activeFamilyId,
+    activeFamily
+  }
+}
 
 export const load: PageServerLoad = async ({ locals: { supabase, user }, cookies, url }) => {
   if (isMockFamilyMode()) {
@@ -35,6 +61,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, user }, cookies
       membersCount: group.membersCount,
       linksCount: group.linksCount,
       previewMembers: group.previewMembers,
+      canManageNotes: true,
       notes: notesForFamily(group.name, group.membersCount),
       treeHref: `/?family=${encodeURIComponent(group.id)}`
     }))
@@ -104,10 +131,18 @@ export const load: PageServerLoad = async ({ locals: { supabase, user }, cookies
     previewByFamily.set(member.family_id, preview)
   }
 
-  const notesByFamily = new Map<string, Array<{ id: string; title: string; body: string }>>()
+  const notesByFamily = new Map<
+    string,
+    Array<{ id: string; title: string; body: string; noteType: 'news' | 'note' }>
+  >()
   for (const note of notesRes.data ?? []) {
     const collection = notesByFamily.get(note.family_id) ?? []
-    collection.push({ id: note.id, title: note.title, body: note.body })
+    collection.push({
+      id: note.id,
+      title: note.title,
+      body: note.body,
+      noteType: note.note_type === 'news' ? 'news' : 'note'
+    })
     notesByFamily.set(note.family_id, collection)
   }
 
@@ -117,6 +152,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, user }, cookies
     membersCount: countByFamily.get(family.id) ?? 0,
     linksCount: 0,
     previewMembers: previewByFamily.get(family.id) ?? [],
+    canManageNotes: family.role === 'admin' || family.role === 'editor',
     notes: notesByFamily.get(family.id) ?? notesForFamily(family.name, countByFamily.get(family.id) ?? 0),
     treeHref: `/?family=${encodeURIComponent(family.id)}`
   }))
@@ -143,5 +179,145 @@ export const load: PageServerLoad = async ({ locals: { supabase, user }, cookies
     activeFamilyName: families.find((family) => family.id === activeFamilyId)?.name ?? null,
     pendingInvitations,
     showPendingInvitations: isManagerRole(role)
+  }
+}
+
+export const actions: Actions = {
+  createNote: async ({ request, locals: { supabase, user }, cookies }) => {
+    if (!user) redirect(303, '/login')
+    if (isMockFamilyMode()) {
+      return fail(400, {
+        noteError:
+          'Estás en modo mock. Las notas no se guardan. Usa el modo normal para persistir cambios.'
+      })
+    }
+
+    const form = await request.formData()
+    const requestedFamilyId = String(form.get('familyId') ?? '').trim() || null
+    const title = String(form.get('title') ?? '').trim()
+    const body = String(form.get('body') ?? '').trim()
+    const noteTypeRaw = String(form.get('noteType') ?? 'note').trim()
+    const noteType = noteTypeRaw === 'news' ? 'news' : 'note'
+
+    if (!title) return fail(400, { noteError: 'El título es obligatorio.', familyId: requestedFamilyId })
+    if (!body) return fail(400, { noteError: 'El contenido es obligatorio.', familyId: requestedFamilyId })
+
+    const { activeFamily, activeFamilyId } = await resolveFamilyForAction({
+      supabase,
+      userId: user.id,
+      cookies,
+      requestedFamilyId
+    })
+
+    if (!activeFamilyId || !activeFamily) {
+      return fail(400, { noteError: 'No hay una familia activa válida.', familyId: requestedFamilyId })
+    }
+
+    const { error } = await supabase.from('family_notes').insert({
+      family_id: activeFamilyId,
+      title,
+      body,
+      note_type: noteType,
+      created_by: user.id
+    })
+
+    if (error) {
+      const message = /row-level security/i.test(error.message)
+        ? 'No tienes permisos para crear notas en esta familia.'
+        : error.message
+      return fail(403, { noteError: message, familyId: activeFamilyId })
+    }
+
+    return { noteCreated: true, familyId: activeFamilyId }
+  },
+
+  updateNote: async ({ request, locals: { supabase, user }, cookies }) => {
+    if (!user) redirect(303, '/login')
+    if (isMockFamilyMode()) {
+      return fail(400, {
+        noteError:
+          'Estás en modo mock. Las notas no se guardan. Usa el modo normal para persistir cambios.'
+      })
+    }
+
+    const form = await request.formData()
+    const requestedFamilyId = String(form.get('familyId') ?? '').trim() || null
+    const noteId = String(form.get('noteId') ?? '').trim()
+    const title = String(form.get('title') ?? '').trim()
+    const body = String(form.get('body') ?? '').trim()
+    const noteTypeRaw = String(form.get('noteType') ?? 'note').trim()
+    const noteType = noteTypeRaw === 'news' ? 'news' : 'note'
+
+    if (!noteId) return fail(400, { noteError: 'Falta la nota a editar.', familyId: requestedFamilyId })
+    if (!title) return fail(400, { noteError: 'El título es obligatorio.', familyId: requestedFamilyId })
+    if (!body) return fail(400, { noteError: 'El contenido es obligatorio.', familyId: requestedFamilyId })
+
+    const { activeFamily, activeFamilyId } = await resolveFamilyForAction({
+      supabase,
+      userId: user.id,
+      cookies,
+      requestedFamilyId
+    })
+
+    if (!activeFamilyId || !activeFamily) {
+      return fail(400, { noteError: 'No hay una familia activa válida.', familyId: requestedFamilyId })
+    }
+
+    const { error } = await supabase
+      .from('family_notes')
+      .update({ title, body, note_type: noteType })
+      .eq('id', noteId)
+      .eq('family_id', activeFamilyId)
+
+    if (error) {
+      const message = /row-level security/i.test(error.message)
+        ? 'No tienes permisos para editar notas en esta familia.'
+        : error.message
+      return fail(403, { noteError: message, familyId: activeFamilyId })
+    }
+
+    return { noteUpdated: true, familyId: activeFamilyId }
+  },
+
+  deleteNote: async ({ request, locals: { supabase, user }, cookies }) => {
+    if (!user) redirect(303, '/login')
+    if (isMockFamilyMode()) {
+      return fail(400, {
+        noteError:
+          'Estás en modo mock. Las notas no se guardan. Usa el modo normal para persistir cambios.'
+      })
+    }
+
+    const form = await request.formData()
+    const requestedFamilyId = String(form.get('familyId') ?? '').trim() || null
+    const noteId = String(form.get('noteId') ?? '').trim()
+
+    if (!noteId) return fail(400, { noteError: 'Falta la nota a eliminar.', familyId: requestedFamilyId })
+
+    const { activeFamily, activeFamilyId } = await resolveFamilyForAction({
+      supabase,
+      userId: user.id,
+      cookies,
+      requestedFamilyId
+    })
+
+    if (!activeFamilyId || !activeFamily) {
+      return fail(400, { noteError: 'No hay una familia activa válida.', familyId: requestedFamilyId })
+    }
+
+    const { error } = await supabase
+      .from('family_notes')
+      .delete()
+      .eq('id', noteId)
+      .eq('family_id', activeFamilyId)
+
+    if (error) {
+      const message = /row-level security/i.test(error.message)
+        ? 'No tienes permisos para eliminar notas en esta familia.'
+        : error.message
+      return fail(403, { noteError: message, familyId: activeFamilyId })
+    }
+
+    return { noteDeleted: true, familyId: activeFamilyId }
   }
 }

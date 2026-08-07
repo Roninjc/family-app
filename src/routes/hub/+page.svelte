@@ -3,6 +3,16 @@
   import LiquidGlassWrapper from '../../components/liquidGlassWrapper.svelte'
   import type { Role } from '$lib/types/auth'
 
+  export let form:
+    | {
+        noteCreated?: boolean
+        noteUpdated?: boolean
+        noteDeleted?: boolean
+        noteError?: string
+        familyId?: string
+      }
+    | undefined = undefined
+
   export let data: {
     displayName: string
     role: Role
@@ -12,7 +22,8 @@
       membersCount: number
       linksCount: number
       previewMembers: string[]
-      notes: Array<{ id: string; title: string; body: string }>
+        canManageNotes: boolean
+        notes: Array<{ id: string; title: string; body: string; noteType: 'news' | 'note' }>
       treeHref: string
     }>
     activeFamilyId: string | null
@@ -32,10 +43,36 @@
         membersCount: number
         linksCount: number
         previewMembers: string[]
-        notes: Array<{ id: string; title: string; body: string }>
+        canManageNotes: boolean
+        notes: Array<{ id: string; title: string; body: string; noteType: 'news' | 'note' }>
         treeHref: string
       }
     | undefined
+
+  let editingNoteId: string | null = null
+  let draftTitle = ''
+  let draftBody = ''
+  let draftType: 'news' | 'note' = 'note'
+  let creatingForFamilyId: string | null = null
+
+  const openEditor = (note: { id: string; title: string; body: string; noteType: 'news' | 'note' }) => {
+    editingNoteId = note.id
+    draftTitle = note.title
+    draftBody = note.body
+    draftType = note.noteType
+  }
+
+  const closeEditor = () => {
+    editingNoteId = null
+    draftTitle = ''
+    draftBody = ''
+    draftType = 'note'
+  }
+
+  const toggleCreate = (familyId: string) => {
+    creatingForFamilyId = creatingForFamilyId === familyId ? null : familyId
+    closeEditor()
+  }
 
   const roleLabels: Record<Role, string> = {
     admin: 'Administrador',
@@ -208,11 +245,119 @@
 
                 <div class="notes-card">
                   <h4>Noticias y notas</h4>
+                  {#if family.canManageNotes}
+                    <button
+                      type="button"
+                      class="app-btn app-btn--secondary note-create-toggle"
+                      on:click={() => {
+                        toggleCreate(family.id)
+                      }}
+                    >
+                      {creatingForFamilyId === family.id ? 'Cerrar editor' : 'Nueva nota'}
+                    </button>
+
+                    {#if creatingForFamilyId === family.id}
+                      <form method="POST" action="?/createNote" class="note-form">
+                        <input type="hidden" name="familyId" value={family.id} />
+                        <label>
+                          Título
+                          <input class="modern-input" name="title" maxlength="120" required />
+                        </label>
+                        <label>
+                          Tipo
+                          <select class="modern-select" name="noteType">
+                            <option value="note">Nota</option>
+                            <option value="news">Noticia</option>
+                          </select>
+                        </label>
+                        <label>
+                          Contenido
+                          <textarea class="modern-textarea" name="body" rows="3" required></textarea>
+                        </label>
+                        <button class="app-btn app-btn--primary" type="submit">Guardar nota</button>
+                      </form>
+                    {/if}
+                  {/if}
+
+                  {#if form?.noteError && (!form.familyId || form.familyId === family.id)}
+                    <p class="note-error" role="alert">{form.noteError}</p>
+                  {/if}
+
+                  {#if form?.noteCreated && form.familyId === family.id}
+                    <p class="note-ok" role="status">Nota creada.</p>
+                  {/if}
+                  {#if form?.noteUpdated && form.familyId === family.id}
+                    <p class="note-ok" role="status">Nota actualizada.</p>
+                  {/if}
+                  {#if form?.noteDeleted && form.familyId === family.id}
+                    <p class="note-ok" role="status">Nota eliminada.</p>
+                  {/if}
+
                   <ul>
                     {#each family.notes as note (note.id)}
                       <li>
-                        <h5>{note.title}</h5>
-                        <p>{note.body}</p>
+                        <div class="note-head">
+                          <h5>{note.title}</h5>
+                          <span class="note-type" class:news={note.noteType === 'news'}>
+                            {note.noteType === 'news' ? 'Noticia' : 'Nota'}
+                          </span>
+                        </div>
+
+                        {#if editingNoteId === note.id}
+                          <form method="POST" action="?/updateNote" class="note-form note-form-inline">
+                            <input type="hidden" name="familyId" value={family.id} />
+                            <input type="hidden" name="noteId" value={note.id} />
+                            <label>
+                              Título
+                              <input class="modern-input" name="title" bind:value={draftTitle} maxlength="120" required />
+                            </label>
+                            <label>
+                              Tipo
+                              <select class="modern-select" name="noteType" bind:value={draftType}>
+                                <option value="note">Nota</option>
+                                <option value="news">Noticia</option>
+                              </select>
+                            </label>
+                            <label>
+                              Contenido
+                              <textarea class="modern-textarea" name="body" rows="3" bind:value={draftBody} required></textarea>
+                            </label>
+                            <div class="note-actions">
+                              <button class="app-btn app-btn--primary" type="submit">Guardar</button>
+                              <button
+                                class="app-btn app-btn--ghost"
+                                type="button"
+                                on:click={() => {
+                                  closeEditor()
+                                }}
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          </form>
+                        {:else}
+                          <p>{note.body}</p>
+                          {#if family.canManageNotes}
+                            <div class="note-actions">
+                              <button
+                                type="button"
+                                class="app-btn app-btn--ghost note-action-btn"
+                                on:click={() => {
+                                  openEditor(note)
+                                }}
+                              >
+                                Editar
+                              </button>
+                              <form method="POST" action="?/deleteNote">
+                                <input type="hidden" name="familyId" value={family.id} />
+                                <input type="hidden" name="noteId" value={note.id} />
+                                <button class="app-btn app-btn--danger note-action-btn" type="submit">
+                                  Eliminar
+                                </button>
+                              </form>
+                            </div>
+                          {/if}
+                        {/if}
                       </li>
                     {/each}
                   </ul>
@@ -468,6 +613,98 @@
 
   .notes-card {
     padding: 12px;
+  }
+
+  .note-create-toggle {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  .note-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .note-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+  }
+
+  .modern-input,
+  .modern-select,
+  .modern-textarea {
+    width: 100%;
+    border: 1px solid rgba(168, 132, 101, 0.32);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.78);
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: var(--fs-sm);
+  }
+
+  .modern-input,
+  .modern-select {
+    min-height: 40px;
+    padding: 0.42rem 0.58rem;
+  }
+
+  .modern-textarea {
+    padding: 0.52rem 0.58rem;
+    resize: vertical;
+  }
+
+  .note-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  .note-action-btn {
+    min-height: 34px;
+    font-size: var(--fs-xs);
+    padding: 0.45rem 0.68rem;
+  }
+
+  .note-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .note-type {
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: var(--fs-2xs);
+    background: rgba(117, 108, 96, 0.16);
+    color: #5e4c3e;
+    white-space: nowrap;
+  }
+
+  .note-type.news {
+    background: rgba(161, 120, 80, 0.2);
+    color: #6f4a2e;
+  }
+
+  .note-ok,
+  .note-error {
+    margin: 0 0 8px;
+    font-size: var(--fs-xs);
+  }
+
+  .note-ok {
+    color: var(--ok);
+  }
+
+  .note-error {
+    color: var(--danger);
   }
 
   h4 {
