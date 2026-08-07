@@ -3,6 +3,7 @@ import { redirect, type Handle } from '@sveltejs/kit'
 import { sequence } from '@sveltejs/kit/hooks'
 import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public'
 import { isMockFamilyMode } from '$lib/server/mockMode'
+import type { Session } from '@supabase/supabase-js'
 
 const supabase: Handle = async ({ event, resolve }) => {
   event.locals.supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
@@ -16,15 +17,8 @@ const supabase: Handle = async ({ event, resolve }) => {
     }
   })
 
-  // getSession() alone reads the (unverified) cookie; getUser() validates the
-  // JWT against the auth server, so only trust the pair together.
+  // Use getUser() so auth is validated by Supabase Auth server.
   event.locals.safeGetSession = async () => {
-    const {
-      data: { session }
-    } = await event.locals.supabase.auth.getSession()
-
-    if (!session) return { session: null, user: null }
-
     const {
       data: { user },
       error
@@ -32,7 +26,8 @@ const supabase: Handle = async ({ event, resolve }) => {
 
     if (error || !user) return { session: null, user: null }
 
-    return { session, user }
+    // The app only needs authenticated user checks in server hooks.
+    return { session: null as Session | null, user }
   }
 
   return resolve(event, {
@@ -43,18 +38,18 @@ const supabase: Handle = async ({ event, resolve }) => {
 }
 
 const authGuard: Handle = async ({ event, resolve }) => {
-  const { session, user } = await event.locals.safeGetSession()
-  event.locals.session = session
+  const { user } = await event.locals.safeGetSession()
+  event.locals.session = null
   event.locals.user = user
 
   const isAuthRoute =
     event.url.pathname.startsWith('/login') || event.url.pathname.startsWith('/auth')
 
-  if (!session && !isAuthRoute && !isMockFamilyMode()) {
+  if (!user && !isAuthRoute && !isMockFamilyMode()) {
     redirect(303, '/login')
   }
 
-  if (session && event.url.pathname === '/login') {
+  if (user && event.url.pathname === '/login') {
     redirect(303, '/hub')
   }
 

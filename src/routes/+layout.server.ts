@@ -17,7 +17,7 @@ const mockProfile: Profile = {
   created_at: ''
 }
 
-export const load: LayoutServerLoad = async ({ locals: { session, user, supabase }, cookies, url }) => {
+export const load: LayoutServerLoad = async ({ locals: { user, supabase }, cookies, url }) => {
   let profile: Profile | null = null
   let activeFamilyId = cookies.get(ACTIVE_FAMILY_COOKIE) ?? null
   let availableFamilies: Array<{ id: string; name: string; role: 'admin' | 'editor' | 'viewer' }> = []
@@ -40,7 +40,7 @@ export const load: LayoutServerLoad = async ({ locals: { session, user, supabase
   }
 
   return {
-    session,
+    user,
     profile,
     activeFamilyId,
     availableFamilies,

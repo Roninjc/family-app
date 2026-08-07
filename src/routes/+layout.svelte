@@ -7,7 +7,7 @@
   export let data
   let showTopFade = false
 
-  $: ({ supabase, session } = data)
+  $: ({ supabase, user } = data)
   $: signupNoticeCode = $page.url.searchParams.get('signup_notice')
   $: signupNoticeMessage =
     signupNoticeCode === 'member_link_already_claimed'
@@ -24,8 +24,8 @@
 
     const {
       data: { subscription }
-    } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      if (newSession?.expires_at !== session?.expires_at) {
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
         invalidate('supabase:auth')
       }
     })
@@ -46,7 +46,7 @@
 <slot />
 <div class="viewport-fade viewport-fade-top" class:active={showTopFade} aria-hidden="true"></div>
 <div class="viewport-fade viewport-fade-bottom" aria-hidden="true"></div>
-{#if session}
+{#if user || data.profile}
   <BottomNav />
 {/if}
 

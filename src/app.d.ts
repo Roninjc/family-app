@@ -13,7 +13,7 @@ declare global {
       user: User | null
     }
     interface PageData {
-      session: Session | null
+      user: User | null
       profile: Profile | null
       activeFamilyId?: string | null
       availableFamilies?: Array<{ id: string; name: string; role: 'admin' | 'editor' | 'viewer' }>

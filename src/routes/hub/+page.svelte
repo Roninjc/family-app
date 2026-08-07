@@ -54,7 +54,12 @@
   let draftBody = ''
   let draftType: 'news' | 'note' = 'note'
   let creatingForFamilyId: string | null = null
-  let isNavigating = true
+  let notesFilterByFamily: Record<string, 'all' | 'news' | 'note'> = {}
+  let filteredNotesByFamily: Record<
+    string,
+    Array<{ id: string; title: string; body: string; noteType: 'news' | 'note' }>
+  > = {}
+  let isNavigating = false
 
   const openEditor = (note: { id: string; title: string; body: string; noteType: 'news' | 'note' }) => {
     editingNoteId = note.id
@@ -87,6 +92,28 @@
   }
 
   $: selectedFamily = data.families.find((family) => family.id === selectedFamilyId) ?? data.families[0]
+
+  $: {
+    const filters = notesFilterByFamily
+    filteredNotesByFamily = Object.fromEntries(
+      data.families.map((family) => {
+        const filter = filters[family.id] ?? 'all'
+        const filtered =
+          filter === 'all' ? family.notes : family.notes.filter((note) => note.noteType === filter)
+        return [family.id, filtered]
+      })
+    )
+  }
+
+  const activeFilterFor = (familyId: string): 'all' | 'news' | 'note' =>
+    notesFilterByFamily[familyId] ?? 'all'
+
+  const setNotesFilter = (familyId: string, filter: 'all' | 'news' | 'note') => {
+    notesFilterByFamily = {
+      ...notesFilterByFamily,
+      [familyId]: filter
+    }
+  }
 
   const clearLoadingSoon = () => {
     if (typeof window === 'undefined') {
@@ -218,8 +245,6 @@
       }
       persistActiveFamily(selectedFamily.id)
     }
-
-    clearLoadingSoon()
   })
 </script>
 
@@ -300,6 +325,45 @@
 
                 <div class="notes-card">
                   <h4>Noticias y notas</h4>
+                  <div class="notes-filter-row" role="group" aria-label={`Filtros de notas en ${family.name}`}>
+                    <button
+                      type="button"
+                      class="filter-chip"
+                      class:active={activeFilterFor(family.id) === 'all'}
+                      data-note-filter="all"
+                      aria-pressed={activeFilterFor(family.id) === 'all'}
+                      on:click={() => {
+                        setNotesFilter(family.id, 'all')
+                      }}
+                    >
+                      Todas
+                    </button>
+                    <button
+                      type="button"
+                      class="filter-chip"
+                      class:active={activeFilterFor(family.id) === 'news'}
+                      data-note-filter="news"
+                      aria-pressed={activeFilterFor(family.id) === 'news'}
+                      on:click={() => {
+                        setNotesFilter(family.id, 'news')
+                      }}
+                    >
+                      Noticias
+                    </button>
+                    <button
+                      type="button"
+                      class="filter-chip"
+                      class:active={activeFilterFor(family.id) === 'note'}
+                      data-note-filter="note"
+                      aria-pressed={activeFilterFor(family.id) === 'note'}
+                      on:click={() => {
+                        setNotesFilter(family.id, 'note')
+                      }}
+                    >
+                      Notas
+                    </button>
+                  </div>
+
                   {#if family.canManageNotes}
                     <button
                       type="button"
@@ -349,7 +413,7 @@
                   {/if}
 
                   <ul>
-                    {#each family.notes as note (note.id)}
+                    {#each filteredNotesByFamily[family.id] ?? [] as note (note.id)}
                       <li>
                         <div class="note-head">
                           <h5>{note.title}</h5>
@@ -416,6 +480,9 @@
                       </li>
                     {/each}
                   </ul>
+                  {#if (filteredNotesByFamily[family.id] ?? []).length === 0}
+                    <p class="notes-empty">No hay elementos para este filtro.</p>
+                  {/if}
                 </div>
                 <div class="loading-sheen" aria-hidden="true"></div>
               </div>
@@ -689,6 +756,36 @@
     padding: 12px;
   }
 
+  .notes-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .filter-chip {
+    border: 1px solid rgba(130, 98, 70, 0.26);
+    background: rgba(255, 255, 255, 0.72);
+    color: #5e4b3c;
+    border-radius: 999px;
+    padding: 4px 9px;
+    font-size: var(--fs-2xs);
+    cursor: pointer;
+    transition:
+      background-color 0.22s var(--motion-standard),
+      transform 0.22s var(--motion-standard);
+  }
+
+  .filter-chip.active {
+    background: rgba(179, 141, 107, 0.34);
+    transform: translateY(-1px);
+  }
+
+  .filter-chip:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--brand) 86%, #fff 14%);
+    outline-offset: 2px;
+  }
+
   .note-create-toggle {
     width: 100%;
     margin-bottom: 8px;
@@ -812,6 +909,12 @@
   }
 
   .notes-card p {
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
+  }
+
+  .notes-empty {
+    margin: 8px 0 0;
     color: var(--text-muted);
     font-size: var(--fs-xs);
   }

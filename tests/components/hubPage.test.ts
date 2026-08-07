@@ -212,4 +212,47 @@ describe('hub page carousel', () => {
     )
   })
 
+  it('renders notes filter controls with default state', async () => {
+    const data = {
+      ...baseData,
+      families: [
+        {
+          ...baseData.families[0],
+          notes: [
+            { id: 'n1', title: 'Nota 1', body: 'Texto 1', noteType: 'note' as const },
+            { id: 'n3', title: 'Noticia 1', body: 'Texto 3', noteType: 'news' as const }
+          ]
+        },
+        ...baseData.families.slice(1)
+      ]
+    }
+
+    new HubPage({
+      target: document.body,
+      props: { data }
+    })
+
+    await tick()
+
+    expect(document.querySelectorAll('.family-panel.active .notes-card li')).toHaveLength(2)
+
+    const allFilter = document.querySelector(
+      '.family-panel.active [data-note-filter="all"]'
+    ) as HTMLButtonElement
+    const newsFilter = document.querySelector(
+      '.family-panel.active [data-note-filter="news"]'
+    ) as HTMLButtonElement
+    const notesFilter = document.querySelector(
+      '.family-panel.active [data-note-filter="note"]'
+    ) as HTMLButtonElement
+
+    expect(allFilter).toBeTruthy()
+    expect(newsFilter).toBeTruthy()
+    expect(notesFilter).toBeTruthy()
+
+    expect(allFilter.getAttribute('aria-pressed')).toBe('true')
+    expect(newsFilter.getAttribute('aria-pressed')).toBe('false')
+    expect(notesFilter.getAttribute('aria-pressed')).toBe('false')
+  })
+
 })
