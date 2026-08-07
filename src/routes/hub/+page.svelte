@@ -54,6 +54,7 @@
   let draftBody = ''
   let draftType: 'news' | 'note' = 'note'
   let creatingForFamilyId: string | null = null
+  let isNavigating = true
 
   const openEditor = (note: { id: string; title: string; body: string; noteType: 'news' | 'note' }) => {
     editingNoteId = note.id
@@ -87,6 +88,17 @@
 
   $: selectedFamily = data.families.find((family) => family.id === selectedFamilyId) ?? data.families[0]
 
+  const clearLoadingSoon = () => {
+    if (typeof window === 'undefined') {
+      isNavigating = false
+      return
+    }
+
+    window.requestAnimationFrame(() => {
+      isNavigating = false
+    })
+  }
+
   const setCardRef = (familyId: string, element: HTMLElement | null) => {
     if (!element) {
       cards.delete(familyId)
@@ -114,6 +126,7 @@
 
   const selectFamily = (familyId: string, scroll = true) => {
     if (selectedFamilyId === familyId) return
+    isNavigating = true
     selectedFamilyId = familyId
     persistActiveFamily(familyId)
 
@@ -123,6 +136,8 @@
         card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
       }
     }
+
+    clearLoadingSoon()
   }
 
   const detectCenteredFamily = () => {
@@ -203,6 +218,8 @@
       }
       persistActiveFamily(selectedFamily.id)
     }
+
+    clearLoadingSoon()
   })
 </script>
 
@@ -210,7 +227,7 @@
   <title>Hub familiar — Familia Castaño</title>
 </svelte:head>
 
-<main class="hub-page page-shell">
+<main class="hub-page page-shell" class:is-loading={isNavigating} aria-busy={isNavigating}>
   <section class="hub-header reveal-fade-up">
     <LiquidGlassWrapper>
       <div class="header-content">
@@ -225,6 +242,7 @@
             </a>
           {/if}
         </div>
+        <div class="loading-sheen" aria-hidden="true"></div>
       </div>
     </LiquidGlassWrapper>
   </section>
@@ -399,6 +417,7 @@
                     {/each}
                   </ul>
                 </div>
+                <div class="loading-sheen" aria-hidden="true"></div>
               </div>
             </LiquidGlassWrapper>
           </article>
@@ -447,6 +466,8 @@
   }
 
   .header-content {
+    position: relative;
+    overflow: hidden;
     width: 100%;
     padding: 18px;
     display: flex;
@@ -563,6 +584,8 @@
   }
 
   .family-content {
+    position: relative;
+    overflow: hidden;
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -845,6 +868,41 @@
   .dot.active {
     background: rgba(116, 95, 75, 0.76);
     transform: scale(1.25);
+  }
+
+  .loading-sheen {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateX(-120%);
+    background: linear-gradient(
+      110deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.34) 42%,
+      rgba(255, 255, 255, 0) 72%
+    );
+    will-change: transform;
+  }
+
+  .is-loading .loading-sheen {
+    opacity: 1;
+    animation: loading-sweep 1.2s var(--motion-standard) infinite;
+  }
+
+  .is-loading .header-content > :not(.loading-sheen),
+  .is-loading .family-content > :not(.loading-sheen) {
+    opacity: 0.72;
+  }
+
+  .is-loading .families-zone {
+    pointer-events: none;
+  }
+
+  @keyframes loading-sweep {
+    to {
+      transform: translateX(120%);
+    }
   }
 
   @media (min-width: 980px) {

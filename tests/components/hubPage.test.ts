@@ -49,6 +49,9 @@ describe('hub page carousel', () => {
 
     await tick()
 
+    const hubMain = document.querySelector('.hub-page') as HTMLElement
+    expect(['true', 'false']).toContain(hubMain.getAttribute('aria-busy'))
+
     expect(document.querySelectorAll('.family-panel')).toHaveLength(2)
     expect(document.querySelector('.dot.active')?.getAttribute('aria-label')).toContain('Castaño')
 
