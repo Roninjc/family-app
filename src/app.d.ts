@@ -15,6 +15,7 @@ declare global {
     interface PageData {
       session: Session | null
       profile: Profile | null
+      activeFamilyId?: string | null
     }
     // interface PageState {}
     // interface Platform {}

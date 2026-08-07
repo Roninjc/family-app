@@ -1,6 +1,11 @@
 import { error, fail, redirect } from '@sveltejs/kit'
 import { mockFamilyData } from '$lib/data/mockFamily'
 import { rowsToFamilyData } from '$lib/server/familyAdapter'
+import {
+  buildFamilyGroups,
+  resolveActiveFamilyId,
+  toRowsFromFamilyData
+} from '$lib/server/familyGroups'
 import { isMockFamilyMode } from '$lib/server/mockMode'
 import type { Actions, PageServerLoad } from './$types'
 
@@ -20,8 +25,41 @@ const relationRow = (memberId: string, otherId: string, kind: RelationKind) => {
   return { member_a: memberA, member_b: memberB, type: kind }
 }
 
-export const load: PageServerLoad = async ({ locals: { supabase } }) => {
-  if (isMockFamilyMode()) return { familyData: mockFamilyData }
+const ACTIVE_FAMILY_COOKIE = 'active_family_id'
+
+export const load: PageServerLoad = async ({ locals: { supabase }, url, cookies }) => {
+  if (isMockFamilyMode()) {
+    const mockRows = toRowsFromFamilyData(mockFamilyData)
+    const groups = buildFamilyGroups(mockRows.members, mockRows.relationships)
+    const selectedFamilyId = resolveActiveFamilyId(
+      groups.map((group) => group.id),
+      url.searchParams.get('family'),
+      cookies.get(ACTIVE_FAMILY_COOKIE) ?? null
+    )
+
+    if (selectedFamilyId && selectedFamilyId !== cookies.get(ACTIVE_FAMILY_COOKIE)) {
+      cookies.set(ACTIVE_FAMILY_COOKIE, selectedFamilyId, {
+        path: '/',
+        maxAge: 60 * 60 * 24 * 180,
+        sameSite: 'lax'
+      })
+    }
+
+    const selectedGroup = groups.find((group) => group.id === selectedFamilyId)
+    if (!selectedGroup) return { familyData: { members: [] }, activeFamilyId: null }
+
+    const selectedIds = new Set(selectedGroup.memberIds)
+    const selectedMembers = mockRows.members.filter((member) => selectedIds.has(member.id))
+    const selectedRelationships = mockRows.relationships.filter(
+      (relationship) =>
+        selectedIds.has(relationship.member_a) && selectedIds.has(relationship.member_b)
+    )
+
+    return {
+      familyData: rowsToFamilyData(selectedMembers, selectedRelationships),
+      activeFamilyId: selectedGroup.id
+    }
+  }
 
   const [membersRes, relationshipsRes] = await Promise.all([
     supabase
@@ -36,8 +74,36 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
   if (relationshipsRes.error)
     error(500, `No se pudieron cargar las relaciones: ${relationshipsRes.error.message}`)
 
+  const groups = buildFamilyGroups(membersRes.data, relationshipsRes.data)
+  const requestedFamilyId = url.searchParams.get('family')
+  const cookieFamilyId = cookies.get(ACTIVE_FAMILY_COOKIE) ?? null
+  const selectedFamilyId = resolveActiveFamilyId(
+    groups.map((group) => group.id),
+    requestedFamilyId,
+    cookieFamilyId
+  )
+
+  if (selectedFamilyId && selectedFamilyId !== cookieFamilyId) {
+    cookies.set(ACTIVE_FAMILY_COOKIE, selectedFamilyId, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 180,
+      sameSite: 'lax'
+    })
+  }
+
+  const selectedGroup = groups.find((group) => group.id === selectedFamilyId)
+  if (!selectedGroup) return { familyData: { members: [] }, activeFamilyId: null }
+
+  const selectedIds = new Set(selectedGroup.memberIds)
+  const selectedMembers = membersRes.data.filter((member) => selectedIds.has(member.id))
+  const selectedRelationships = relationshipsRes.data.filter(
+    (relationship) =>
+      selectedIds.has(relationship.member_a) && selectedIds.has(relationship.member_b)
+  )
+
   return {
-    familyData: rowsToFamilyData(membersRes.data, relationshipsRes.data)
+    familyData: rowsToFamilyData(selectedMembers, selectedRelationships),
+    activeFamilyId: selectedGroup.id
   }
 }
 

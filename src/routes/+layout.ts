@@ -24,6 +24,7 @@ export const load: LayoutLoad = async ({ data, depends, fetch }) => {
   return {
     supabase,
     session,
-    profile: data.profile
+    profile: data.profile,
+    activeFamilyId: data.activeFamilyId
   }
 }

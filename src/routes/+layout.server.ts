@@ -14,6 +14,7 @@ const mockProfile: Profile = {
 
 export const load: LayoutServerLoad = async ({ locals: { session, user, supabase }, cookies }) => {
   let profile: Profile | null = null
+  const activeFamilyId = cookies.get('active_family_id') ?? null
 
   if (user) {
     const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
@@ -25,6 +26,7 @@ export const load: LayoutServerLoad = async ({ locals: { session, user, supabase
   return {
     session,
     profile,
+    activeFamilyId,
     cookies: cookies.getAll()
   }
 }

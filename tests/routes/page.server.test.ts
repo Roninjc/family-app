@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { actions } from '../../src/routes/+page.server'
+import { actions, load } from '../../src/routes/+page.server'
 
 // Minimal supabase client mock: only what the page actions use
 const makeSupabase = ({
@@ -314,5 +314,88 @@ describe('deleteMember action', () => {
 
     expect(result.status).toBe(400)
     expect(mock.getDeleteCount()).toBe(0)
+  })
+})
+
+describe('page load family filtering', () => {
+  it('returns only members and relations from the selected family component', async () => {
+    const members = [
+      { id: 'a', name: 'Ana', family_name: 'C', birth_date: null, photo_url: null },
+      { id: 'b', name: 'Beto', family_name: 'C', birth_date: null, photo_url: null },
+      { id: 'c', name: 'Cris', family_name: 'L', birth_date: null, photo_url: null }
+    ]
+
+    const relationships = [{ member_a: 'a', member_b: 'b', type: 'partner' as const }]
+    const cookieWrites: Array<{ name: string; value: string }> = []
+
+    const supabase = {
+      from: (table: string) => {
+        if (table === 'members') {
+          return {
+            select: () => ({ order: async () => ({ data: members, error: null }) })
+          }
+        }
+
+        if (table === 'relationships') {
+          return {
+            select: async () => ({ data: relationships, error: null })
+          }
+        }
+
+        throw new Error(`Unexpected table: ${table}`)
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await (load as any)({
+      locals: { supabase },
+      cookies: {
+        get: () => null,
+        set: (name: string, value: string) => cookieWrites.push({ name, value })
+      },
+      url: new URL('http://localhost/?family=c')
+    })
+
+    expect(data.activeFamilyId).toBe('c')
+    expect(data.familyData.members.map((member: { id: string }) => member.id)).toEqual(['c'])
+    expect(cookieWrites).toContainEqual({ name: 'active_family_id', value: 'c' })
+  })
+
+  it('falls back to the first family when query and cookie are invalid', async () => {
+    const members = [
+      { id: 'a', name: 'Ana', family_name: 'C', birth_date: null, photo_url: null },
+      { id: 'b', name: 'Beto', family_name: 'C', birth_date: null, photo_url: null }
+    ]
+
+    const supabase = {
+      from: (table: string) => {
+        if (table === 'members') {
+          return {
+            select: () => ({ order: async () => ({ data: members, error: null }) })
+          }
+        }
+
+        if (table === 'relationships') {
+          return {
+            select: async () => ({ data: [], error: null })
+          }
+        }
+
+        throw new Error(`Unexpected table: ${table}`)
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await (load as any)({
+      locals: { supabase },
+      cookies: {
+        get: () => 'missing',
+        set: () => {}
+      },
+      url: new URL('http://localhost/?family=not-found')
+    })
+
+    expect(data.activeFamilyId).toBe('a')
+    expect(data.familyData.members.map((member: { id: string }) => member.id)).toEqual(['a'])
   })
 })

@@ -3,6 +3,8 @@
   import { canEdit } from '$lib/types/auth'
 
   $: canManage = canEdit($page.data.profile)
+  $: activeFamilyId = $page.data.activeFamilyId ?? null
+  $: treeHref = activeFamilyId ? `/?family=${encodeURIComponent(activeFamilyId)}` : '/'
 </script>
 
 <footer class="app-footer-nav" aria-label="Navegación principal fija">
@@ -10,7 +12,7 @@
     <nav class="app-bottom-nav app-nav-dock" aria-label="Navegación principal">
       <a
         aria-current={$page.url.pathname === '/' ? 'page' : undefined}
-        href="/"
+        href={treeHref}
         aria-label="Ir al árbol"
       >
         Árbol
