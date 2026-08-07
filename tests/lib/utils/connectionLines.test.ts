@@ -5,6 +5,7 @@ import {
   coupleLineSpec,
   memberExitOffsets,
   midGapY,
+  previousPartnerNoChildrenSpec,
   previousPartnerFamilySpecs,
   previousPartnerHeights
 } from '$lib/utils/connectionLines'
@@ -173,5 +174,37 @@ describe('memberExitOffsets', () => {
 
     expect(previousPartnerOffsets).toEqual([-12, 0])
     expect(singleParentOffset).toBe(12)
+  })
+})
+
+describe('previousPartnerNoChildrenSpec', () => {
+  const member = box(75, 60)
+  const previousPartner = box(-115, 60)
+
+  it('connects ex-partners below both badges with a dashed-ready U shape', () => {
+    const spec = previousPartnerNoChildrenSpec(member, previousPartner, 0, 1)
+    const local = (x: number) => x - spec.left
+    const localY = (y: number) => y - spec.top
+    const joinY = 138 // max(120, 120) + 18
+
+    expect(spec.d).toContain(`M${local(75)} ${localY(120)} L${local(75)} ${localY(joinY)}`)
+    expect(spec.d).toContain(`M${local(-115)} ${localY(joinY)} L${local(75)} ${localY(joinY)}`)
+    expect(spec.d).toContain(`M${local(-115)} ${localY(joinY)} L${local(-115)} ${localY(120)}`)
+  })
+
+  it('can shift the member exit so it does not overlap other downward lines', () => {
+    const spec = previousPartnerNoChildrenSpec(member, previousPartner, 0, 1, -12)
+    const local = (x: number) => x - spec.left
+    const localY = (y: number) => y - spec.top
+    const joinY = 138
+
+    expect(spec.d).toContain(`M${local(63)} ${localY(120)} L${local(63)} ${localY(joinY)}`)
+  })
+
+  it('stacks multiple previous partners so dashed joins do not overlap perfectly', () => {
+    const first = previousPartnerNoChildrenSpec(member, previousPartner, 0, 2)
+    const second = previousPartnerNoChildrenSpec(member, previousPartner, 1, 2)
+
+    expect(first.height).toBeGreaterThan(second.height)
   })
 })

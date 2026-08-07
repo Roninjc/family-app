@@ -248,9 +248,12 @@
   // measures one generation band, the anchor for the connection lines
   .badges-row {
     position: relative;
+    isolation: isolate;
   }
 
   .member-node {
+    position: relative;
+    z-index: 2;
     animation: node-reveal 0.4s var(--motion-standard) both;
   }
 

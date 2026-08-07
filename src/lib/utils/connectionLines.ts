@@ -77,6 +77,35 @@ export const memberExitOffsets = (
 export const coupleLineSpec = (memberCenter: Point, partnerCenter: Point): LineSpec =>
   specFromSegments([{ from: memberCenter, to: partnerCenter }])
 
+// Past partners without common children still connect under both badges,
+// so the relationship is visible without crossing through names/avatars.
+export const previousPartnerNoChildrenSpec = (
+  member: MemberBox,
+  previousPartner: MemberBox,
+  previousPartnerIndex: number,
+  amountOfPreviousPartners: number,
+  memberStubOffset = 0,
+  extraGap = 18
+): LineSpec => {
+  const memberX = member.center.x + memberStubOffset
+  const baseY = Math.max(member.bottom, previousPartner.bottom) + extraGap
+  const steps = Math.max(amountOfPreviousPartners, 1)
+  const step = 10
+  const joinY = baseY + (steps - previousPartnerIndex - 1) * step
+
+  return specFromSegments([
+    { from: { x: memberX, y: member.bottom }, to: { x: memberX, y: joinY } },
+    {
+      from: { x: Math.min(memberX, previousPartner.center.x), y: joinY },
+      to: { x: Math.max(memberX, previousPartner.center.x), y: joinY }
+    },
+    {
+      from: { x: previousPartner.center.x, y: joinY },
+      to: { x: previousPartner.center.x, y: previousPartner.bottom }
+    }
+  ])
+}
+
 // Drop from junction, horizontal line (bus) at busY and a drop to each
 // child's center. junction is the couple's midpoint (at their line's height)
 // or the single parent's center.

@@ -6,6 +6,7 @@
     coupleLineSpec,
     memberExitOffsets,
     midGapY,
+    previousPartnerNoChildrenSpec,
     previousPartnerFamilySpecs
   } from '$lib/utils/connectionLines'
   import { onMount } from 'svelte'
@@ -64,8 +65,10 @@
 
     // Spread apart the child-bound exits leaving the same badge (previous-partner
     // stubs + single-parent drop) so each line can be followed
+    const totalPreviousPartnerExits =
+      previousPartnersChildren.length + previousPartnersNoChildren.length
     const { previousPartnerOffsets, singleParentOffset } = memberExitOffsets(
-      previousPartnersChildren.length,
+      totalPreviousPartnerExits,
       SPCChildren.length > 0
     )
 
@@ -136,11 +139,20 @@
     })
     previousPartnerFamilyLines = previousPartnerFamilyLines
 
-    previousPartnersNoChildren.forEach((pPartner) => {
+    previousPartnersNoChildren.forEach((pPartner, index) => {
       const previousPartner = measure(pPartner.nodeId)
 
       if (previousPartner) {
-        previousPartnerDashedLines.push(coupleLineSpec(member.center, previousPartner.center))
+        const offsetIndex = previousPartnersChildren.length + index
+        previousPartnerDashedLines.push(
+          previousPartnerNoChildrenSpec(
+            member,
+            previousPartner,
+            index,
+            previousPartnersNoChildren.length,
+            previousPartnerOffsets[offsetIndex] ?? 0
+          )
+        )
       }
     })
     previousPartnerDashedLines = previousPartnerDashedLines
@@ -208,6 +220,7 @@
 <style lang="scss">
   svg {
     position: absolute;
+    z-index: 1;
     overflow: visible;
     fill: none;
     stroke: var(--tree-line-main);
