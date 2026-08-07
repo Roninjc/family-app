@@ -4,12 +4,17 @@ import { load } from '../../src/routes/hub/+page.server'
 describe('hub load', () => {
   it('builds family panels and sets active family cookie from query', async () => {
     const members = [
-      { id: 'a', name: 'Ana', family_name: 'Castaño', birth_date: null, photo_url: null },
-      { id: 'b', name: 'Beto', family_name: 'Castaño', birth_date: null, photo_url: null },
-      { id: 'c', name: 'Cris', family_name: 'Luna', birth_date: null, photo_url: null }
+      { id: 'a', name: 'Ana', family_id: 'f1' },
+      { id: 'b', name: 'Beto', family_id: 'f1' },
+      { id: 'c', name: 'Cris', family_id: 'f2' }
     ]
-
-    const relationships = [{ member_a: 'a', member_b: 'b', type: 'partner' as const }]
+    const notes = [
+      { id: 'n1', family_id: 'f2', title: 'Aviso', body: 'Nota persistida', note_type: 'news' }
+    ]
+    const memberships = [
+      { family_id: 'f1', role: 'editor', families: { id: 'f1', name: 'Familia Castaño' } },
+      { family_id: 'f2', role: 'editor', families: { id: 'f2', name: 'Familia Luna' } }
+    ]
 
     const cookieWrites: Array<{ name: string; value: string }> = []
 
@@ -23,15 +28,29 @@ describe('hub load', () => {
           }
         }
 
-        if (table === 'members') {
+        if (table === 'family_memberships') {
           return {
-            select: () => ({ order: async () => ({ data: members }) })
+            select: () => ({
+              eq: async () => ({ data: memberships, error: null })
+            })
           }
         }
 
-        if (table === 'relationships') {
+        if (table === 'members') {
           return {
-            select: async () => ({ data: relationships })
+            select: () => ({
+              in: async () => ({ data: members, error: null })
+            })
+          }
+        }
+
+        if (table === 'family_notes') {
+          return {
+            select: () => ({
+              in: () => ({
+                order: async () => ({ data: notes, error: null })
+              })
+            })
           }
         }
 
@@ -58,20 +77,23 @@ describe('hub load', () => {
     const data = await (load as any)({
       locals: { supabase, user: { id: 'u1', email: 'jesus@test.dev' } },
       cookies,
-      url: new URL('http://localhost/hub?family=c')
+      url: new URL('http://localhost/hub?family=f2')
     })
 
     expect(data.families).toHaveLength(2)
-    expect(data.activeFamilyId).toBe('c')
+    expect(data.activeFamilyId).toBe('f2')
     expect(data.activeFamilyName).toContain('Luna')
-    expect(data.families[0].treeHref).toContain('/?family=')
-    expect(cookieWrites).toContainEqual({ name: 'active_family_id', value: 'c' })
+    expect(data.families[0].treeHref).toContain('/?family=f1')
+    expect(data.families.find((family: { id: string }) => family.id === 'f2')?.notes[0].title).toBe(
+      'Aviso'
+    )
+    expect(cookieWrites).toContainEqual({ name: 'active_family_id', value: 'f2' })
   })
 
   it('falls back to cookie family when query family is invalid', async () => {
-    const members = [
-      { id: 'a', name: 'Ana', family_name: 'Castaño', birth_date: null, photo_url: null },
-      { id: 'b', name: 'Beto', family_name: 'Castaño', birth_date: null, photo_url: null }
+    const memberships = [
+      { family_id: 'f1', role: 'viewer', families: { id: 'f1', name: 'Familia Castaño' } },
+      { family_id: 'f2', role: 'viewer', families: { id: 'f2', name: 'Familia Luna' } }
     ]
 
     const supabase = {
@@ -84,15 +106,29 @@ describe('hub load', () => {
           }
         }
 
-        if (table === 'members') {
+        if (table === 'family_memberships') {
           return {
-            select: () => ({ order: async () => ({ data: members }) })
+            select: () => ({
+              eq: async () => ({ data: memberships, error: null })
+            })
           }
         }
 
-        if (table === 'relationships') {
+        if (table === 'members') {
           return {
-            select: async () => ({ data: [] })
+            select: () => ({
+              in: async () => ({ data: [], error: null })
+            })
+          }
+        }
+
+        if (table === 'family_notes') {
+          return {
+            select: () => ({
+              in: () => ({
+                order: async () => ({ data: [], error: null })
+              })
+            })
           }
         }
 
@@ -104,13 +140,13 @@ describe('hub load', () => {
     const data = await (load as any)({
       locals: { supabase, user: { id: 'u1', email: 'jesus@test.dev' } },
       cookies: {
-        get: () => 'a',
+        get: () => 'f1',
         set: () => {}
       },
       url: new URL('http://localhost/hub?family=missing')
     })
 
-    expect(data.activeFamilyId).toBe('a')
+    expect(data.activeFamilyId).toBe('f1')
     expect(data.families).toHaveLength(2)
   })
 })

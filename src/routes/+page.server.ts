@@ -1,5 +1,10 @@
 import { error, fail, redirect } from '@sveltejs/kit'
 import { mockFamilyData } from '$lib/data/mockFamily'
+import {
+  ACTIVE_FAMILY_COOKIE,
+  loadUserFamilies,
+  resolveAndPersistActiveFamily
+} from '$lib/server/activeFamily'
 import { rowsToFamilyData } from '$lib/server/familyAdapter'
 import {
   buildFamilyGroups,
@@ -25,9 +30,7 @@ const relationRow = (memberId: string, otherId: string, kind: RelationKind) => {
   return { member_a: memberA, member_b: memberB, type: kind }
 }
 
-const ACTIVE_FAMILY_COOKIE = 'active_family_id'
-
-export const load: PageServerLoad = async ({ locals: { supabase }, url, cookies }) => {
+export const load: PageServerLoad = async ({ locals: { supabase, user }, url, cookies }) => {
   if (isMockFamilyMode()) {
     const mockRows = toRowsFromFamilyData(mockFamilyData)
     const groups = buildFamilyGroups(mockRows.members, mockRows.relationships)
@@ -61,10 +64,23 @@ export const load: PageServerLoad = async ({ locals: { supabase }, url, cookies 
     }
   }
 
+  if (!user) redirect(303, '/login')
+
+  const userFamilies = await loadUserFamilies(supabase, user.id)
+  const selectedFamilyId = resolveAndPersistActiveFamily({
+    families: userFamilies,
+    requestedFamilyId: url.searchParams.get('family'),
+    cookieFamilyId: cookies.get(ACTIVE_FAMILY_COOKIE) ?? null,
+    cookies
+  })
+
+  if (!selectedFamilyId) return { familyData: { members: [] }, activeFamilyId: null }
+
   const [membersRes, relationshipsRes] = await Promise.all([
     supabase
       .from('members')
       .select('id, name, family_name, birth_date, photo_url')
+      .eq('family_id', selectedFamilyId)
       .order('created_at', { ascending: true }),
     supabase.from('relationships').select('member_a, member_b, type')
   ])
@@ -74,41 +90,20 @@ export const load: PageServerLoad = async ({ locals: { supabase }, url, cookies 
   if (relationshipsRes.error)
     error(500, `No se pudieron cargar las relaciones: ${relationshipsRes.error.message}`)
 
-  const groups = buildFamilyGroups(membersRes.data, relationshipsRes.data)
-  const requestedFamilyId = url.searchParams.get('family')
-  const cookieFamilyId = cookies.get(ACTIVE_FAMILY_COOKIE) ?? null
-  const selectedFamilyId = resolveActiveFamilyId(
-    groups.map((group) => group.id),
-    requestedFamilyId,
-    cookieFamilyId
-  )
-
-  if (selectedFamilyId && selectedFamilyId !== cookieFamilyId) {
-    cookies.set(ACTIVE_FAMILY_COOKIE, selectedFamilyId, {
-      path: '/',
-      maxAge: 60 * 60 * 24 * 180,
-      sameSite: 'lax'
-    })
-  }
-
-  const selectedGroup = groups.find((group) => group.id === selectedFamilyId)
-  if (!selectedGroup) return { familyData: { members: [] }, activeFamilyId: null }
-
-  const selectedIds = new Set(selectedGroup.memberIds)
-  const selectedMembers = membersRes.data.filter((member) => selectedIds.has(member.id))
+  const selectedIds = new Set(membersRes.data.map((member) => member.id))
   const selectedRelationships = relationshipsRes.data.filter(
     (relationship) =>
       selectedIds.has(relationship.member_a) && selectedIds.has(relationship.member_b)
   )
 
   return {
-    familyData: rowsToFamilyData(selectedMembers, selectedRelationships),
-    activeFamilyId: selectedGroup.id
+    familyData: rowsToFamilyData(membersRes.data, selectedRelationships),
+    activeFamilyId: selectedFamilyId
   }
 }
 
 export const actions: Actions = {
-  addMember: async ({ request, locals: { supabase, user } }) => {
+  addMember: async ({ request, locals: { supabase, user }, cookies }) => {
     if (!user) redirect(303, '/login')
     if (isMockFamilyMode()) {
       return fail(400, {
@@ -127,8 +122,13 @@ export const actions: Actions = {
     const siblingsIds = form.getAll('siblingsIds').map(String).filter(Boolean)
     const childrenIds = form.getAll('childrenIds').map(String).filter(Boolean)
     const previousPartnersIds = form.getAll('previousPartnersIds').map(String).filter(Boolean)
+    const fallbackFamilyId = String(form.get('familyId') ?? '').trim()
+    const familyId = cookies.get(ACTIVE_FAMILY_COOKIE) ?? (fallbackFamilyId || null)
 
     if (!name) return fail(400, { addError: 'El nombre es obligatorio.' })
+    if (!familyId) {
+      return fail(400, { addError: 'No hay una familia activa seleccionada.' })
+    }
 
     const relations = [
       ...[fatherId, motherId]
@@ -142,7 +142,7 @@ export const actions: Actions = {
     ]
 
     const { data, error: rpcError } = await supabase.rpc('add_member_with_relations', {
-      payload: { name, family_name: familyName, birth_date: birthDate, relations }
+      payload: { name, family_name: familyName, birth_date: birthDate, family_id: familyId, relations }
     })
 
     if (rpcError) {

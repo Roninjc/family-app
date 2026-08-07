@@ -16,6 +16,7 @@ declare global {
       session: Session | null
       profile: Profile | null
       activeFamilyId?: string | null
+      availableFamilies?: Array<{ id: string; name: string; role: 'admin' | 'editor' | 'viewer' }>
     }
     // interface PageState {}
     // interface Platform {}

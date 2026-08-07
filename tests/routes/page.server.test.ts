@@ -93,7 +93,10 @@ const callAction = (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const event: any = {
     request: makeRequest(fields),
-    locals: { supabase: supabaseMock.supabase, user: { id: 'user-1' } }
+    locals: { supabase: supabaseMock.supabase, user: { id: 'user-1' } },
+    cookies: {
+      get: () => 'family-1'
+    }
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (actions[action] as any)(event)
@@ -122,6 +125,7 @@ describe('addMember action', () => {
     expect(mock.rpcCalls).toHaveLength(1)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload = mock.rpcCalls[0].args as any
+    expect(payload.payload.family_id).toBe('family-1')
     expect(payload.payload.relations).toEqual([
       { other: 'aaa', type: 'parent', direction: 'child_of' },
       { other: 'bbb', type: 'parent', direction: 'child_of' },
@@ -318,7 +322,7 @@ describe('deleteMember action', () => {
 })
 
 describe('page load family filtering', () => {
-  it('returns only members and relations from the selected family component', async () => {
+  it('returns members and relations from the selected persisted family', async () => {
     const members = [
       { id: 'a', name: 'Ana', family_name: 'C', birth_date: null, photo_url: null },
       { id: 'b', name: 'Beto', family_name: 'C', birth_date: null, photo_url: null },
@@ -330,9 +334,22 @@ describe('page load family filtering', () => {
 
     const supabase = {
       from: (table: string) => {
+        if (table === 'family_memberships') {
+          return {
+            select: () => ({
+              eq: async () => ({
+                data: [{ family_id: 'c', role: 'viewer', families: { id: 'c', name: 'Familia C' } }],
+                error: null
+              })
+            })
+          }
+        }
+
         if (table === 'members') {
           return {
-            select: () => ({ order: async () => ({ data: members, error: null }) })
+            select: () => ({
+              eq: () => ({ order: async () => ({ data: members.filter((member) => member.id === 'c'), error: null }) })
+            })
           }
         }
 
@@ -348,7 +365,7 @@ describe('page load family filtering', () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await (load as any)({
-      locals: { supabase },
+      locals: { supabase, user: { id: 'u1' } },
       cookies: {
         get: () => null,
         set: (name: string, value: string) => cookieWrites.push({ name, value })
@@ -369,9 +386,22 @@ describe('page load family filtering', () => {
 
     const supabase = {
       from: (table: string) => {
+        if (table === 'family_memberships') {
+          return {
+            select: () => ({
+              eq: async () => ({
+                data: [{ family_id: 'a', role: 'viewer', families: { id: 'a', name: 'Familia A' } }],
+                error: null
+              })
+            })
+          }
+        }
+
         if (table === 'members') {
           return {
-            select: () => ({ order: async () => ({ data: members, error: null }) })
+            select: () => ({
+              eq: () => ({ order: async () => ({ data: members.filter((member) => member.id === 'a'), error: null }) })
+            })
           }
         }
 
@@ -387,7 +417,7 @@ describe('page load family filtering', () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await (load as any)({
-      locals: { supabase },
+      locals: { supabase, user: { id: 'u1' } },
       cookies: {
         get: () => 'missing',
         set: () => {}
