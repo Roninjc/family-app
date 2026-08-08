@@ -291,16 +291,12 @@
             class:active={family.id === selectedFamily?.id}
             use:trackCard={family.id}
           >
-            <LiquidGlassWrapper>
-              <div class="family-content">
-                <div class="panel-header">
-                  <div>
-                    <p class="panel-kicker">Grupo familiar</p>
-                    <h3>{family.name}</h3>
-                  </div>
-                  <a class="app-btn app-btn--primary panel-tree-link" href={family.treeHref}>Abrir árbol</a>
-                </div>
+            <div class="family-content">
+              <div class="panel-header">
+                <h3>{family.name}</h3>
+              </div>
 
+              <div class="family-center">
                 <div class="preview-card" aria-label={`Previsualización de ${family.name}`}>
                   <div class="preview-stats">
                     <p>
@@ -320,7 +316,22 @@
                 </div>
 
                 <div class="notes-card">
-                  <h4>Noticias y notas</h4>
+                  <div class="notes-header">
+                    <h4>Noticias y notas</h4>
+                    {#if family.canManageNotes}
+                      <button
+                        type="button"
+                        class="note-create-toggle"
+                        aria-label={creatingForFamilyId === family.id ? 'Cerrar editor de nota' : 'Crear nueva nota'}
+                        title={creatingForFamilyId === family.id ? 'Cerrar editor' : 'Nueva nota'}
+                        on:click={() => {
+                          toggleCreate(family.id)
+                        }}
+                      >
+                        {creatingForFamilyId === family.id ? '×' : '+'}
+                      </button>
+                    {/if}
+                  </div>
                   <div class="notes-filter-row" role="group" aria-label={`Filtros de notas en ${family.name}`}>
                     <button
                       type="button"
@@ -360,18 +371,7 @@
                     </button>
                   </div>
 
-                  {#if family.canManageNotes}
-                    <button
-                      type="button"
-                      class="app-btn app-btn--secondary note-create-toggle"
-                      on:click={() => {
-                        toggleCreate(family.id)
-                      }}
-                    >
-                      {creatingForFamilyId === family.id ? 'Cerrar editor' : 'Nueva nota'}
-                    </button>
-
-                    {#if creatingForFamilyId === family.id}
+                    {#if family.canManageNotes && creatingForFamilyId === family.id}
                       <form method="POST" action="?/createNote" class="note-form">
                         <input type="hidden" name="familyId" value={family.id} />
                         <label>
@@ -392,97 +392,96 @@
                         <button class="app-btn app-btn--primary" type="submit">Guardar nota</button>
                       </form>
                     {/if}
-                  {/if}
 
-                  {#if form?.noteError && (!form.familyId || form.familyId === family.id)}
-                    <p class="note-error" role="alert">{form.noteError}</p>
-                  {/if}
+                    {#if form?.noteError && (!form.familyId || form.familyId === family.id)}
+                      <p class="note-error" role="alert">{form.noteError}</p>
+                    {/if}
 
-                  {#if form?.noteCreated && form.familyId === family.id}
-                    <p class="note-ok" role="status">Nota creada.</p>
-                  {/if}
-                  {#if form?.noteUpdated && form.familyId === family.id}
-                    <p class="note-ok" role="status">Nota actualizada.</p>
-                  {/if}
-                  {#if form?.noteDeleted && form.familyId === family.id}
-                    <p class="note-ok" role="status">Nota eliminada.</p>
-                  {/if}
+                    {#if form?.noteCreated && form.familyId === family.id}
+                      <p class="note-ok" role="status">Nota creada.</p>
+                    {/if}
+                    {#if form?.noteUpdated && form.familyId === family.id}
+                      <p class="note-ok" role="status">Nota actualizada.</p>
+                    {/if}
+                    {#if form?.noteDeleted && form.familyId === family.id}
+                      <p class="note-ok" role="status">Nota eliminada.</p>
+                    {/if}
 
-                  <ul>
-                    {#each filteredNotesByFamily[family.id] ?? [] as note (note.id)}
-                      <li>
-                        <div class="note-head">
-                          <h5>{note.title}</h5>
-                          <span class="note-type" class:news={note.noteType === 'news'}>
-                            {note.noteType === 'news' ? 'Noticia' : 'Nota'}
-                          </span>
-                        </div>
+                    <ul>
+                      {#each filteredNotesByFamily[family.id] ?? [] as note (note.id)}
+                        <li>
+                          <div class="note-head">
+                            <h5>{note.title}</h5>
+                            <span class="note-type" class:news={note.noteType === 'news'}>
+                              {note.noteType === 'news' ? 'Noticia' : 'Nota'}
+                            </span>
+                          </div>
 
-                        {#if editingNoteId === note.id}
-                          <form method="POST" action="?/updateNote" class="note-form note-form-inline">
-                            <input type="hidden" name="familyId" value={family.id} />
-                            <input type="hidden" name="noteId" value={note.id} />
-                            <label>
-                              Título
-                              <input class="modern-input" name="title" bind:value={draftTitle} maxlength="120" required />
-                            </label>
-                            <label>
-                              Tipo
-                              <select class="modern-select" name="noteType" bind:value={draftType}>
-                                <option value="note">Nota</option>
-                                <option value="news">Noticia</option>
-                              </select>
-                            </label>
-                            <label>
-                              Contenido
-                              <textarea class="modern-textarea" name="body" rows="3" bind:value={draftBody} required></textarea>
-                            </label>
-                            <div class="note-actions">
-                              <button class="app-btn app-btn--primary" type="submit">Guardar</button>
-                              <button
-                                class="app-btn app-btn--ghost"
-                                type="button"
-                                on:click={() => {
-                                  closeEditor()
-                                }}
-                              >
-                                Cancelar
-                              </button>
-                            </div>
-                          </form>
-                        {:else}
-                          <p>{note.body}</p>
-                          {#if family.canManageNotes}
-                            <div class="note-actions">
-                              <button
-                                type="button"
-                                class="app-btn app-btn--ghost note-action-btn"
-                                on:click={() => {
-                                  openEditor(note)
-                                }}
-                              >
-                                Editar
-                              </button>
-                              <form method="POST" action="?/deleteNote">
-                                <input type="hidden" name="familyId" value={family.id} />
-                                <input type="hidden" name="noteId" value={note.id} />
-                                <button class="app-btn app-btn--danger note-action-btn" type="submit">
-                                  Eliminar
+                          {#if editingNoteId === note.id}
+                            <form method="POST" action="?/updateNote" class="note-form note-form-inline">
+                              <input type="hidden" name="familyId" value={family.id} />
+                              <input type="hidden" name="noteId" value={note.id} />
+                              <label>
+                                Título
+                                <input class="modern-input" name="title" bind:value={draftTitle} maxlength="120" required />
+                              </label>
+                              <label>
+                                Tipo
+                                <select class="modern-select" name="noteType" bind:value={draftType}>
+                                  <option value="note">Nota</option>
+                                  <option value="news">Noticia</option>
+                                </select>
+                              </label>
+                              <label>
+                                Contenido
+                                <textarea class="modern-textarea" name="body" rows="3" bind:value={draftBody} required></textarea>
+                              </label>
+                              <div class="note-actions">
+                                <button class="app-btn app-btn--primary" type="submit">Guardar</button>
+                                <button
+                                  class="app-btn app-btn--ghost"
+                                  type="button"
+                                  on:click={() => {
+                                    closeEditor()
+                                  }}
+                                >
+                                  Cancelar
                                 </button>
-                              </form>
-                            </div>
+                              </div>
+                            </form>
+                          {:else}
+                            <p>{note.body}</p>
+                            {#if family.canManageNotes}
+                              <div class="note-actions">
+                                <button
+                                  type="button"
+                                  class="app-btn app-btn--ghost note-action-btn"
+                                  on:click={() => {
+                                    openEditor(note)
+                                  }}
+                                >
+                                  Editar
+                                </button>
+                                <form method="POST" action="?/deleteNote">
+                                  <input type="hidden" name="familyId" value={family.id} />
+                                  <input type="hidden" name="noteId" value={note.id} />
+                                  <button class="app-btn app-btn--danger note-action-btn" type="submit">
+                                    Eliminar
+                                  </button>
+                                </form>
+                              </div>
+                            {/if}
                           {/if}
-                        {/if}
-                      </li>
-                    {/each}
-                  </ul>
-                  {#if (filteredNotesByFamily[family.id] ?? []).length === 0}
-                    <p class="notes-empty">No hay elementos para este filtro.</p>
-                  {/if}
+                        </li>
+                      {/each}
+                    </ul>
+                    {#if (filteredNotesByFamily[family.id] ?? []).length === 0}
+                      <p class="notes-empty">No hay elementos para este filtro.</p>
+                    {/if}
                 </div>
-                <div class="loading-sheen" aria-hidden="true"></div>
               </div>
-            </LiquidGlassWrapper>
+              <div class="loading-sheen" aria-hidden="true"></div>
+            </div>
           </article>
         {/each}
       </div>
@@ -518,13 +517,12 @@
     color: var(--text-main);
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 30px;
     min-height: 100vh;
     padding-bottom: max(114px, env(safe-area-inset-bottom));
   }
 
-  .hub-header :global(.liquid-glass-wrapper),
-  .family-panel :global(.liquid-glass-wrapper) {
+  .hub-header :global(.liquid-glass-wrapper) {
     width: 100%;
   }
 
@@ -592,7 +590,11 @@
   .families-zone {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 16px;
+    border-radius: 18px;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .zone-title-row {
@@ -600,7 +602,7 @@
     justify-content: space-between;
     align-items: baseline;
     gap: 8px;
-    padding-inline: 2px;
+    padding: 4px 2px 0;
   }
 
   h2 {
@@ -616,6 +618,11 @@
 
   .carousel-shell {
     position: relative;
+    border-radius: 16px;
+    margin-inline: 20px;
+    padding: 6px;
+    background: color-mix(in srgb, var(--neu-surface) 72%, transparent);
+    box-shadow: var(--neu-shadow-inset);
   }
 
   .families-carousel {
@@ -626,24 +633,14 @@
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
-    padding-bottom: 6px;
+    padding: 2px;
   }
 
   .family-panel {
     scroll-snap-align: center;
     min-height: 470px;
-  }
-
-  .family-panel :global(.liquid-glass-wrapper) {
-    height: 100%;
-    transition:
-      transform 0.24s var(--motion-standard),
-      box-shadow 0.24s var(--motion-standard);
-  }
-
-  .family-panel.active :global(.liquid-glass-wrapper) {
-    transform: translateY(-2px);
-    box-shadow: 0 18px 28px rgba(93, 66, 43, 0.18);
+    container-type: inline-size;
+    border-radius: 14px;
   }
 
   .family-content {
@@ -652,36 +649,34 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 16px;
+    gap: 20px;
+    padding: 26px 24px 20px;
+    border-radius: inherit;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .family-center {
+    display: grid;
+    gap: 24px;
+    flex: 1;
+    min-height: 0;
   }
 
   .panel-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
-    gap: 10px;
-  }
-
-  .panel-kicker {
-    margin: 0;
-    font-size: var(--fs-2xs);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--text-muted);
+    text-align: center;
   }
 
   h3 {
-    margin: 2px 0 0;
-    font-size: var(--fs-lg);
+    margin: 0;
+    font-size: clamp(1.2rem, 1.1rem + 0.45vw, 1.45rem);
     line-height: 1.18;
+    letter-spacing: 0.01em;
   }
 
-  .panel-tree-link {
-    white-space: nowrap;
-  }
-
-  .panel-tree-link:focus-visible,
   .note-create-toggle:focus-visible,
   .note-action-btn:focus-visible {
     outline: 2px solid color-mix(in srgb, var(--brand) 86%, #fff 14%);
@@ -691,16 +686,29 @@
 
   .preview-card,
   .notes-card {
-    border-radius: 12px;
-    background: linear-gradient(165deg, rgba(255, 252, 247, 0.62), rgba(246, 234, 216, 0.48));
-    border: 1px solid rgba(199, 169, 138, 0.34);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--neu-surface-soft) 88%, #ffffff 12%);
+    border: none;
+    box-shadow:
+      4px 4px 9px rgba(154, 132, 109, 0.17),
+      -4px -4px 9px rgba(255, 255, 255, 0.72);
+    transition:
+      transform 0.22s var(--motion-standard),
+      box-shadow 0.22s var(--motion-standard);
+  }
+
+  .family-panel.active .preview-card,
+  .family-panel.active .notes-card {
+    box-shadow:
+      5px 5px 10px rgba(154, 132, 109, 0.18),
+      -5px -5px 10px rgba(255, 255, 255, 0.74);
   }
 
   .preview-card {
-    padding: 12px;
+    padding: 14px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
   }
 
   .preview-stats {
@@ -713,7 +721,7 @@
     flex: 1;
     border-radius: 10px;
     padding: 8px 10px;
-    background: rgba(255, 255, 255, 0.52);
+    background: transparent;
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -735,6 +743,7 @@
     list-style: none;
     display: flex;
     flex-wrap: wrap;
+    justify-content: space-evenly;
     gap: 6px;
     margin: 0;
     padding: 0;
@@ -749,7 +758,19 @@
   }
 
   .notes-card {
-    padding: 12px;
+    position: relative;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .notes-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 2px;
   }
 
   .notes-filter-row {
@@ -783,8 +804,41 @@
   }
 
   .note-create-toggle {
-    width: 100%;
-    margin-bottom: 8px;
+    margin: -3px -2px 0 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    border: none;
+    background: color-mix(in srgb, var(--neu-surface-soft) 86%, #ffffff 14%);
+    color: var(--brand);
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow:
+      3px 3px 7px rgba(154, 132, 109, 0.16),
+      -3px -3px 7px rgba(255, 255, 255, 0.72);
+    transition:
+      transform 0.22s var(--motion-standard),
+      box-shadow 0.22s var(--motion-standard),
+      background-color 0.22s var(--motion-standard);
+  }
+
+  .note-create-toggle:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      4px 4px 9px rgba(154, 132, 109, 0.2),
+      -4px -4px 9px rgba(255, 255, 255, 0.76);
+  }
+
+  .note-create-toggle:active {
+    transform: translateY(0);
+    box-shadow:
+      inset 3px 3px 6px rgba(154, 132, 109, 0.18),
+      inset -3px -3px 6px rgba(255, 255, 255, 0.72);
   }
 
   .note-form {
@@ -875,7 +929,7 @@
   }
 
   h4 {
-    margin: 0 0 8px;
+    margin: 0;
     font-size: var(--fs-md);
   }
 
@@ -886,12 +940,17 @@
     gap: 8px;
     margin: 0;
     padding: 0;
+    min-height: 0;
   }
 
   .notes-card li {
-    padding: 9px 10px;
+    padding: 10px 11px;
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.56);
+    background: color-mix(in srgb, var(--neu-surface-soft) 90%, #ffffff 10%);
+    border: none;
+    box-shadow:
+      3px 3px 7px rgba(154, 132, 109, 0.14),
+      -3px -3px 7px rgba(255, 255, 255, 0.7);
   }
 
   h5,
@@ -931,12 +990,12 @@
 
   .edge-left {
     left: 0;
-    background: linear-gradient(90deg, rgba(241, 236, 228, 0.88), transparent);
+    background: linear-gradient(90deg, rgba(239, 232, 222, 0.9), transparent);
   }
 
   .edge-right {
     right: 0;
-    background: linear-gradient(270deg, rgba(241, 236, 228, 0.88), transparent);
+    background: linear-gradient(270deg, rgba(239, 232, 222, 0.9), transparent);
   }
 
   .carousel-dots {
@@ -1012,6 +1071,21 @@
 
     .family-panel {
       min-height: 400px;
+    }
+  }
+
+  @supports (container-type: inline-size) {
+    @container (min-width: 760px) {
+      .family-center {
+        grid-template-columns: minmax(220px, 0.95fr) minmax(0, 1.35fr);
+        align-items: stretch;
+      }
+    }
+
+    @container (max-width: 520px) {
+      .panel-header {
+        justify-content: center;
+      }
     }
   }
 </style>
