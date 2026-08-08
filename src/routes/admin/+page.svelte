@@ -1,6 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import { page } from '$app/stores'
+  import { onDestroy } from 'svelte'
   import { fade } from 'svelte/transition'
   import LiquidGlassWrapper from '../../components/liquidGlassWrapper.svelte'
 
@@ -26,6 +27,64 @@
     general: 'General (enlace)',
     member_linked: 'Vinculada a miembro'
   }
+
+  const roleLabelsByGender: Record<string, string> = {
+    admin: 'administrador',
+    editor: 'editor',
+    viewer: 'visualizador'
+  }
+
+  const inviteStatusLabel = (invite: {
+    revoked_at: string | null
+    expires_at: string | null
+    uses_count: number
+    max_uses: number | null
+  }) => {
+    if (invite.revoked_at) return 'Revocada'
+    if (invite.expires_at && Date.parse(invite.expires_at) <= Date.now()) return 'Caducada'
+    if (invite.max_uses !== null && invite.uses_count >= invite.max_uses) return 'Límite alcanzado'
+    return 'Activa'
+  }
+
+  const inviteStatusTone = (status: string) => {
+    if (status === 'Activa') return 'ok'
+    if (status === 'Límite alcanzado') return 'warn'
+    return 'muted'
+  }
+
+  let copyStatus = ''
+  let copyStatusTone: 'ok' | 'error' = 'ok'
+  let clearCopyStatusTimer: ReturnType<typeof setTimeout> | null = null
+
+  const clearCopyStatusLater = () => {
+    if (clearCopyStatusTimer) clearTimeout(clearCopyStatusTimer)
+    clearCopyStatusTimer = setTimeout(() => {
+      copyStatus = ''
+    }, 2200)
+  }
+
+  const copyInviteLink = async (link: string) => {
+    if (!link) return
+
+    try {
+      if (!navigator?.clipboard?.writeText) {
+        throw new Error('Clipboard API not available')
+      }
+
+      await navigator.clipboard.writeText(link)
+      copyStatusTone = 'ok'
+      copyStatus = 'Enlace copiado al portapapeles.'
+      clearCopyStatusLater()
+    } catch {
+      copyStatusTone = 'error'
+      copyStatus = 'No se pudo copiar automáticamente. Copia el enlace manualmente.'
+      clearCopyStatusLater()
+    }
+  }
+
+  onDestroy(() => {
+    if (clearCopyStatusTimer) clearTimeout(clearCopyStatusTimer)
+  })
 
   const formatDate = (value: string | null) => {
     if (!value) return 'Sin caducidad'
@@ -140,6 +199,23 @@
                 <p class="ok-note invite-link" role="status">
                   Enlace: <a href={form.inviteLink}>{form.inviteLink}</a>
                 </p>
+                <div class="invite-link-actions">
+                  <button
+                    type="button"
+                    class="app-btn app-btn--secondary small"
+                    on:click={() => {
+                      copyInviteLink(form?.inviteLink ?? '')
+                    }}
+                  >
+                    Copiar enlace
+                  </button>
+                  <span class="inline-help">Compártelo con quien quieras invitar</span>
+                </div>
+                {#if copyStatus}
+                  <p class="copy-status" class:error={copyStatusTone === 'error'} role="status" aria-live="polite">
+                    {copyStatus}
+                  </p>
+                {/if}
               {/if}
               {#if form?.inviteError}<p class="error-note" role="alert">{form.inviteError}</p>{/if}
             </div>
@@ -197,6 +273,7 @@
                   Invitación vinculada creada para {form.invitedMember}.
                 </p>
               {/if}
+              {#if form?.inviteError}<p class="error-note" role="alert">{form.inviteError}</p>{/if}
             </div>
           {/if}
         </section>
@@ -232,11 +309,11 @@
                           Usos: {invite.uses_count}
                           {#if invite.max_uses !== null}/ {invite.max_uses}{/if}
                         </small>
-                        {#if invite.revoked_at}
-                          <small>Estado: Revocada</small>
-                        {:else}
-                          <small>Estado: Activa</small>
-                        {/if}
+                        <small
+                          class:status-ok={inviteStatusTone(inviteStatusLabel(invite)) === 'ok'}
+                          class:status-warn={inviteStatusTone(inviteStatusLabel(invite)) === 'warn'}
+                          >Estado: {inviteStatusLabel(invite)}</small
+                        >
                       </span>
                       {#if !invite.revoked_at}
                         <form method="POST" action="?/revokeInvite" use:enhance>
@@ -248,6 +325,12 @@
                     </li>
                   {/each}
                 </ul>
+                {#if form?.revokeSuccess}
+                  <p class="ok-note" role="status">{form.revokeSuccess}</p>
+                {/if}
+                {#if form?.inviteError}
+                  <p class="error-note" role="alert">{form.inviteError}</p>
+                {/if}
               {:else}
                 <p class="empty-note">Aún no hay invitaciones registradas.</p>
               {/if}
@@ -513,10 +596,43 @@
       }
     }
 
+    .invite-link-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+
+      .inline-help {
+        color: var(--text-muted);
+        font-size: var(--fs-2xs);
+      }
+    }
+
+    .copy-status {
+      margin: 0.4rem 0 0;
+      font-size: var(--fs-2xs);
+      color: #166534;
+
+      &.error {
+        color: #b91c1c;
+      }
+    }
+
     .error-note {
       color: #dc2626;
       font-size: var(--fs-xs);
       margin: 0.5rem 0 0;
+    }
+
+    .status-ok {
+      color: #166534;
+      font-weight: 600;
+    }
+
+    .status-warn {
+      color: #9a3412;
+      font-weight: 600;
     }
 
     .empty-note {

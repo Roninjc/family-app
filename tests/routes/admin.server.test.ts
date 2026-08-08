@@ -152,4 +152,231 @@ describe('admin setRole family scope', () => {
     expect(filters).toContainEqual({ column: 'family_id', value: 'f2' })
     expect(filters).toContainEqual({ column: 'profile_id', value: 'u2' })
   })
+
+  it('rejects role update when submitted family does not match active cookie family', async () => {
+    const supabase = {
+      from: (table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: () => ({ eq: () => ({ single: async () => ({ data: { id: 'u1' } }) }) })
+          }
+        }
+
+        if (table === 'family_memberships') {
+          return {
+            select: (columns: string) => {
+              if (columns.includes('families!inner')) {
+                return {
+                  eq: async () => ({
+                    data: [{ family_id: 'f2', role: 'admin', families: { id: 'f2', name: 'Luna' } }],
+                    error: null
+                  })
+                }
+              }
+
+              throw new Error('Unexpected select in this test')
+            },
+            update: () => {
+              throw new Error('Should not update when family is out of sync')
+            }
+          }
+        }
+
+        throw new Error(`Unexpected table: ${table}`)
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await (actions.setRole as any)({
+      request: makeRequest({ familyId: 'f2', profileId: 'u2', role: 'editor' }),
+      locals: { supabase, user: { id: 'u1' } },
+      cookies: { get: () => 'f1', set: () => {} }
+    })
+
+    expect(result.status).toBe(409)
+    expect(result.data.roleError).toBe(
+      'La familia activa cambió antes de enviar el formulario. Recarga la página y vuelve a intentarlo.'
+    )
+  })
+})
+
+describe('admin invite actions family sync', () => {
+  it('rejects general invitation when familyId is missing', async () => {
+    const supabase = {
+      from: (table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: () => ({ eq: () => ({ single: async () => ({ data: { id: 'u1' } }) }) })
+          }
+        }
+
+        if (table === 'family_memberships') {
+          return {
+            select: (columns: string) => {
+              if (columns.includes('families!inner')) {
+                return {
+                  eq: async () => ({
+                    data: [{ family_id: 'f1', role: 'admin', families: { id: 'f1', name: 'Castaño' } }],
+                    error: null
+                  })
+                }
+              }
+
+              throw new Error('Unexpected select in this test')
+            }
+          }
+        }
+
+        throw new Error(`Unexpected table: ${table}`)
+      },
+      rpc: () => {
+        throw new Error('Should not create invitation when familyId is missing')
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await (actions.inviteGeneral as any)({
+      request: makeRequest({ role: 'viewer', expiryPreset: 'none', maxUses: '' }),
+      locals: { supabase, user: { id: 'u1' } },
+      cookies: { get: () => 'f1', set: () => {} },
+      url: new URL('http://localhost/admin')
+    })
+
+    expect(result.status).toBe(409)
+    expect(result.data.inviteError).toBe(
+      'La familia activa cambió antes de enviar el formulario. Recarga la página y vuelve a intentarlo.'
+    )
+  })
+})
+
+describe('admin revoke invitation', () => {
+  it('revokes a general invitation in the active family', async () => {
+    const updates: Array<{ inviteId: string }> = []
+
+    const supabase = {
+      from: (table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: () => ({ eq: () => ({ single: async () => ({ data: { id: 'u1' } }) }) })
+          }
+        }
+
+        if (table === 'family_memberships') {
+          return {
+            select: (columns: string) => {
+              if (columns.includes('families!inner')) {
+                return {
+                  eq: async () => ({
+                    data: [{ family_id: 'f1', role: 'admin', families: { id: 'f1', name: 'Castaño' } }],
+                    error: null
+                  })
+                }
+              }
+
+              throw new Error('Unexpected select in this test')
+            }
+          }
+        }
+
+        if (table === 'invitations') {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: async () => ({
+                  data: {
+                    id: 'inv-1',
+                    family_id: 'f1',
+                    type: 'general',
+                    revoked_at: null
+                  }
+                })
+              })
+            }),
+            update: () => ({
+              eq: (column: string, value: string) => {
+                if (column === 'id') updates.push({ inviteId: value })
+                return Promise.resolve({ error: null })
+              }
+            })
+          }
+        }
+
+        throw new Error(`Unexpected table: ${table}`)
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await (actions.revokeInvite as any)({
+      request: makeRequest({ familyId: 'f1', inviteId: 'inv-1' }),
+      locals: { supabase, user: { id: 'u1' } },
+      cookies: { get: () => 'f1', set: () => {} }
+    })
+
+    expect(result).toEqual({
+      revoked: 'inv-1',
+      revokeSuccess: 'Invitación general revocada correctamente.'
+    })
+    expect(updates).toEqual([{ inviteId: 'inv-1' }])
+  })
+
+  it('rejects revocation for invitations outside the active family', async () => {
+    const supabase = {
+      from: (table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: () => ({ eq: () => ({ single: async () => ({ data: { id: 'u1' } }) }) })
+          }
+        }
+
+        if (table === 'family_memberships') {
+          return {
+            select: (columns: string) => {
+              if (columns.includes('families!inner')) {
+                return {
+                  eq: async () => ({
+                    data: [{ family_id: 'f1', role: 'admin', families: { id: 'f1', name: 'Castaño' } }],
+                    error: null
+                  })
+                }
+              }
+
+              throw new Error('Unexpected select in this test')
+            }
+          }
+        }
+
+        if (table === 'invitations') {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: async () => ({
+                  data: {
+                    id: 'inv-2',
+                    family_id: 'f2',
+                    type: 'member_linked',
+                    revoked_at: null
+                  }
+                })
+              })
+            }),
+            update: () => {
+              throw new Error('Should not update out-of-family invitations')
+            }
+          }
+        }
+
+        throw new Error(`Unexpected table: ${table}`)
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await (actions.revokeInvite as any)({
+      request: makeRequest({ familyId: 'f1', inviteId: 'inv-2' }),
+      locals: { supabase, user: { id: 'u1' } },
+      cookies: { get: () => 'f1', set: () => {} }
+    })
+
+    expect(result.status).toBe(403)
+    expect(result.data.inviteError).toBe('No puedes revocar invitaciones de otra familia.')
+  })
 })

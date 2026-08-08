@@ -10,6 +10,9 @@ import type { Actions, PageServerLoad } from './$types'
 
 const VALID_ROLES: Role[] = ['admin', 'editor', 'viewer']
 
+const FAMILY_SYNC_ERROR =
+  'La familia activa cambió antes de enviar el formulario. Recarga la página y vuelve a intentarlo.'
+
 const expiryFromPreset = (preset: string): string | null => {
   if (preset === '7d') return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
   if (preset === '30d') return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
@@ -58,6 +61,20 @@ const resolveManagerFamily = async (options: {
     families,
     activeFamily
   }
+}
+
+const ensureActionFamilyInSync = (options: {
+  requestedFamilyId: string | null
+  cookieFamilyId: string | null
+  resolvedFamilyId: string
+}) => {
+  if (!options.requestedFamilyId) return false
+
+  if (options.requestedFamilyId !== options.resolvedFamilyId) return false
+
+  if (options.cookieFamilyId && options.cookieFamilyId !== options.requestedFamilyId) return false
+
+  return true
 }
 
 export const load: PageServerLoad = async ({ locals, cookies, url }) => {
@@ -135,6 +152,17 @@ export const actions: Actions = {
     const form = await request.formData()
     const requestedFamilyId = String(form.get('familyId') ?? '').trim() || null
     const managerContext = await resolveManagerFamily({ locals, cookies, requestedFamilyId })
+    const cookieFamilyId = cookies.get(ACTIVE_FAMILY_COOKIE) ?? null
+
+    if (
+      !ensureActionFamilyInSync({
+        requestedFamilyId,
+        cookieFamilyId,
+        resolvedFamilyId: managerContext.activeFamily.id
+      })
+    ) {
+      return fail(409, { inviteError: FAMILY_SYNC_ERROR })
+    }
 
     const role = String(form.get('role') ?? 'viewer') as Role
     const expiryPreset = String(form.get('expiryPreset') ?? 'none')
@@ -185,6 +213,17 @@ export const actions: Actions = {
     const form = await request.formData()
     const requestedFamilyId = String(form.get('familyId') ?? '').trim() || null
     const managerContext = await resolveManagerFamily({ locals, cookies, requestedFamilyId })
+    const cookieFamilyId = cookies.get(ACTIVE_FAMILY_COOKIE) ?? null
+
+    if (
+      !ensureActionFamilyInSync({
+        requestedFamilyId,
+        cookieFamilyId,
+        resolvedFamilyId: managerContext.activeFamily.id
+      })
+    ) {
+      return fail(409, { inviteError: FAMILY_SYNC_ERROR })
+    }
 
     const email = String(form.get('email') ?? '')
       .trim()
@@ -241,6 +280,17 @@ export const actions: Actions = {
     const form = await request.formData()
     const requestedFamilyId = String(form.get('familyId') ?? '').trim() || null
     const managerContext = await resolveManagerFamily({ locals, cookies, requestedFamilyId })
+    const cookieFamilyId = cookies.get(ACTIVE_FAMILY_COOKIE) ?? null
+
+    if (
+      !ensureActionFamilyInSync({
+        requestedFamilyId,
+        cookieFamilyId,
+        resolvedFamilyId: managerContext.activeFamily.id
+      })
+    ) {
+      return fail(409, { inviteError: FAMILY_SYNC_ERROR })
+    }
 
     const inviteId = String(form.get('inviteId') ?? '').trim()
 
@@ -248,23 +298,20 @@ export const actions: Actions = {
 
     const { data: invite } = await locals.supabase
       .from('invitations')
-      .select('id, member_id, type')
+      .select('id, family_id, type, revoked_at')
       .eq('id', inviteId)
       .maybeSingle()
 
-    if (!invite || invite.type !== 'member_linked' || !invite.member_id) {
-      return fail(400, { inviteError: 'La invitación no es válida para esta sección.' })
+    if (!invite) {
+      return fail(404, { inviteError: 'La invitación ya no existe o no está disponible.' })
     }
 
-    const { data: memberInFamily } = await locals.supabase
-      .from('members')
-      .select('id')
-      .eq('id', invite.member_id)
-      .eq('family_id', managerContext.activeFamily.id)
-      .maybeSingle()
-
-    if (!memberInFamily) {
+    if (invite.family_id !== managerContext.activeFamily.id) {
       return fail(403, { inviteError: 'No puedes revocar invitaciones de otra familia.' })
+    }
+
+    if (invite.revoked_at) {
+      return fail(409, { inviteError: 'Esta invitación ya estaba revocada.' })
     }
 
     const { error } = await locals.supabase
@@ -274,7 +321,13 @@ export const actions: Actions = {
 
     if (error) return fail(400, { inviteError: error.message })
 
-    return { revoked: inviteId }
+    return {
+      revoked: inviteId,
+      revokeSuccess:
+        invite.type === 'general'
+          ? 'Invitación general revocada correctamente.'
+          : 'Invitación vinculada revocada correctamente.'
+    }
   },
 
   setRole: async ({ request, locals, cookies }) => {
@@ -287,6 +340,18 @@ export const actions: Actions = {
     const form = await request.formData()
     const requestedFamilyId = String(form.get('familyId') ?? '').trim() || null
     const managerContext = await resolveManagerFamily({ locals, cookies, requestedFamilyId })
+    const cookieFamilyId = cookies.get(ACTIVE_FAMILY_COOKIE) ?? null
+
+    if (
+      !ensureActionFamilyInSync({
+        requestedFamilyId,
+        cookieFamilyId,
+        resolvedFamilyId: managerContext.activeFamily.id
+      })
+    ) {
+      return fail(409, { roleError: FAMILY_SYNC_ERROR })
+    }
+
     if (managerContext.activeFamily.role !== 'admin') redirect(303, '/hub')
 
     const profileId = String(form.get('profileId') ?? '')
