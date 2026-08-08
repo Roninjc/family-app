@@ -187,7 +187,7 @@
             aria-expanded={openSection === 'general'}
           >
             <span>Invitación general</span>
-            <small>Enlace reusable</small>
+            <small>Enlace reutilizable</small>
           </button>
           {#if openSection === 'general'}
             <div class="section-body" transition:fade={{ duration: 140 }}>
@@ -217,7 +217,7 @@
                   <button class="app-btn app-btn--primary" type="submit">Crear invitación</button>
                 </div>
               </form>
-              {#if form?.invitedGeneral}<p class="ok-note" role="status">Invitación general creada.</p>{/if}
+              {#if form?.invitedGeneral}<p class="ok-note" role="status">Invitación general lista.</p>{/if}
               {#if form?.inviteSuccess}<p class="ok-note" role="status">{form.inviteSuccess}</p>{/if}
               {#if form?.inviteLink}
                 <div class="invite-link-card" role="status" aria-live="polite">
@@ -234,7 +234,7 @@
                     >
                       Copiar enlace
                     </button>
-                    <span class="inline-help">Compártelo con quien quieras invitar</span>
+                      <span class="inline-help">Compártelo por WhatsApp o email</span>
                   </div>
                   {#if copyStatus}
                     <p class="copy-status" class:error={copyStatusTone === 'error'} role="status" aria-live="polite">
@@ -296,7 +296,7 @@
               </form>
               {#if form?.invitedMember}
                 <p class="ok-note" role="status">
-                  Invitación vinculada creada para {form.invitedMember}.
+                    Invitación vinculada lista para {form.invitedMember}.
                 </p>
               {/if}
               {#if form?.inviteError}<p class="error-note" role="alert">{form.inviteError}</p>{/if}
@@ -382,7 +382,7 @@
                   </p>
 
                   {#if filteredInvites.length === 0}
-                    <p class="empty-note">No hay invitaciones para este filtro.</p>
+                    <p class="empty-note">No hay resultados para este filtro.</p>
                   {/if}
 
                 <ul class="list">
@@ -433,7 +433,7 @@
                   <p class="error-note" role="alert">{form.inviteError}</p>
                 {/if}
               {:else}
-                <p class="empty-note">Aún no hay invitaciones registradas.</p>
+                  <p class="empty-note">Todavía no has creado invitaciones en esta familia.</p>
               {/if}
             </div>
           {/if}

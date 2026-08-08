@@ -254,12 +254,12 @@
       <div class="header-content">
         <p class="crumb">Hub / {selectedFamily?.name ?? 'Sin familia'}</p>
         <h1>Hola, {data.displayName}</h1>
-        <p class="welcome">Bienvenido. Estás en {selectedFamily?.name ?? 'tu espacio familiar'}.</p>
+        <p class="welcome">Te damos la bienvenida. Estás en {selectedFamily?.name ?? 'tu espacio familiar'}.</p>
         <div class="chips-row">
           <span class="role-chip">{roleLabels[data.role]}</span>
           {#if data.showPendingInvitations}
             <a class="pending-chip" href="/admin">
-              Invitaciones {data.pendingInvitations > 0 ? `(${data.pendingInvitations})` : '(0)'}
+              Invitaciones pendientes {data.pendingInvitations > 0 ? `(${data.pendingInvitations})` : '(0)'}
             </a>
           {/if}
         </div>
@@ -272,7 +272,7 @@
     <div class="zone-title-row">
       <h2>Familias</h2>
       {#if data.families.length > 1}
-        <p class="scroll-hint" role="status">Desliza para cambiar de familia</p>
+        <p class="scroll-hint" role="status">Desliza para cambiar de familia activa</p>
       {/if}
     </div>
 

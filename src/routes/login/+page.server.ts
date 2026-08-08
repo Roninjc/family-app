@@ -2,7 +2,7 @@ import { fail, redirect } from '@sveltejs/kit'
 import type { Actions } from './$types'
 
 const NOT_INVITED_MESSAGE =
-  'Este email no está invitado a la app. Pide a un administrador que te invite.'
+  'Este email no tiene una invitación activa. Pide a un administrador que te invite.'
 
 const friendlyAuthError = (error: { message: string; status?: number }) => {
   // The invite-gate trigger rejection surfaces as a 500 whose body supabase-js
@@ -70,7 +70,7 @@ export const actions: Actions = {
     if (inviteToken) {
       return fail(400, {
         error:
-          'Esta invitación requiere registro por enlace mágico. Usa el formulario de email de arriba.'
+          'Esta invitación requiere acceso con enlace mágico. Usa el formulario de email de arriba.'
       })
     }
 

@@ -195,7 +195,7 @@ describe('admin setRole family scope', () => {
 
     expect(result.status).toBe(409)
     expect(result.data.roleError).toBe(
-      'La familia activa cambió antes de enviar el formulario. Recarga la página y vuelve a intentarlo.'
+      'La familia activa cambió mientras completabas la acción. Recarga la página y vuelve a intentarlo.'
     )
   })
 })
@@ -244,7 +244,7 @@ describe('admin invite actions family sync', () => {
 
     expect(result.status).toBe(409)
     expect(result.data.inviteError).toBe(
-      'La familia activa cambió antes de enviar el formulario. Recarga la página y vuelve a intentarlo.'
+      'La familia activa cambió mientras completabas la acción. Recarga la página y vuelve a intentarlo.'
     )
   })
 })
@@ -314,7 +314,7 @@ describe('admin revoke invitation', () => {
 
     expect(result).toEqual({
       revoked: 'inv-1',
-      revokeSuccess: 'Invitación general revocada correctamente.'
+      revokeSuccess: 'Invitación general revocada.'
     })
     expect(updates).toEqual([{ inviteId: 'inv-1' }])
   })
@@ -377,7 +377,7 @@ describe('admin revoke invitation', () => {
     })
 
     expect(result.status).toBe(403)
-    expect(result.data.inviteError).toBe('No puedes revocar invitaciones de otra familia.')
+    expect(result.data.inviteError).toBe('No puedes revocar invitaciones de otra familia activa.')
   })
 })
 
@@ -461,7 +461,7 @@ describe('admin regenerate invite link', () => {
       invitedGeneral: true,
       familyId: 'f1',
       regeneratedInviteId: 'inv-old',
-      inviteSuccess: 'Nuevo enlace generado. La invitación anterior quedó revocada.',
+      inviteSuccess: 'Nuevo enlace generado. El enlace anterior quedó revocado.',
       inviteLink: 'http://localhost/login?invite=new-token-123'
     })
     expect(rpcCalls[0]).toMatchObject({
@@ -536,7 +536,7 @@ describe('admin regenerate invite link', () => {
 
     expect(result.status).toBe(400)
     expect(result.data.inviteError).toBe(
-      'Solo se puede regenerar enlace para invitaciones generales.'
+      'Solo las invitaciones generales permiten regenerar enlace.'
     )
   })
 })

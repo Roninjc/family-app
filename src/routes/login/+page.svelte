@@ -33,12 +33,11 @@
     <LiquidGlassWrapper>
       <div class="login-content">
         <h1>Familia Castaño</h1>
-        <p class="subtitle">Accede con tu email para entrar al hub familiar.</p>
+        <p class="subtitle">Inicia sesión con tu email para entrar al hub familiar.</p>
 
         {#if form?.sent}
           <p class="sent-message">
-            Te hemos enviado un enlace a <b>{form.email}</b>. Ábrelo desde este dispositivo para
-            entrar.
+            Te enviamos un enlace a <b>{form.email}</b>. Ábrelo desde este dispositivo para entrar.
           </p>
         {:else}
           <form
@@ -97,7 +96,7 @@
 
           <button class="toggle-method" on:click={() => (showPasswordForm = !showPasswordForm)}>
             {#if showPasswordForm}
-              Prefiero un enlace por email
+              Prefiero recibir un enlace por email
             {:else}
               Prefiero usar mi contraseña
             {/if}
@@ -107,7 +106,7 @@
 
           {#if inviteToken}
             <p class="invite-hint">
-              Esta invitación se valida con el enlace mágico al email indicado.
+              Esta invitación se valida con un enlace mágico enviado al email invitado.
             </p>
           {:else}
             <form method="POST" action="?/google" use:enhance>

@@ -11,7 +11,10 @@ import type { Actions, PageServerLoad } from './$types'
 const VALID_ROLES: Role[] = ['admin', 'editor', 'viewer']
 
 const FAMILY_SYNC_ERROR =
-  'La familia activa cambió antes de enviar el formulario. Recarga la página y vuelve a intentarlo.'
+  'La familia activa cambió mientras completabas la acción. Recarga la página y vuelve a intentarlo.'
+
+const MOCK_INVITE_ERROR =
+  'Estás en modo mock. Las invitaciones no se guardan en este modo. Usa el modo normal para enviar invitaciones reales.'
 
 const expiryFromPreset = (preset: string): string | null => {
   if (preset === '7d') return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
@@ -143,10 +146,7 @@ export const load: PageServerLoad = async ({ locals, cookies, url }) => {
 export const actions: Actions = {
   inviteGeneral: async ({ request, locals, url, cookies }) => {
     if (isMockFamilyMode()) {
-      return fail(400, {
-        inviteError:
-          'Estás en modo mock. Las invitaciones no se guardan. Usa el modo normal para persistir cambios.'
-      })
+      return fail(400, { inviteError: MOCK_INVITE_ERROR })
     }
 
     const form = await request.formData()
@@ -193,7 +193,9 @@ export const actions: Actions = {
 
     const token = data?.[0]?.token
 
-    if (!token) return fail(500, { inviteError: 'No se pudo generar el token de invitación.' })
+    if (!token) {
+      return fail(500, { inviteError: 'No pudimos generar el enlace de invitación. Inténtalo de nuevo.' })
+    }
 
     return {
       invitedGeneral: true,
@@ -204,10 +206,7 @@ export const actions: Actions = {
 
   inviteMember: async ({ request, locals, cookies }) => {
     if (isMockFamilyMode()) {
-      return fail(400, {
-        inviteError:
-          'Estás en modo mock. Las invitaciones no se guardan. Usa el modo normal para persistir cambios.'
-      })
+      return fail(400, { inviteError: MOCK_INVITE_ERROR })
     }
 
     const form = await request.formData()
@@ -271,10 +270,7 @@ export const actions: Actions = {
 
   revokeInvite: async ({ request, locals, cookies }) => {
     if (isMockFamilyMode()) {
-      return fail(400, {
-        inviteError:
-          'Estás en modo mock. Las invitaciones no se guardan. Usa el modo normal para persistir cambios.'
-      })
+      return fail(400, { inviteError: MOCK_INVITE_ERROR })
     }
 
     const form = await request.formData()
@@ -294,7 +290,7 @@ export const actions: Actions = {
 
     const inviteId = String(form.get('inviteId') ?? '').trim()
 
-    if (!inviteId) return fail(400, { inviteError: 'Falta la invitación.' })
+    if (!inviteId) return fail(400, { inviteError: 'No se recibió la invitación que quieres gestionar.' })
 
     const { data: invite } = await locals.supabase
       .from('invitations')
@@ -303,11 +299,11 @@ export const actions: Actions = {
       .maybeSingle()
 
     if (!invite) {
-      return fail(404, { inviteError: 'La invitación ya no existe o no está disponible.' })
+      return fail(404, { inviteError: 'No encontramos esa invitación. Puede que ya no exista.' })
     }
 
     if (invite.family_id !== managerContext.activeFamily.id) {
-      return fail(403, { inviteError: 'No puedes revocar invitaciones de otra familia.' })
+      return fail(403, { inviteError: 'No puedes revocar invitaciones de otra familia activa.' })
     }
 
     if (invite.revoked_at) {
@@ -325,17 +321,14 @@ export const actions: Actions = {
       revoked: inviteId,
       revokeSuccess:
         invite.type === 'general'
-          ? 'Invitación general revocada correctamente.'
-          : 'Invitación vinculada revocada correctamente.'
+          ? 'Invitación general revocada.'
+          : 'Invitación vinculada revocada.'
     }
   },
 
   regenerateInviteLink: async ({ request, locals, url, cookies }) => {
     if (isMockFamilyMode()) {
-      return fail(400, {
-        inviteError:
-          'Estás en modo mock. Las invitaciones no se guardan. Usa el modo normal para persistir cambios.'
-      })
+      return fail(400, { inviteError: MOCK_INVITE_ERROR })
     }
 
     const form = await request.formData()
@@ -354,7 +347,7 @@ export const actions: Actions = {
     }
 
     const inviteId = String(form.get('inviteId') ?? '').trim()
-    if (!inviteId) return fail(400, { inviteError: 'Falta la invitación.' })
+    if (!inviteId) return fail(400, { inviteError: 'No se recibió la invitación que quieres gestionar.' })
 
     const { data: invite } = await locals.supabase
       .from('invitations')
@@ -363,16 +356,16 @@ export const actions: Actions = {
       .maybeSingle()
 
     if (!invite) {
-      return fail(404, { inviteError: 'La invitación ya no existe o no está disponible.' })
+      return fail(404, { inviteError: 'No encontramos esa invitación. Puede que ya no exista.' })
     }
 
     if (invite.family_id !== managerContext.activeFamily.id) {
-      return fail(403, { inviteError: 'No puedes regenerar enlaces de otra familia.' })
+      return fail(403, { inviteError: 'No puedes regenerar enlaces de otra familia activa.' })
     }
 
     if (invite.type !== 'general') {
       return fail(400, {
-        inviteError: 'Solo se puede regenerar enlace para invitaciones generales.'
+        inviteError: 'Solo las invitaciones generales permiten regenerar enlace.'
       })
     }
 
@@ -389,7 +382,9 @@ export const actions: Actions = {
     if (error) return fail(400, { inviteError: error.message })
 
     const token = data?.[0]?.token
-    if (!token) return fail(500, { inviteError: 'No se pudo generar el token de invitación.' })
+    if (!token) {
+      return fail(500, { inviteError: 'No pudimos generar el enlace de invitación. Inténtalo de nuevo.' })
+    }
 
     const { error: revokeError } = await locals.supabase
       .from('invitations')
@@ -403,7 +398,7 @@ export const actions: Actions = {
       invitedGeneral: true,
       familyId: managerContext.activeFamily.id,
       regeneratedInviteId: invite.id,
-      inviteSuccess: 'Nuevo enlace generado. La invitación anterior quedó revocada.',
+      inviteSuccess: 'Nuevo enlace generado. El enlace anterior quedó revocado.',
       inviteLink: `${url.origin}/login?invite=${encodeURIComponent(token)}`
     }
   },
