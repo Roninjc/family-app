@@ -10,7 +10,17 @@
   let showPasswordForm = false
   let submitting = false
 
-  $: urlError = $page.url.searchParams.get('error')
+  const resolveUrlError = (value: string | null) => {
+    if (value === 'link_expired') return 'El enlace ha caducado. Pide uno nuevo.'
+    if (value === 'link_invalid') return 'El enlace no es válido. Solicita uno nuevo.'
+    if (value === 'auth_confirm_failed') {
+      return 'No se pudo completar el acceso con ese enlace. Inténtalo otra vez.'
+    }
+    if (value === 'oauth_failed') return 'No se pudo completar el inicio de sesión con Google.'
+    return value
+  }
+
+  $: urlError = resolveUrlError($page.url.searchParams.get('error'))
   $: inviteToken = $page.url.searchParams.get('invite') ?? ''
 </script>
 

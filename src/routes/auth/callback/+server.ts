@@ -16,5 +16,5 @@ export const GET: RequestHandler = async ({ url, locals: { supabase } }) => {
     }
   }
 
-  redirect(303, `/login?error=${encodeURIComponent('No se pudo completar el inicio de sesión.')}`)
+  redirect(303, `/login?error=${encodeURIComponent('oauth_failed')}`)
 }

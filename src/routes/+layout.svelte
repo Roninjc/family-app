@@ -7,12 +7,30 @@
   export let data
   let showTopFade = false
 
+  const roleLabel = (role: string | null) => {
+    if (role === 'admin') return 'administrador'
+    if (role === 'editor') return 'editor'
+    if (role === 'viewer') return 'visualizador'
+    return null
+  }
+
+  const inviteContextText = (family: string | null, role: string | null) => {
+    const parts: string[] = []
+    if (family) parts.push(`en ${family}`)
+    if (role) parts.push(`como ${role}`)
+    return parts.length > 0 ? ` ${parts.join(' ')}` : ''
+  }
+
   $: ({ supabase, user } = data)
   $: signupNoticeCode = $page.url.searchParams.get('signup_notice')
+  $: signupFamily = $page.url.searchParams.get('signup_family')
+  $: signupRole = roleLabel($page.url.searchParams.get('signup_role'))
   $: signupNoticeMessage =
-    signupNoticeCode === 'member_link_already_claimed'
-      ? 'Tu cuenta se creó correctamente, pero ese miembro ya está vinculado a otra cuenta.'
-      : null
+    signupNoticeCode === 'invitation_accepted'
+      ? `Tu cuenta está lista. Ya has entrado${inviteContextText(signupFamily, signupRole)}.`
+      : signupNoticeCode === 'member_link_already_claimed'
+        ? `Tu cuenta se creó correctamente${inviteContextText(signupFamily, signupRole)}, pero ese miembro ya está vinculado a otra cuenta.`
+        : null
 
   function handleViewportScroll() {
     showTopFade = window.scrollY > 12
