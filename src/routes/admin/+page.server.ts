@@ -330,6 +330,84 @@ export const actions: Actions = {
     }
   },
 
+  regenerateInviteLink: async ({ request, locals, url, cookies }) => {
+    if (isMockFamilyMode()) {
+      return fail(400, {
+        inviteError:
+          'Estás en modo mock. Las invitaciones no se guardan. Usa el modo normal para persistir cambios.'
+      })
+    }
+
+    const form = await request.formData()
+    const requestedFamilyId = String(form.get('familyId') ?? '').trim() || null
+    const managerContext = await resolveManagerFamily({ locals, cookies, requestedFamilyId })
+    const cookieFamilyId = cookies.get(ACTIVE_FAMILY_COOKIE) ?? null
+
+    if (
+      !ensureActionFamilyInSync({
+        requestedFamilyId,
+        cookieFamilyId,
+        resolvedFamilyId: managerContext.activeFamily.id
+      })
+    ) {
+      return fail(409, { inviteError: FAMILY_SYNC_ERROR })
+    }
+
+    const inviteId = String(form.get('inviteId') ?? '').trim()
+    if (!inviteId) return fail(400, { inviteError: 'Falta la invitación.' })
+
+    const { data: invite } = await locals.supabase
+      .from('invitations')
+      .select('id, family_id, type, role_on_signup, expires_at, max_uses, revoked_at')
+      .eq('id', inviteId)
+      .maybeSingle()
+
+    if (!invite) {
+      return fail(404, { inviteError: 'La invitación ya no existe o no está disponible.' })
+    }
+
+    if (invite.family_id !== managerContext.activeFamily.id) {
+      return fail(403, { inviteError: 'No puedes regenerar enlaces de otra familia.' })
+    }
+
+    if (invite.type !== 'general') {
+      return fail(400, {
+        inviteError: 'Solo se puede regenerar enlace para invitaciones generales.'
+      })
+    }
+
+    const { data, error } = await locals.supabase.rpc('create_invitation', {
+      invitation_type: 'general',
+      invitation_family_id: managerContext.activeFamily.id,
+      invitation_email: null,
+      invitation_member_id: null,
+      invitation_role: invite.role_on_signup,
+      invitation_expires_at: invite.expires_at,
+      invitation_max_uses: invite.max_uses
+    })
+
+    if (error) return fail(400, { inviteError: error.message })
+
+    const token = data?.[0]?.token
+    if (!token) return fail(500, { inviteError: 'No se pudo generar el token de invitación.' })
+
+    const { error: revokeError } = await locals.supabase
+      .from('invitations')
+      .update({ revoked_at: new Date().toISOString() })
+      .eq('id', invite.id)
+      .is('revoked_at', null)
+
+    if (revokeError) return fail(400, { inviteError: revokeError.message })
+
+    return {
+      invitedGeneral: true,
+      familyId: managerContext.activeFamily.id,
+      regeneratedInviteId: invite.id,
+      inviteSuccess: 'Nuevo enlace generado. La invitación anterior quedó revocada.',
+      inviteLink: `${url.origin}/login?invite=${encodeURIComponent(token)}`
+    }
+  },
+
   setRole: async ({ request, locals, cookies }) => {
     if (isMockFamilyMode()) {
       return fail(400, {

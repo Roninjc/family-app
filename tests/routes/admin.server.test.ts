@@ -380,3 +380,163 @@ describe('admin revoke invitation', () => {
     expect(result.data.inviteError).toBe('No puedes revocar invitaciones de otra familia.')
   })
 })
+
+describe('admin regenerate invite link', () => {
+  it('regenerates link for general invitation and revokes previous one', async () => {
+    const rpcCalls: Array<Record<string, unknown>> = []
+    const revokeFilters: Array<{ column: string; value: string }> = []
+
+    const supabase = {
+      from: (table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: () => ({ eq: () => ({ single: async () => ({ data: { id: 'u1' } }) }) })
+          }
+        }
+
+        if (table === 'family_memberships') {
+          return {
+            select: (columns: string) => {
+              if (columns.includes('families!inner')) {
+                return {
+                  eq: async () => ({
+                    data: [{ family_id: 'f1', role: 'admin', families: { id: 'f1', name: 'Castaño' } }],
+                    error: null
+                  })
+                }
+              }
+
+              throw new Error('Unexpected select in this test')
+            }
+          }
+        }
+
+        if (table === 'invitations') {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: async () => ({
+                  data: {
+                    id: 'inv-old',
+                    family_id: 'f1',
+                    type: 'general',
+                    role_on_signup: 'editor',
+                    expires_at: null,
+                    max_uses: 3,
+                    revoked_at: null
+                  }
+                })
+              })
+            }),
+            update: () => {
+              const builder = {
+                eq: (column: string, value: string) => {
+                  revokeFilters.push({ column, value })
+                  return builder
+                },
+                is: async () => ({ error: null })
+              }
+              return builder
+            }
+          }
+        }
+
+        throw new Error(`Unexpected table: ${table}`)
+      },
+      rpc: (_fn: string, args: Record<string, unknown>) => {
+        rpcCalls.push(args)
+        return Promise.resolve({ data: [{ token: 'new-token-123' }], error: null })
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await (actions.regenerateInviteLink as any)({
+      request: makeRequest({ familyId: 'f1', inviteId: 'inv-old' }),
+      locals: { supabase, user: { id: 'u1' } },
+      cookies: { get: () => 'f1', set: () => {} },
+      url: new URL('http://localhost/admin')
+    })
+
+    expect(result).toEqual({
+      invitedGeneral: true,
+      familyId: 'f1',
+      regeneratedInviteId: 'inv-old',
+      inviteSuccess: 'Nuevo enlace generado. La invitación anterior quedó revocada.',
+      inviteLink: 'http://localhost/login?invite=new-token-123'
+    })
+    expect(rpcCalls[0]).toMatchObject({
+      invitation_type: 'general',
+      invitation_family_id: 'f1',
+      invitation_role: 'editor',
+      invitation_max_uses: 3
+    })
+    expect(revokeFilters).toContainEqual({ column: 'id', value: 'inv-old' })
+  })
+
+  it('rejects regeneration for member-linked invitations', async () => {
+    const supabase = {
+      from: (table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: () => ({ eq: () => ({ single: async () => ({ data: { id: 'u1' } }) }) })
+          }
+        }
+
+        if (table === 'family_memberships') {
+          return {
+            select: (columns: string) => {
+              if (columns.includes('families!inner')) {
+                return {
+                  eq: async () => ({
+                    data: [{ family_id: 'f1', role: 'admin', families: { id: 'f1', name: 'Castaño' } }],
+                    error: null
+                  })
+                }
+              }
+
+              throw new Error('Unexpected select in this test')
+            }
+          }
+        }
+
+        if (table === 'invitations') {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: async () => ({
+                  data: {
+                    id: 'inv-member',
+                    family_id: 'f1',
+                    type: 'member_linked',
+                    role_on_signup: 'viewer',
+                    expires_at: null,
+                    max_uses: 1,
+                    revoked_at: null
+                  }
+                })
+              })
+            })
+          }
+        }
+
+        throw new Error(`Unexpected table: ${table}`)
+      },
+      rpc: () => {
+        throw new Error('Should not call RPC for member-linked invites')
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await (actions.regenerateInviteLink as any)({
+      request: makeRequest({ familyId: 'f1', inviteId: 'inv-member' }),
+      locals: { supabase, user: { id: 'u1' } },
+      cookies: { get: () => 'f1', set: () => {} },
+      url: new URL('http://localhost/admin')
+    })
+
+    expect(result.status).toBe(400)
+    expect(result.data.inviteError).toBe(
+      'Solo se puede regenerar enlace para invitaciones generales.'
+    )
+  })
+})

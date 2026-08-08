@@ -52,6 +52,28 @@
     return 'muted'
   }
 
+  let inviteFilter: 'all' | 'active' | 'expired' | 'revoked' | 'limit' = 'all'
+
+  const inviteMatchesFilter = (
+    invite: {
+      revoked_at: string | null
+      expires_at: string | null
+      uses_count: number
+      max_uses: number | null
+    },
+    filter: 'all' | 'active' | 'expired' | 'revoked' | 'limit'
+  ) => {
+    const status = inviteStatusLabel(invite)
+
+    if (filter === 'all') return true
+    if (filter === 'active') return status === 'Activa'
+    if (filter === 'expired') return status === 'Caducada'
+    if (filter === 'revoked') return status === 'Revocada'
+    if (filter === 'limit') return status === 'Límite alcanzado'
+
+    return true
+  }
+
   let copyStatus = ''
   let copyStatusTone: 'ok' | 'error' = 'ok'
   let clearCopyStatusTimer: ReturnType<typeof setTimeout> | null = null
@@ -106,6 +128,7 @@
     memberId = preselectedMemberId
   }
   $: activeFamilyId = data.activeFamily?.id ?? ''
+  $: filteredInvites = data.invites.filter((invite) => inviteMatchesFilter(invite, inviteFilter))
 
   let openSection: 'general' | 'member' | 'invites' | 'users' | null = 'general'
 
@@ -195,27 +218,30 @@
                 </div>
               </form>
               {#if form?.invitedGeneral}<p class="ok-note" role="status">Invitación general creada.</p>{/if}
+              {#if form?.inviteSuccess}<p class="ok-note" role="status">{form.inviteSuccess}</p>{/if}
               {#if form?.inviteLink}
-                <p class="ok-note invite-link" role="status">
-                  Enlace: <a href={form.inviteLink}>{form.inviteLink}</a>
-                </p>
-                <div class="invite-link-actions">
-                  <button
-                    type="button"
-                    class="app-btn app-btn--secondary small"
-                    on:click={() => {
-                      copyInviteLink(form?.inviteLink ?? '')
-                    }}
-                  >
-                    Copiar enlace
-                  </button>
-                  <span class="inline-help">Compártelo con quien quieras invitar</span>
-                </div>
-                {#if copyStatus}
-                  <p class="copy-status" class:error={copyStatusTone === 'error'} role="status" aria-live="polite">
-                    {copyStatus}
+                <div class="invite-link-card" role="status" aria-live="polite">
+                  <p class="ok-note invite-link">
+                    Enlace: <a href={form.inviteLink}>{form.inviteLink}</a>
                   </p>
-                {/if}
+                  <div class="invite-link-actions">
+                    <button
+                      type="button"
+                      class="app-btn app-btn--secondary small"
+                      on:click={() => {
+                        copyInviteLink(form?.inviteLink ?? '')
+                      }}
+                    >
+                      Copiar enlace
+                    </button>
+                    <span class="inline-help">Compártelo con quien quieras invitar</span>
+                  </div>
+                  {#if copyStatus}
+                    <p class="copy-status" class:error={copyStatusTone === 'error'} role="status" aria-live="polite">
+                      {copyStatus}
+                    </p>
+                  {/if}
+                </div>
               {/if}
               {#if form?.inviteError}<p class="error-note" role="alert">{form.inviteError}</p>{/if}
             </div>
@@ -292,9 +318,75 @@
           </button>
           {#if openSection === 'invites'}
             <div class="section-body" transition:fade={{ duration: 140 }}>
-              {#if data.invites.length > 0}
+                {#if data.invites.length > 0}
+                  <div class="invite-filters" role="toolbar" aria-label="Filtrar invitaciones">
+                    <button
+                      type="button"
+                      class="filter-chip"
+                      class:active={inviteFilter === 'all'}
+                      aria-pressed={inviteFilter === 'all'}
+                      on:click={() => {
+                        inviteFilter = 'all'
+                      }}
+                    >
+                      Todas
+                    </button>
+                    <button
+                      type="button"
+                      class="filter-chip"
+                      class:active={inviteFilter === 'active'}
+                      aria-pressed={inviteFilter === 'active'}
+                      on:click={() => {
+                        inviteFilter = 'active'
+                      }}
+                    >
+                      Activas
+                    </button>
+                    <button
+                      type="button"
+                      class="filter-chip"
+                      class:active={inviteFilter === 'expired'}
+                      aria-pressed={inviteFilter === 'expired'}
+                      on:click={() => {
+                        inviteFilter = 'expired'
+                      }}
+                    >
+                      Caducadas
+                    </button>
+                    <button
+                      type="button"
+                      class="filter-chip"
+                      class:active={inviteFilter === 'limit'}
+                      aria-pressed={inviteFilter === 'limit'}
+                      on:click={() => {
+                        inviteFilter = 'limit'
+                      }}
+                    >
+                      Límite
+                    </button>
+                    <button
+                      type="button"
+                      class="filter-chip"
+                      class:active={inviteFilter === 'revoked'}
+                      aria-pressed={inviteFilter === 'revoked'}
+                      on:click={() => {
+                        inviteFilter = 'revoked'
+                      }}
+                    >
+                      Revocadas
+                    </button>
+                  </div>
+
+                  <p class="filter-summary" aria-live="polite">
+                    Mostrando {filteredInvites.length} de {data.invites.length} invitaciones.
+                  </p>
+
+                  {#if filteredInvites.length === 0}
+                    <p class="empty-note">No hay invitaciones para este filtro.</p>
+                  {/if}
+
                 <ul class="list">
-                  {#each data.invites as invite (invite.id)}
+                    {#each filteredInvites as invite (invite.id)}
                     <li>
                       <span>
                         {inviteTypeLabels[invite.type]}
@@ -321,6 +413,15 @@
                           <input type="hidden" name="inviteId" value={invite.id} />
                           <button type="submit" class="app-btn app-btn--danger small">Revocar</button>
                         </form>
+                          {#if invite.type === 'general'}
+                            <form method="POST" action="?/regenerateInviteLink" use:enhance>
+                              <input type="hidden" name="familyId" value={activeFamilyId} />
+                              <input type="hidden" name="inviteId" value={invite.id} />
+                              <button type="submit" class="app-btn app-btn--secondary small">
+                                Regenerar enlace
+                              </button>
+                            </form>
+                          {/if}
                       {/if}
                     </li>
                   {/each}
@@ -607,6 +708,43 @@
         color: var(--text-muted);
         font-size: var(--fs-2xs);
       }
+    }
+
+    .invite-link-card {
+      margin-top: 0.5rem;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+
+    .invite-filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .filter-chip {
+      border: 1px solid rgba(156, 90, 45, 0.24);
+      background: rgba(255, 255, 255, 0.56);
+      color: var(--text-main);
+      border-radius: var(--radius-pill);
+      font-size: var(--fs-2xs);
+      font-weight: 600;
+      min-height: 30px;
+      padding: 0.28rem 0.62rem;
+      cursor: pointer;
+
+      &.active {
+        background: rgba(156, 90, 45, 0.18);
+        border-color: rgba(156, 90, 45, 0.45);
+      }
+    }
+
+    .filter-summary {
+      margin: 0 0 10px;
+      color: var(--text-muted);
+      font-size: var(--fs-2xs);
     }
 
     .copy-status {
