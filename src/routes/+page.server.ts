@@ -5,7 +5,7 @@ import {
   loadUserFamilies,
   resolveAndPersistActiveFamily
 } from '$lib/server/activeFamily'
-import { rowsToFamilyData } from '$lib/server/familyAdapter'
+import { rowsToFamilyData, type RelationshipRow } from '$lib/server/familyAdapter'
 import {
   buildFamilyGroups,
   resolveActiveFamilyId,
@@ -76,28 +76,34 @@ export const load: PageServerLoad = async ({ locals: { supabase, user }, url, co
 
   if (!selectedFamilyId) return { familyData: { members: [] }, activeFamilyId: null }
 
-  const [membersRes, relationshipsRes] = await Promise.all([
-    supabase
-      .from('members')
-      .select('id, name, family_name, birth_date, photo_url')
-      .eq('family_id', selectedFamilyId)
-      .order('created_at', { ascending: true }),
-    supabase.from('relationships').select('member_a, member_b, type')
-  ])
+  const { data: membersData, error: membersError } = await supabase
+    .from('members')
+    .select('id, name, family_name, birth_date, photo_url')
+    .eq('family_id', selectedFamilyId)
+    .order('created_at', { ascending: true })
 
-  if (membersRes.error)
-    error(500, `No se pudieron cargar los miembros: ${membersRes.error.message}`)
-  if (relationshipsRes.error)
-    error(500, `No se pudieron cargar las relaciones: ${relationshipsRes.error.message}`)
+  if (membersError) error(500, `No se pudieron cargar los miembros: ${membersError.message}`)
 
-  const selectedIds = new Set(membersRes.data.map((member) => member.id))
-  const selectedRelationships = relationshipsRes.data.filter(
-    (relationship) =>
-      selectedIds.has(relationship.member_a) && selectedIds.has(relationship.member_b)
-  )
+  const selectedIds = new Set((membersData ?? []).map((member) => member.id))
+  const memberIds = [...selectedIds]
+
+  let selectedRelationships: RelationshipRow[] = []
+  if (memberIds.length > 0) {
+    const { data, error: scopedRelationshipsError } = await supabase
+      .from('relationships')
+      .select('member_a, member_b, type')
+      .in('member_a', memberIds)
+      .in('member_b', memberIds)
+
+    if (scopedRelationshipsError) {
+      error(500, `No se pudieron cargar las relaciones: ${scopedRelationshipsError.message}`)
+    }
+
+    selectedRelationships = data ?? []
+  }
 
   return {
-    familyData: rowsToFamilyData(membersRes.data, selectedRelationships),
+    familyData: rowsToFamilyData(membersData ?? [], selectedRelationships),
     activeFamilyId: selectedFamilyId
   }
 }

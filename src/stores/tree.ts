@@ -305,19 +305,21 @@ export const familyTree = initFamilyTree()
 
 const buildTree = (familyData: FamilyData) => {
   familyTree.adjList.clear()
+  const members = familyData?.members ?? []
+  const membersById = new Map(members.map((member) => [member.id, member]))
 
-  familyData?.members?.forEach((member: FamilyMember) => {
+  members.forEach((member: FamilyMember) => {
     familyTree.addVertex(member)
 
     member.children?.forEach((childId: string) => {
-      const child = familyData.members.find((member) => member.id === childId)
+      const child = membersById.get(childId)
       if (child) {
         familyTree.addEdge(member, child, Relation.Child)
       }
     })
 
     member.parents?.forEach((parentId: string) => {
-      const parent = familyData.members.find((member) => member.id === parentId)
+      const parent = membersById.get(parentId)
       if (parent) {
         familyTree.addEdge(member, parent, Relation.Parent)
       }
@@ -325,21 +327,21 @@ const buildTree = (familyData: FamilyData) => {
     })
 
     member.siblings?.forEach((siblingId: string) => {
-      const sibling = familyData.members.find((member) => member.id === siblingId)
+      const sibling = membersById.get(siblingId)
       if (sibling) {
         familyTree.addEdge(member, sibling, Relation.Sibling)
       }
     })
 
     member.partner?.forEach((partnerId: string) => {
-      const partner = familyData.members.find((member) => member.id === partnerId)
+      const partner = membersById.get(partnerId)
       if (partner) {
         familyTree.addEdge(member, partner, Relation.Partner)
       }
     })
 
     member.previousPartners?.forEach((previousPartnerId: string) => {
-      const previousPartner = familyData.members.find((member) => member.id === previousPartnerId)
+      const previousPartner = membersById.get(previousPartnerId)
       if (previousPartner) {
         familyTree.addEdge(member, previousPartner, Relation.PreviousPartner)
       }
