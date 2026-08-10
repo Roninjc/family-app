@@ -16,14 +16,23 @@
   let error = ''
   let submitting = false
   let confirmingDelete = false
-  let activeSection: 'datos' | 'relaciones' | 'peligro' = 'datos'
+  let activeSection: 'datos' | 'relaciones' | 'ajustes' = 'datos'
   let loadedMemberId: string | null = null
   let canSubmitEdit = false
+
+  type MemberWithAvatar = FamilyMember & {
+    avatarUrl?: string
+    photoUrl?: string
+    imageUrl?: string
+    image?: string
+  }
 
   $: familyMembers = ($page.data.familyData?.members ?? []) as FamilyMember[]
   $: member = $editingMemberId ? familyMembers.find((m) => m.id === $editingMemberId) : undefined
   $: editable = canEdit($page.data.profile)
   $: canSubmitEdit = editable && name.trim().length > 0 && familyName.trim().length > 0 && !submitting
+  $: memberAvatar = member ? getMemberAvatar(member as MemberWithAvatar) : ''
+  $: memberInitials = member ? getMemberInitials(member.name, member.familyName) : ''
 
   // Preload the fields when the modal opens or the member changes. Compared by
   // id (not by reference) so half-edited personal fields aren't clobbered when
@@ -82,6 +91,16 @@
       }
     }
   }
+
+  function getMemberAvatar(m: MemberWithAvatar): string {
+    return m.avatarUrl ?? m.photoUrl ?? m.imageUrl ?? m.image ?? ''
+  }
+
+  function getMemberInitials(firstName: string, lastName: string): string {
+    const firstInitial = firstName?.trim().charAt(0) ?? ''
+    const lastInitial = lastName?.trim().charAt(0) ?? ''
+    return `${firstInitial}${lastInitial}`.toUpperCase()
+  }
 </script>
 
 {#if $showEditMemberModal && member}
@@ -105,52 +124,68 @@
       on:click|stopPropagation
     >
       <LiquidGlassWrapper>
-        <h2 id="edit-member-title">{member.name} {member.familyName}</h2>
+        <div class="member-header">
+          <div class="member-avatar" aria-hidden="true">
+            {#if memberAvatar}
+              <img src={memberAvatar} alt="" loading="lazy" decoding="async" />
+            {:else}
+              {memberInitials}
+            {/if}
+          </div>
+          <h2 id="edit-member-title">{member.name} {member.familyName}</h2>
+        </div>
         {#if !editable}
           <p class="viewer-note" role="status">
             Estás en modo solo lectura. Puedes explorar vínculos y datos sin editar.
           </p>
         {/if}
-        <div class="section-tabs" role="tablist" aria-label="Secciones de edición">
-          <button
-            type="button"
-            role="tab"
-            class:active={activeSection === 'datos'}
-            aria-selected={activeSection === 'datos'}
-            on:click={() => {
-              activeSection = 'datos'
-            }}
-          >
-            Datos
-          </button>
-          <button
-            type="button"
-            role="tab"
-            class:active={activeSection === 'relaciones'}
-            aria-selected={activeSection === 'relaciones'}
-            on:click={() => {
-              activeSection = 'relaciones'
-            }}
-          >
-            Relaciones
-          </button>
-          {#if editable}
+        <div class="section-row">
+          <div class="section-tabs" role="tablist" aria-label="Secciones de edición">
             <button
               type="button"
               role="tab"
-              class:active={activeSection === 'peligro'}
-              aria-selected={activeSection === 'peligro'}
+              class:active={activeSection === 'datos'}
+              aria-selected={activeSection === 'datos'}
               on:click={() => {
-                activeSection = 'peligro'
+                activeSection = 'datos'
               }}
             >
-              Riesgo
+              Datos
+            </button>
+            <button
+              type="button"
+              role="tab"
+              class:active={activeSection === 'relaciones'}
+              aria-selected={activeSection === 'relaciones'}
+              on:click={() => {
+                activeSection = 'relaciones'
+              }}
+            >
+              Relaciones
+            </button>
+          </div>
+          {#if editable}
+            <button
+              type="button"
+              class="settings-tab"
+              class:active={activeSection === 'ajustes'}
+              title="Ajustes"
+              aria-label="Abrir ajustes"
+              on:click={() => {
+                activeSection = 'ajustes'
+              }}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path
+                  d="M19.14 12.94a7.9 7.9 0 0 0 .05-.94 7.9 7.9 0 0 0-.05-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.27 7.27 0 0 0-1.63-.94l-.36-2.54A.5.5 0 0 0 13.9 2h-3.8a.5.5 0 0 0-.49.42l-.36 2.54a7.27 7.27 0 0 0-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 8.48a.5.5 0 0 0 .12.64l2.03 1.58a7.9 7.9 0 0 0-.05.94 7.9 7.9 0 0 0 .05.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96c.5.39 1.05.71 1.63.94l.36 2.54a.5.5 0 0 0 .49.42h3.8a.5.5 0 0 0 .49-.42l.36-2.54c.58-.23 1.13-.55 1.63-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.4A3.4 3.4 0 1 1 12 8.6a3.4 3.4 0 0 1 0 6.8Z"
+                />
+              </svg>
             </button>
           {/if}
         </div>
 
         {#if activeSection === 'datos'}
-          <div transition:fade={{ duration: 140 }}>
+          <div in:fade={{ duration: 140 }}>
           <form method="POST" action="?/updateMember" use:enhance={enhanceMemberForm}>
             <input type="hidden" name="memberId" value={member.id} />
             <div class="input-wrapper floating-input-wrapper">
@@ -205,16 +240,11 @@
               </button>
             {/if}
           </form>
-          {#if editable}
-            <a class="app-btn app-btn--secondary invite-member-button" href={`/admin?memberId=${member.id}`}>
-              Invitar por email
-            </a>
-          {/if}
           </div>
         {/if}
 
         {#if activeSection === 'relaciones'}
-          <div class="relations-section" transition:fade={{ duration: 140 }}>
+          <div class="relations-section" in:fade={{ duration: 140 }}>
             <h3>Relaciones</h3>
             <RelationChipsEditor
               label="Padres"
@@ -280,32 +310,43 @@
           </div>
         {/if}
 
-        {#if editable && activeSection === 'peligro'}
-          <div class="danger-zone" transition:fade={{ duration: 140 }}>
-            {#if !confirmingDelete}
-              <button
-                type="button"
-                class="delete-button"
-                on:click={() => (confirmingDelete = true)}
-              >
-                Eliminar miembro
-              </button>
-            {:else}
-              <p class="delete-warning">
-                Se eliminará a {member.name} y todas sus relaciones. ¿Seguro?
-              </p>
-              <form method="POST" action="?/deleteMember" use:enhance={enhanceMemberForm}>
-                <input type="hidden" name="memberId" value={member.id} />
-                <div class="delete-actions">
-                  <button type="button" on:click={() => (confirmingDelete = false)}>
-                    Cancelar
-                  </button>
-                  <button type="submit" class="delete-button" disabled={submitting}>
-                    {submitting ? 'Eliminando…' : 'Sí, eliminar'}
-                  </button>
-                </div>
-              </form>
-            {/if}
+        {#if editable && activeSection === 'ajustes'}
+          <div class="settings-section" in:fade={{ duration: 140 }}>
+            <div class="settings-actions">
+              <h3>Ajustes</h3>
+              <p>Acciones sensibles y administración de acceso para este miembro.</p>
+              <a class="app-btn app-btn--secondary invite-member-button" href={`/admin?memberId=${member.id}`}>
+                Invitar por email
+              </a>
+            </div>
+
+            <div class="danger-zone">
+              <h4>Zona de peligro</h4>
+              {#if !confirmingDelete}
+                <button
+                  type="button"
+                  class="delete-button"
+                  on:click={() => (confirmingDelete = true)}
+                >
+                  Eliminar miembro
+                </button>
+              {:else}
+                <p class="delete-warning">
+                  Se eliminará a {member.name} y todas sus relaciones. ¿Seguro?
+                </p>
+                <form method="POST" action="?/deleteMember" use:enhance={enhanceMemberForm}>
+                  <input type="hidden" name="memberId" value={member.id} />
+                  <div class="delete-actions">
+                    <button type="button" on:click={() => (confirmingDelete = false)}>
+                      Cancelar
+                    </button>
+                    <button type="submit" class="delete-button" disabled={submitting}>
+                      {submitting ? 'Eliminando…' : 'Sí, eliminar'}
+                    </button>
+                  </div>
+                </form>
+              {/if}
+            </div>
           </div>
         {/if}
         {#if error}
@@ -337,16 +378,54 @@
       z-index: 1000;
       min-width: 280px;
 
-      h2 {
-        margin-top: 0;
-        margin-bottom: 0.75rem;
-        text-wrap: nowrap;
+      .member-header {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        margin: 0 0 1.15rem;
+
+        h2 {
+          margin: 0;
+          text-wrap: nowrap;
+        }
+      }
+
+      .member-avatar {
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
+        border-radius: 50%;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+        font-size: 0.84rem;
+        font-weight: 800;
+        color: #6d4f3a;
+        background: #f3ede5;
+        box-shadow:
+          inset 3px 3px 7px rgba(154, 132, 109, 0.18),
+          inset -3px -3px 7px rgba(255, 255, 255, 0.82);
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+      }
+
+      .section-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.6rem;
+        margin-bottom: 1rem;
       }
 
       .section-tabs {
         display: flex;
         gap: 8px;
-        margin-bottom: 1rem;
+        flex: 1 1 auto;
 
         button {
           flex: 1 1 auto;
@@ -377,6 +456,44 @@
             color: #7e4520;
             box-shadow: var(--neu-shadow-inset);
           }
+        }
+      }
+
+      .settings-tab {
+        width: 38px;
+        min-height: 38px;
+        padding: 8px;
+        border-radius: 12px;
+        background: #efe7dc;
+        color: #1f1f1f;
+        box-shadow:
+          4px 4px 10px rgba(149, 121, 95, 0.14),
+          -4px -4px 10px rgba(255, 255, 255, 0.6);
+
+        svg {
+          display: block;
+          width: 18px;
+          height: 18px;
+          fill: currentColor;
+          margin: 0 auto;
+        }
+
+        &:hover {
+          background: #f3ece2;
+          color: #111111;
+          transform: translateY(-1px);
+          box-shadow:
+            6px 6px 12px rgba(149, 121, 95, 0.15),
+            -5px -5px 12px rgba(255, 255, 255, 0.72);
+        }
+
+        &.active {
+          background: #ebe1d4;
+          color: #6c3d20;
+          box-shadow:
+            inset 3px 3px 7px rgba(149, 121, 95, 0.2),
+            inset -3px -3px 7px rgba(255, 255, 255, 0.75);
+          border-color: rgba(126, 69, 32, 0.22);
         }
       }
 
@@ -455,19 +572,71 @@
         }
       }
 
+      .settings-section {
+        margin-top: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.9rem;
+      }
+
+      .settings-actions {
+        padding: 0.75rem;
+        border-radius: 12px;
+        background: rgba(250, 244, 233, 0.65);
+        border: 1px solid rgba(149, 121, 95, 0.2);
+
+        h3 {
+          margin: 0 0 0.35rem;
+          font-size: var(--fs-md);
+          color: #5f4632;
+        }
+
+        p {
+          margin: 0 0 0.7rem;
+          color: var(--text-muted);
+          font-size: var(--fs-xs);
+        }
+      }
+
       .invite-member-button {
-        margin: 0.75rem 0 0.25rem;
+        margin: 0;
         width: 100%;
         min-height: 40px;
         border-radius: 10px;
         font-size: var(--fs-xs);
+        background: #f1e7da;
+        border: none;
+        color: #6f4b31;
+        box-shadow:
+          5px 5px 12px rgba(149, 121, 95, 0.13),
+          -5px -5px 12px rgba(255, 255, 255, 0.68);
+
+        &:hover {
+          background: #f6ede2;
+          box-shadow:
+            7px 7px 14px rgba(149, 121, 95, 0.15),
+            -6px -6px 14px rgba(255, 255, 255, 0.75);
+        }
       }
 
       .danger-zone {
-        margin-top: 0.5rem;
+        margin-top: 0;
+        padding: 0.8rem;
+        border-radius: 12px;
+        border: 1px solid rgba(208, 124, 124, 0.45);
+        background: rgba(255, 237, 237, 0.55);
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
+
+        h4 {
+          margin: 0;
+          font-size: var(--fs-sm);
+          font-weight: 800;
+          color: #8c2d2d;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
 
         .delete-warning {
           margin: 0;
@@ -481,13 +650,31 @@
         }
 
         button.delete-button {
-          background-color: #e4cac4;
-          color: #7a2f2f;
+          background: linear-gradient(145deg, #efe1de, #dcc3bd);
+          border: 3px solid #f0e2de;
+          color: #6e2424;
+          box-shadow:
+            6px 6px 14px rgba(140, 88, 88, 0.26),
+            -6px -6px 14px rgba(255, 252, 252, 0.75),
+            inset 5px 4px 6px rgba(132, 84, 84, 0.09),
+            inset -4px -3px 7px rgba(255, 250, 250, 0.34);
 
           &:hover {
-            background: #ebd6d2;
             transform: translateY(-1px);
-            box-shadow: var(--neu-shadow-out-soft);
+            box-shadow:
+              8px 8px 16px rgba(140, 88, 88, 0.28),
+              -7px -7px 16px rgba(255, 253, 253, 0.8),
+              inset 5px 4px 6px rgba(132, 84, 84, 0.09),
+              inset -4px -3px 7px rgba(255, 250, 250, 0.34);
+          }
+
+          &:active {
+            transform: translateY(0);
+            box-shadow:
+              4px 4px 10px rgba(140, 88, 88, 0.2),
+              -4px -4px 10px rgba(255, 252, 252, 0.68),
+              inset 7px 6px 10px rgba(132, 84, 84, 0.16),
+              inset -6px -5px 10px rgba(255, 251, 251, 0.46);
           }
         }
       }
