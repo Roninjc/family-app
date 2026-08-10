@@ -75,14 +75,32 @@
     font-size: var(--fs-xs);
     gap: 0.38rem;
     flex-shrink: 0;
-    color: var(--accent-sky);
+    color: #6f4e33;
     border: none;
-    background: linear-gradient(160deg, rgba(252, 249, 244, 0.9), rgba(245, 236, 225, 0.74));
-    box-shadow: 0 6px 12px rgba(110, 89, 67, 0.12);
+    background: #f1e7da;
+    box-shadow:
+      5px 5px 12px rgba(149, 121, 95, 0.14),
+      -5px -5px 12px rgba(255, 255, 255, 0.72);
+    transition:
+      transform 0.2s var(--motion-standard),
+      box-shadow 0.2s var(--motion-standard),
+      background-color 0.2s var(--motion-standard),
+      color 0.2s var(--motion-standard);
   }
 
   .add-member-inline:hover:not(:disabled):not([aria-disabled='true']) {
-    background: linear-gradient(160deg, rgba(254, 252, 248, 0.94), rgba(247, 239, 229, 0.8));
+    background: #f6ede2;
+    transform: translateY(-1px);
+    box-shadow:
+      7px 7px 14px rgba(149, 121, 95, 0.17),
+      -6px -6px 14px rgba(255, 255, 255, 0.78);
+  }
+
+  .add-member-inline:active:not(:disabled):not([aria-disabled='true']) {
+    transform: translateY(0);
+    box-shadow:
+      inset 3px 3px 7px rgba(149, 121, 95, 0.2),
+      inset -3px -3px 7px rgba(255, 255, 255, 0.76);
   }
 
   .icon {
