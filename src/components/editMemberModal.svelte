@@ -19,6 +19,9 @@
   let activeSection: 'datos' | 'relaciones' | 'ajustes' = 'datos'
   let loadedMemberId: string | null = null
   let canSubmitEdit = false
+  let originalName = ''
+  let originalFamilyName = ''
+  let originalBirthDate = ''
 
   type MemberWithAvatar = FamilyMember & {
     avatarUrl?: string
@@ -30,7 +33,14 @@
   $: familyMembers = ($page.data.familyData?.members ?? []) as FamilyMember[]
   $: member = $editingMemberId ? familyMembers.find((m) => m.id === $editingMemberId) : undefined
   $: editable = canEdit($page.data.profile)
-  $: canSubmitEdit = editable && name.trim().length > 0 && familyName.trim().length > 0 && !submitting
+  $: normalizedBirthDate = normalizeBirthDate(birthDate)
+  $: normalizedOriginalBirthDate = normalizeBirthDate(originalBirthDate)
+  $: isDirty =
+    name.trim() !== originalName.trim() ||
+    familyName.trim() !== originalFamilyName.trim() ||
+    normalizedBirthDate !== normalizedOriginalBirthDate
+  $: canSubmitEdit =
+    editable && name.trim().length > 0 && familyName.trim().length > 0 && isDirty && !submitting
   $: memberAvatar = member ? getMemberAvatar(member as MemberWithAvatar) : ''
   $: memberInitials = member ? getMemberInitials(member.name, member.familyName) : ''
 
@@ -38,7 +48,10 @@
   // id (not by reference) so half-edited personal fields aren't clobbered when
   // invalidateAll refreshes the data after saving a relation.
   $: if ($showEditMemberModal && member && member.id !== loadedMemberId) loadMember(member)
-  $: if (!$showEditMemberModal) loadedMemberId = null
+  $: if (!$showEditMemberModal) {
+    loadedMemberId = null
+    resetEditState()
+  }
 
   // Anyone already related to the member (or the member itself) is not
   // selectable in any other relation group
@@ -61,16 +74,22 @@
   $: suggestedParentsList = member ? suggestedParents(member, relatedOrSelfIds, familyMembers) : []
 
   function loadMember(m: FamilyMember) {
+    const normalizedMemberBirthDate = normalizeBirthDate(m.birthDate)
+
     loadedMemberId = m.id
     name = m.name
     familyName = m.familyName
-    birthDate = m.birthDate ?? ''
+    birthDate = normalizedMemberBirthDate
+    originalName = m.name
+    originalFamilyName = m.familyName
+    originalBirthDate = normalizedMemberBirthDate
     error = ''
     confirmingDelete = false
     activeSection = 'datos'
   }
 
   function closeModal() {
+    resetEditState()
     showEditMemberModal.set(false)
     editingMemberId.set(null)
   }
@@ -100,6 +119,25 @@
     const firstInitial = firstName?.trim().charAt(0) ?? ''
     const lastInitial = lastName?.trim().charAt(0) ?? ''
     return `${firstInitial}${lastInitial}`.toUpperCase()
+  }
+
+  function resetEditState() {
+    name = ''
+    familyName = ''
+    birthDate = ''
+    originalName = ''
+    originalFamilyName = ''
+    originalBirthDate = ''
+    error = ''
+    confirmingDelete = false
+    activeSection = 'datos'
+  }
+
+  function normalizeBirthDate(value: string | undefined): string {
+    if (!value) return ''
+    const trimmed = value.trim()
+    if (!trimmed) return ''
+    return trimmed.split('T')[0]
   }
 </script>
 
@@ -325,7 +363,7 @@
               {#if !confirmingDelete}
                 <button
                   type="button"
-                  class="delete-button"
+                  class="delete-button delete-button--normal"
                   on:click={() => (confirmingDelete = true)}
                 >
                   Eliminar miembro
@@ -337,10 +375,18 @@
                 <form method="POST" action="?/deleteMember" use:enhance={enhanceMemberForm}>
                   <input type="hidden" name="memberId" value={member.id} />
                   <div class="delete-actions">
-                    <button type="button" on:click={() => (confirmingDelete = false)}>
+                    <button
+                      type="button"
+                      class="delete-button delete-button--featured delete-button--cancel"
+                      on:click={() => (confirmingDelete = false)}
+                    >
                       Cancelar
                     </button>
-                    <button type="submit" class="delete-button" disabled={submitting}>
+                    <button
+                      type="submit"
+                      class="delete-button delete-button--normal"
+                      disabled={submitting}
+                    >
                       {submitting ? 'Eliminando…' : 'Sí, eliminar'}
                     </button>
                   </div>
@@ -537,19 +583,25 @@
         }
 
         &[type='submit'] {
-          background: #cfdcc9;
-          color: #44543d;
+          background: #d8dece;
+          color: #4d5a43;
+          box-shadow:
+            5px 5px 12px rgba(124, 137, 108, 0.2),
+            -5px -5px 12px rgba(250, 254, 246, 0.82);
 
           &:hover {
-            background: #d8e4d1;
+            background: #dfe6d5;
             transform: translateY(-1px);
-            box-shadow: var(--neu-shadow-out-soft);
+            box-shadow:
+              7px 7px 14px rgba(124, 137, 108, 0.24),
+              -6px -6px 14px rgba(252, 255, 250, 0.86);
           }
 
           &:disabled,
           &:disabled:hover {
-            background-color: #c3ccd6;
-            color: #5c6673;
+            background-color: #d3d8cb;
+            color: #747f6a;
+            box-shadow: none;
           }
         }
 
@@ -650,9 +702,34 @@
         }
 
         button.delete-button {
+          color: #6e2424;
+        }
+
+        button.delete-button--normal {
+          background: #f0dbd6;
+          box-shadow:
+            5px 5px 12px rgba(140, 88, 88, 0.2),
+            -5px -5px 12px rgba(255, 251, 251, 0.68);
+
+          &:hover {
+            background: #f4e2dd;
+            transform: translateY(-1px);
+            box-shadow:
+              7px 7px 14px rgba(140, 88, 88, 0.23),
+              -6px -6px 14px rgba(255, 253, 253, 0.78);
+          }
+
+          &:active {
+            transform: translateY(0);
+            box-shadow:
+              inset 4px 4px 8px rgba(140, 88, 88, 0.2),
+              inset -4px -4px 8px rgba(255, 251, 251, 0.58);
+          }
+        }
+
+        button.delete-button--featured {
           background: linear-gradient(145deg, #efe1de, #dcc3bd);
           border: 3px solid #f0e2de;
-          color: #6e2424;
           box-shadow:
             6px 6px 14px rgba(140, 88, 88, 0.26),
             -6px -6px 14px rgba(255, 252, 252, 0.75),
@@ -675,6 +752,33 @@
               -4px -4px 10px rgba(255, 252, 252, 0.68),
               inset 7px 6px 10px rgba(132, 84, 84, 0.16),
               inset -6px -5px 10px rgba(255, 251, 251, 0.46);
+          }
+        }
+
+        button.delete-button--cancel {
+          color: #4f4a45;
+          background: linear-gradient(145deg, #f1ede7, #ddd6cc);
+          border-color: #ece5da;
+          box-shadow:
+            6px 6px 14px rgba(141, 130, 113, 0.2),
+            -6px -6px 14px rgba(255, 255, 255, 0.8),
+            inset 5px 4px 6px rgba(148, 136, 118, 0.08),
+            inset -4px -3px 7px rgba(255, 255, 255, 0.34);
+
+          &:hover {
+            box-shadow:
+              8px 8px 16px rgba(141, 130, 113, 0.24),
+              -7px -7px 16px rgba(255, 255, 255, 0.84),
+              inset 5px 4px 6px rgba(148, 136, 118, 0.08),
+              inset -4px -3px 7px rgba(255, 255, 255, 0.34);
+          }
+
+          &:active {
+            box-shadow:
+              4px 4px 10px rgba(141, 130, 113, 0.18),
+              -4px -4px 10px rgba(255, 255, 255, 0.76),
+              inset 7px 6px 10px rgba(148, 136, 118, 0.14),
+              inset -6px -5px 10px rgba(255, 255, 255, 0.44);
           }
         }
       }
