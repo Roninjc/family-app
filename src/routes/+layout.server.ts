@@ -7,12 +7,12 @@ import {
 import { isMockFamilyMode } from '$lib/server/mockMode'
 import type { LayoutServerLoad } from './$types'
 
-// Editor-role stand-in so the mock mode shows every edit affordance
+// Admin-role stand-in so the mock mode exposes full management affordances
 const mockProfile: Profile = {
   id: 'mock-user',
   email: 'mock@localhost',
   display_name: 'Modo mock',
-  role: 'editor',
+  role: 'admin',
   member_id: null,
   created_at: ''
 }
@@ -35,7 +35,7 @@ export const load: LayoutServerLoad = async ({ locals: { user, supabase }, cooki
     })
   } else if (isMockFamilyMode()) {
     profile = mockProfile
-    availableFamilies = [{ id: 'mock-family', name: 'Familia mock', role: 'editor' }]
+    availableFamilies = [{ id: 'mock-family', name: 'Familia mock', role: 'admin' }]
     activeFamilyId = activeFamilyId ?? 'mock-family'
   }
 

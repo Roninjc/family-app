@@ -1,8 +1,9 @@
 <script lang="ts">
+  import { goto } from '$app/navigation'
   import { enhance } from '$app/forms'
   import { page } from '$app/stores'
-  import { onDestroy } from 'svelte'
-  import { fade } from 'svelte/transition'
+  import { onDestroy, onMount } from 'svelte'
+  import { fade, slide } from 'svelte/transition'
   import LiquidGlassWrapper from '../../components/liquidGlassWrapper.svelte'
 
   export let data
@@ -28,12 +29,6 @@
     member_linked: 'Vinculada a miembro'
   }
 
-  const roleLabelsByGender: Record<string, string> = {
-    admin: 'administrador',
-    editor: 'editor',
-    viewer: 'visualizador'
-  }
-
   const inviteStatusLabel = (invite: {
     revoked_at: string | null
     expires_at: string | null
@@ -53,6 +48,11 @@
   }
 
   let inviteFilter: 'all' | 'active' | 'expired' | 'revoked' | 'limit' = 'all'
+  let familyCarousel: HTMLDivElement | null = null
+  const familyCards = new Map<string, HTMLElement>()
+  let focusedFamilyId = ''
+  let pendingFamilyId: string | null = null
+  let switchFamilyTimer: ReturnType<typeof setTimeout> | null = null
 
   const inviteMatchesFilter = (
     invite: {
@@ -106,6 +106,7 @@
 
   onDestroy(() => {
     if (clearCopyStatusTimer) clearTimeout(clearCopyStatusTimer)
+    if (switchFamilyTimer) clearTimeout(switchFamilyTimer)
   })
 
   const formatDate = (value: string | null) => {
@@ -128,6 +129,15 @@
     memberId = preselectedMemberId
   }
   $: activeFamilyId = data.activeFamily?.id ?? ''
+  $: activeFamilyName = data.activeFamily?.name ?? 'Sin familia activa'
+  $: pendingFamilyName = pendingFamilyId
+    ? data.families.find((family) => family.id === pendingFamilyId)?.name ?? ''
+    : ''
+  $: headerFamilyName = pendingFamilyName || activeFamilyName
+  $: focusedFamilyId = activeFamilyId
+  $: if (pendingFamilyId && pendingFamilyId === activeFamilyId) {
+    pendingFamilyId = null
+  }
   $: filteredInvites = data.invites.filter((invite) => inviteMatchesFilter(invite, inviteFilter))
 
   let openSection: 'general' | 'member' | 'invites' | 'users' | null = 'general'
@@ -136,11 +146,92 @@
     openSection = openSection === section ? null : section
   }
 
-  const handleFamilySelectChange = (event: Event) => {
-    const target = event.currentTarget
-    if (!(target instanceof HTMLSelectElement)) return
-    if (target.value) target.form?.requestSubmit()
+  const switchFamily = async (familyId: string) => {
+    if (!familyId || familyId === activeFamilyId) return
+
+    pendingFamilyId = familyId
+
+    try {
+      await goto(`?family=${encodeURIComponent(familyId)}`, {
+        keepFocus: true,
+        noScroll: true
+      })
+    } catch {
+      pendingFamilyId = null
+    }
   }
+
+  const goToFamilyAt = (index: number) => {
+    const family = data.families[index]
+    if (!family) return
+
+    const card = familyCards.get(family.id)
+    if (card && typeof card.scrollIntoView === 'function') {
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+    }
+
+    focusedFamilyId = family.id
+    switchFamily(family.id)
+  }
+
+  const setFamilyCardRef = (familyId: string, element: HTMLElement | null) => {
+    if (!element) {
+      familyCards.delete(familyId)
+      return
+    }
+    familyCards.set(familyId, element)
+  }
+
+  const trackFamilyCard = (node: HTMLElement, familyId: string) => {
+    setFamilyCardRef(familyId, node)
+    return {
+      destroy() {
+        setFamilyCardRef(familyId, null)
+      }
+    }
+  }
+
+  const scheduleFamilySwitch = (familyId: string) => {
+    if (!familyId || familyId === activeFamilyId) return
+    if (switchFamilyTimer) clearTimeout(switchFamilyTimer)
+    switchFamilyTimer = setTimeout(() => {
+      switchFamily(familyId)
+    }, 220)
+  }
+
+  const detectCenteredFamily = () => {
+    if (!familyCarousel) return
+
+    const trackRect = familyCarousel.getBoundingClientRect()
+    const trackCenter = trackRect.left + trackRect.width / 2
+    let closestId = ''
+    let minDistance = Number.POSITIVE_INFINITY
+
+    for (const family of data.families) {
+      const card = familyCards.get(family.id)
+      if (!card) continue
+      const rect = card.getBoundingClientRect()
+      const center = rect.left + rect.width / 2
+      const distance = Math.abs(center - trackCenter)
+
+      if (distance < minDistance) {
+        minDistance = distance
+        closestId = family.id
+      }
+    }
+
+    if (!closestId) return
+    focusedFamilyId = closestId
+    scheduleFamilySwitch(closestId)
+  }
+
+  onMount(() => {
+    if (!activeFamilyId) return
+    const activeCard = familyCards.get(activeFamilyId)
+    if (activeCard && typeof activeCard.scrollIntoView === 'function') {
+      activeCard.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' })
+    }
+  })
 </script>
 
 <svelte:head>
@@ -151,32 +242,103 @@
   <div class="admin-card reveal-fade-up">
     <LiquidGlassWrapper>
       <div class="admin-content">
-        <h1>Administración</h1>
+        <div class="page-heading">
+          <h1>Administración</h1>
+          <!-- TODO: Revisar esta transición del nombre de familia; sigue viéndose inestable en algunos cambios. -->
+          {#key headerFamilyName}
+            <p
+              class="active-family-name"
+              out:fade={{ duration: 120 }}
+              in:fade={{ duration: 140 }}
+            >
+              {headerFamilyName}
+            </p>
+          {/key}
+        </div>
+        <div class="heading-divider" aria-hidden="true"></div>
 
-        <section class="admin-section open reveal-fade-up reveal-delay-1">
+        <section class="family-scope-section reveal-fade-up reveal-delay-1">
           <div class="section-body family-scope-row">
-            <div class="scope-copy">
-              <strong>Familia activa:</strong> {data.activeFamily?.name}
-              <small>Tu rol aquí: {roleLabels[data.activeFamily?.role ?? 'viewer']}</small>
+            <div class="family-carousel-shell" class:multi={data.families.length > 1}>
+              <div
+                class="family-carousel"
+                bind:this={familyCarousel}
+                on:scroll={detectCenteredFamily}
+                role="tablist"
+                aria-label="Cambiar familia administrada"
+              >
+                {#each data.families as family (family.id)}
+                  <div
+                    class="family-card"
+                    class:active={family.id === focusedFamilyId}
+                    role="tab"
+                    tabindex={family.id === focusedFamilyId ? 0 : -1}
+                    aria-selected={family.id === activeFamilyId}
+                    use:trackFamilyCard={family.id}
+                    on:click={() => {
+                      focusedFamilyId = family.id
+                      switchFamily(family.id)
+                    }}
+                    on:keydown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault()
+                        focusedFamilyId = family.id
+                        switchFamily(family.id)
+                      }
+                    }}
+                  >
+                    <div class="family-card-header">
+                      <span>{family.name}</span>
+                      <small>{roleLabels[family.role]}</small>
+                    </div>
+                    <div class="family-metrics-grid">
+                      <p>
+                        <strong>{family.metrics.membersCount}</strong>
+                        <span>Miembros</span>
+                      </p>
+                      <p>
+                        <strong>{family.metrics.usersCount}</strong>
+                        <span>Usuarios</span>
+                      </p>
+                      <p>
+                        <strong>{family.metrics.unlinkedMembersCount}</strong>
+                        <span>Sin vincular</span>
+                      </p>
+                      <p>
+                        <strong>{family.metrics.activeInvitesCount}</strong>
+                        <span>Invitaciones activas</span>
+                      </p>
+                      <p>
+                        <strong>{family.metrics.managersCount}</strong>
+                        <span>Gestores (admin/editor)</span>
+                      </p>
+                    </div>
+                  </div>
+                {/each}
+              </div>
             </div>
+
             {#if data.families.length > 1}
-              <form method="GET" class="family-picker-form">
-                <label for="family-select">Cambiar familia</label>
-                <select
-                  id="family-select"
-                  name="family"
-                  value={activeFamilyId}
-                  on:change={handleFamilySelectChange}
-                >
-                  {#each data.families as family}
-                    <option value={family.id}>{family.name}</option>
-                  {/each}
-                </select>
-              </form>
+              <div class="carousel-dots" role="tablist" aria-label="Paginación de familias">
+                {#each data.families as family, index (family.id)}
+                  <button
+                    type="button"
+                    class="dot"
+                    class:active={family.id === focusedFamilyId}
+                    role="tab"
+                    aria-selected={family.id === focusedFamilyId}
+                    aria-label={`Ir a ${family.name}`}
+                    on:click={() => {
+                      goToFamilyAt(index)
+                    }}
+                  ></button>
+                {/each}
+              </div>
             {/if}
           </div>
         </section>
 
+        {#if data.canManageInvites}
         <section class="admin-section reveal-fade-up reveal-delay-1" class:open={openSection === 'general'}>
           <button
             type="button"
@@ -187,10 +349,13 @@
             aria-expanded={openSection === 'general'}
           >
             <span>Invitación general</span>
-            <small>Enlace reutilizable</small>
+            <small>
+              Enlace reutilizable
+              <b class="toggle-state" aria-hidden="true">{openSection === 'general' ? '−' : '+'}</b>
+            </small>
           </button>
           {#if openSection === 'general'}
-            <div class="section-body" transition:fade={{ duration: 140 }}>
+            <div class="section-body" transition:slide={{ duration: 220 }}>
               <form method="POST" action="?/inviteGeneral" use:enhance>
                 <div class="invite-row">
                   <input type="hidden" name="familyId" value={activeFamilyId} />
@@ -234,7 +399,7 @@
                     >
                       Copiar enlace
                     </button>
-                      <span class="inline-help">Compártelo por WhatsApp o email</span>
+                    <span class="inline-help">Compártelo por WhatsApp o email</span>
                   </div>
                   {#if copyStatus}
                     <p class="copy-status" class:error={copyStatusTone === 'error'} role="status" aria-live="polite">
@@ -258,10 +423,13 @@
             aria-expanded={openSection === 'member'}
           >
             <span>Invitación vinculada</span>
-            <small>Asignada a persona</small>
+            <small>
+              Asignada a persona
+              <b class="toggle-state" aria-hidden="true">{openSection === 'member' ? '−' : '+'}</b>
+            </small>
           </button>
           {#if openSection === 'member'}
-            <div class="section-body" transition:fade={{ duration: 140 }}>
+            <div class="section-body" transition:slide={{ duration: 220 }}>
               <form method="POST" action="?/inviteMember" use:enhance>
                 <div class="invite-row member-row">
                   <input type="hidden" name="familyId" value={activeFamilyId} />
@@ -314,10 +482,13 @@
             aria-expanded={openSection === 'invites'}
           >
             <span>Invitaciones emitidas</span>
-            <small>{data.invites.length} registradas</small>
+            <small>
+              {data.invites.length} registradas
+              <b class="toggle-state" aria-hidden="true">{openSection === 'invites' ? '−' : '+'}</b>
+            </small>
           </button>
           {#if openSection === 'invites'}
-            <div class="section-body" transition:fade={{ duration: 140 }}>
+            <div class="section-body" transition:slide={{ duration: 220 }}>
                 {#if data.invites.length > 0}
                   <div class="invite-filters" role="toolbar" aria-label="Filtrar invitaciones">
                     <button
@@ -450,10 +621,13 @@
               aria-expanded={openSection === 'users'}
             >
               <span>Usuarios y roles</span>
-              <small>{data.profiles.length} usuarios</small>
+              <small>
+                {data.profiles.length} usuarios
+                <b class="toggle-state" aria-hidden="true">{openSection === 'users' ? '−' : '+'}</b>
+              </small>
             </button>
             {#if openSection === 'users'}
-              <div class="section-body" transition:fade={{ duration: 140 }}>
+              <div class="section-body" transition:slide={{ duration: 220 }}>
                 <ul class="list">
                   {#each data.profiles as profile (profile.id)}
                     <li>
@@ -474,6 +648,14 @@
                 {#if form?.roleError}<p class="error-note" role="alert">{form.roleError}</p>{/if}
               </div>
             {/if}
+          </section>
+        {/if}
+        {:else}
+          <section class="viewer-note-section reveal-fade-up reveal-delay-1" transition:fade={{ duration: 180 }}>
+            <p>
+              Estás en modo solo lectura para esta familia. Cambia a otra familia donde seas editor o
+              administrador para gestionar invitaciones y usuarios.
+            </p>
           </section>
         {/if}
 
@@ -501,22 +683,60 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    gap: 2px;
+    gap: 8px;
 
     h1 {
-      margin: 0 0 1rem;
+      margin: 0;
       font-size: var(--fs-xl);
       line-height: var(--lh-tight);
     }
 
+    .page-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 0.55rem;
+      flex-wrap: wrap;
+    }
+
+    .active-family-name {
+      margin: 0;
+      font-size: var(--fs-sm);
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .heading-divider {
+      height: 1px;
+      width: 100%;
+      margin-bottom: 0.95rem;
+      background: linear-gradient(
+        90deg,
+        rgba(149, 121, 95, 0.26),
+        rgba(149, 121, 95, 0.08) 40%,
+        rgba(149, 121, 95, 0)
+      );
+    }
+
     .admin-section {
-      margin-bottom: 0.6rem;
-      background: rgba(255, 255, 255, 0.34);
+      margin-bottom: 1.05rem;
+      background: #f2e9de;
       border: none;
-      border-radius: 12px;
+      border-radius: 14px;
+      overflow: clip;
+      box-shadow:
+        5px 5px 12px rgba(149, 121, 95, 0.14),
+        -5px -5px 12px rgba(255, 255, 255, 0.74);
+      transition:
+        box-shadow 0.22s var(--motion-standard),
+        background-color 0.22s var(--motion-standard);
 
       &.open {
-        background: rgba(255, 255, 255, 0.44);
+        background: #f3eadf;
+        box-shadow:
+          7px 7px 15px rgba(149, 121, 95, 0.18),
+          -6px -6px 15px rgba(255, 255, 255, 0.8);
       }
 
       .section-toggle {
@@ -531,14 +751,17 @@
         padding: 12px;
         text-align: left;
         cursor: pointer;
-        border-radius: 12px;
+        border-radius: 14px;
+        box-shadow: none;
         transition:
           background-color 0.22s var(--motion-standard),
-          transform 0.22s var(--motion-standard);
+          transform 0.22s var(--motion-standard),
+          box-shadow 0.22s var(--motion-standard);
 
-        &:hover {
-          background: rgba(255, 243, 230, 0.44);
-          transform: translateX(2px);
+        &[aria-expanded="false"]:hover {
+          background: rgba(255, 255, 255, 0.3);
+          transform: translateY(-1px);
+          box-shadow: none;
         }
 
         span {
@@ -547,14 +770,207 @@
         }
 
         small {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
           font-size: var(--fs-2xs);
           color: var(--text-muted);
           font-weight: 600;
+
+          .toggle-state {
+            display: inline-grid;
+            place-items: center;
+            width: 18px;
+            height: 18px;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            line-height: 1;
+            font-weight: 700;
+            color: #6b4b31;
+            background: #f1e6d8;
+            box-shadow:
+              inset 2px 2px 5px rgba(149, 121, 95, 0.16),
+              inset -2px -2px 5px rgba(255, 255, 255, 0.74);
+          }
         }
       }
 
       .section-body {
-        padding: 0 12px 12px;
+        padding: 12px 12px 14px;
+      }
+    }
+
+    .family-scope-section {
+      margin-bottom: 1.05rem;
+
+      .section-body {
+        padding: 2px 2px 6px;
+      }
+    }
+
+    .family-scope-row {
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .family-carousel-shell {
+      width: min(980px, 100%);
+      border-radius: 14px;
+      padding: 6px;
+      background: rgba(255, 255, 255, 0.24);
+      box-shadow:
+        inset 2px 2px 6px rgba(149, 121, 95, 0.12),
+        inset -2px -2px 6px rgba(255, 255, 255, 0.64);
+
+      &.multi {
+        margin-inline: auto;
+      }
+    }
+
+    .family-carousel {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(100%, 100%);
+      gap: 12px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      padding: 4px;
+      scrollbar-width: none;
+
+      &::-webkit-scrollbar {
+        display: none;
+      }
+    }
+
+    .family-card {
+      scroll-snap-align: center;
+      min-width: 0;
+      border-radius: 12px;
+      border: none;
+      border-radius: inherit;
+      min-height: 168px;
+      width: 100%;
+      padding: 0.8rem 0.9rem;
+      background: transparent;
+      color: #5d4735;
+      cursor: default;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.7rem;
+
+      &:focus-visible {
+        outline: 2px solid color-mix(in srgb, var(--brand) 86%, #fff 14%);
+        outline-offset: 2px;
+      }
+
+      .family-card-header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+
+        span {
+          font-size: var(--fs-md);
+          font-weight: 800;
+          color: #5d4735;
+        }
+
+        small {
+          font-size: var(--fs-xs);
+          color: var(--text-muted);
+        }
+      }
+
+      .family-metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+
+        p {
+          margin: 0;
+          padding: 0.48rem 0.55rem;
+          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.48);
+          box-shadow:
+            inset 2px 2px 5px rgba(149, 121, 95, 0.1),
+            inset -2px -2px 5px rgba(255, 255, 255, 0.7);
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+
+          strong {
+            font-size: var(--fs-md);
+            line-height: 1;
+            color: #5a402d;
+          }
+
+          span {
+            font-size: var(--fs-2xs);
+            color: var(--text-muted);
+          }
+        }
+
+        p:last-child {
+          grid-column: 1 / -1;
+        }
+      }
+
+      &.active,
+      &[aria-selected='true'] {
+        background: transparent;
+        border: none;
+      }
+    }
+
+    .carousel-dots {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 0.55rem;
+
+      .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 999px;
+        border: none;
+        background: #d7ccbe;
+        cursor: pointer;
+        box-shadow:
+          2px 2px 5px rgba(149, 121, 95, 0.14),
+          -2px -2px 5px rgba(255, 255, 255, 0.72);
+        transition:
+          transform 0.2s var(--motion-standard),
+          background-color 0.2s var(--motion-standard),
+          box-shadow 0.2s var(--motion-standard);
+
+        &.active {
+          transform: scale(1.2);
+          background: #bfa58f;
+          box-shadow:
+            inset 1px 1px 3px rgba(149, 121, 95, 0.2),
+            inset -1px -1px 3px rgba(255, 255, 255, 0.6);
+        }
+      }
+    }
+
+    .viewer-note-section {
+      margin-top: -0.2rem;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.52);
+      color: var(--text-muted);
+      box-shadow: var(--neu-shadow-out-soft);
+
+      p {
+        margin: 0;
+        font-size: var(--fs-sm);
+        line-height: var(--lh-copy);
       }
     }
 
@@ -583,37 +999,6 @@
       &.member-row {
         .modern-input {
           min-width: 220px;
-        }
-      }
-    }
-
-    .family-scope-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: end;
-      gap: 12px;
-      flex-wrap: wrap;
-
-      .scope-copy {
-        display: flex;
-        flex-direction: column;
-        gap: 3px;
-
-        small {
-          color: var(--text-muted);
-          font-size: var(--fs-xs);
-        }
-      }
-
-      .family-picker-form {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-
-        label {
-          font-size: var(--fs-2xs);
-          color: var(--text-muted);
-          font-weight: 600;
         }
       }
     }
@@ -725,8 +1110,8 @@
     }
 
     .filter-chip {
-      border: 1px solid rgba(156, 90, 45, 0.24);
-      background: rgba(255, 255, 255, 0.56);
+      border: none;
+      background: #f3eadf;
       color: var(--text-main);
       border-radius: var(--radius-pill);
       font-size: var(--fs-2xs);
@@ -734,10 +1119,24 @@
       min-height: 30px;
       padding: 0.28rem 0.62rem;
       cursor: pointer;
+      box-shadow:
+        3px 3px 8px rgba(149, 121, 95, 0.12),
+        -3px -3px 8px rgba(255, 255, 255, 0.72);
+      transition:
+        transform 0.2s var(--motion-standard),
+        box-shadow 0.2s var(--motion-standard),
+        background-color 0.2s var(--motion-standard);
+
+      &:hover {
+        transform: translateY(-1px);
+        background: #f7efe6;
+      }
 
       &.active {
-        background: rgba(156, 90, 45, 0.18);
-        border-color: rgba(156, 90, 45, 0.45);
+        background: #e9dccd;
+        box-shadow:
+          inset 2px 2px 5px rgba(149, 121, 95, 0.16),
+          inset -2px -2px 5px rgba(255, 255, 255, 0.7);
       }
     }
 

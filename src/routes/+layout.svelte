@@ -248,6 +248,7 @@
     font-weight: 700;
     letter-spacing: 0.01em;
     cursor: pointer;
+    box-shadow: var(--neu-shadow-out-soft);
     transition:
       transform 0.22s var(--motion-standard),
       box-shadow 0.22s var(--motion-standard),
@@ -263,7 +264,9 @@
 
   :global(.app-btn:active:not(:disabled):not([aria-disabled='true'])) {
     transform: translateY(0);
-    box-shadow: var(--neu-shadow-inset);
+    box-shadow:
+      inset 3px 3px 7px rgba(154, 132, 109, 0.18),
+      inset -3px -3px 7px rgba(255, 255, 255, 0.72);
   }
 
   :global(.app-btn--primary) {

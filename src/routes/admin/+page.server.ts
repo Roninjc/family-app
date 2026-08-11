@@ -5,6 +5,8 @@ import {
   loadUserFamilies,
   resolveAndPersistActiveFamily
 } from '$lib/server/activeFamily'
+import { mockFamilyData } from '$lib/data/mockFamily'
+import { buildFamilyGroups, resolveActiveFamilyId, toRowsFromFamilyData } from '$lib/server/familyGroups'
 import { isMockFamilyMode } from '$lib/server/mockMode'
 import type { Actions, PageServerLoad } from './$types'
 
@@ -15,6 +17,11 @@ const FAMILY_SYNC_ERROR =
 
 const MOCK_INVITE_ERROR =
   'Estás en modo mock. Las invitaciones no se guardan en este modo. Usa el modo normal para enviar invitaciones reales.'
+
+const VIEWER_MANAGE_ERROR =
+  'No tienes permisos para gestionar invitaciones en esta familia (solo lectura).'
+
+const MOCK_FAMILY_ROLE_ROTATION: Role[] = ['admin', 'editor', 'viewer']
 
 const expiryFromPreset = (preset: string): string | null => {
   if (preset === '7d') return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
@@ -28,17 +35,43 @@ const resolveManagerFamily = async (options: {
   requestedFamilyId: string | null
 }) => {
   if (isMockFamilyMode()) {
+    const rows = toRowsFromFamilyData(mockFamilyData)
+    const groups = buildFamilyGroups(rows.members, rows.relationships)
+    const families = groups.map((group, index) => ({
+      id: group.id,
+      name: group.name,
+      role: MOCK_FAMILY_ROLE_ROTATION[index % MOCK_FAMILY_ROLE_ROTATION.length]
+    }))
+
+    const cookieFamilyId = options.cookies.get(ACTIVE_FAMILY_COOKIE) ?? null
+    const activeFamilyId = resolveActiveFamilyId(
+      families.map((family) => family.id),
+      options.requestedFamilyId,
+      cookieFamilyId
+    )
+
+    if (activeFamilyId && activeFamilyId !== cookieFamilyId) {
+      options.cookies.set(ACTIVE_FAMILY_COOKIE, activeFamilyId, {
+        path: '/',
+        maxAge: 60 * 60 * 24 * 180,
+        sameSite: 'lax'
+      })
+    }
+
+    const activeFamily = families.find((family) => family.id === activeFamilyId) ?? null
+    if (!activeFamily) redirect(303, '/hub')
+
     return {
       profile: {
         id: 'mock-user',
         email: 'mock@localhost',
         display_name: 'Modo mock',
-        role: 'editor',
+        role: activeFamily.role,
         member_id: null,
         created_at: ''
       } as Profile,
-      families: [{ id: 'mock-family', name: 'Familia mock', role: 'editor' as const }],
-      activeFamily: { id: 'mock-family', name: 'Familia mock', role: 'editor' as const }
+      families,
+      activeFamily
     }
   }
 
@@ -57,7 +90,7 @@ const resolveManagerFamily = async (options: {
   })
 
   const activeFamily = families.find((family) => family.id === activeFamilyId) ?? null
-  if (!activeFamily || activeFamily.role === 'viewer') redirect(303, '/hub')
+  if (!activeFamily) redirect(303, '/hub')
 
   return {
     profile: (profileRes.data as Profile | null) ?? null,
@@ -88,16 +121,37 @@ export const load: PageServerLoad = async ({ locals, cookies, url }) => {
   })
 
   if (isMockFamilyMode()) {
+    const rows = toRowsFromFamilyData(mockFamilyData)
+    const groups = buildFamilyGroups(rows.members, rows.relationships)
+    const familiesWithMetrics = managerContext.families.map((family) => {
+      const group = groups.find((candidate) => candidate.id === family.id)
+      const membersCount = group?.membersCount ?? 0
+
+      return {
+        ...family,
+        metrics: {
+          membersCount,
+          usersCount: 0,
+          unlinkedMembersCount: membersCount,
+          activeInvitesCount: 0,
+          managersCount: 1
+        }
+      }
+    })
+
     return {
       manager: managerContext.profile,
-      families: managerContext.families,
+      families: familiesWithMetrics,
       activeFamily: managerContext.activeFamily,
-      canManageRoles: false,
+      canManageInvites: managerContext.activeFamily.role !== 'viewer',
+      canManageRoles: managerContext.activeFamily.role === 'admin',
       profiles: [] as Profile[],
       invites: [],
       members: []
     }
   }
+
+  const familyIds = managerContext.families.map((family) => family.id)
 
   const membersRes = await locals.supabase
     .from('members')
@@ -105,9 +159,7 @@ export const load: PageServerLoad = async ({ locals, cookies, url }) => {
     .eq('family_id', managerContext.activeFamily.id)
     .order('created_at', { ascending: true })
 
-  const memberIds = (membersRes.data ?? []).map((member) => member.id)
-
-  const [membershipsRes, invitesRes] = await Promise.all([
+  const [membershipsRes, invitesRes, allMembersRes, allMembershipsRes, allInvitesRes] = await Promise.all([
     locals.supabase
       .from('family_memberships')
       .select('profile_id, role, profiles!inner(id, email, display_name, member_id, created_at)')
@@ -116,8 +168,83 @@ export const load: PageServerLoad = async ({ locals, cookies, url }) => {
       .from('invitations')
       .select('*')
       .eq('family_id', managerContext.activeFamily.id)
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: false }),
+    familyIds.length > 0
+      ? locals.supabase.from('members').select('id, family_id').in('family_id', familyIds)
+      : Promise.resolve({ data: [], error: null }),
+    familyIds.length > 0
+      ? locals.supabase
+          .from('family_memberships')
+          .select('family_id, profile_id, role, profiles(member_id)')
+          .in('family_id', familyIds)
+      : Promise.resolve({ data: [], error: null }),
+    familyIds.length > 0
+      ? locals.supabase
+          .from('invitations')
+          .select('family_id, revoked_at, expires_at, uses_count, max_uses')
+          .in('family_id', familyIds)
+      : Promise.resolve({ data: [], error: null })
   ])
+
+  const membersCountByFamily = new Map<string, number>()
+  for (const member of allMembersRes.data ?? []) {
+    membersCountByFamily.set(member.family_id, (membersCountByFamily.get(member.family_id) ?? 0) + 1)
+  }
+
+  const usersCountByFamily = new Map<string, number>()
+  const linkedMembersByFamily = new Map<string, Set<string>>()
+  const managersCountByFamily = new Map<string, number>()
+
+  for (const membership of allMembershipsRes.data ?? []) {
+    usersCountByFamily.set(
+      membership.family_id,
+      (usersCountByFamily.get(membership.family_id) ?? 0) + 1
+    )
+
+    if (membership.role === 'admin' || membership.role === 'editor') {
+      managersCountByFamily.set(
+        membership.family_id,
+        (managersCountByFamily.get(membership.family_id) ?? 0) + 1
+      )
+    }
+
+    const profile = Array.isArray(membership.profiles) ? membership.profiles[0] : membership.profiles
+    const linkedMemberId = profile?.member_id ?? null
+    if (!linkedMemberId) continue
+
+    const linkedSet = linkedMembersByFamily.get(membership.family_id) ?? new Set<string>()
+    linkedSet.add(linkedMemberId)
+    linkedMembersByFamily.set(membership.family_id, linkedSet)
+  }
+
+  const activeInvitesByFamily = new Map<string, number>()
+  const now = Date.now()
+  for (const invite of allInvitesRes.data ?? []) {
+    if (invite.revoked_at) continue
+    if (invite.expires_at && Date.parse(invite.expires_at) <= now) continue
+    if (invite.max_uses !== null && invite.uses_count >= invite.max_uses) continue
+
+    activeInvitesByFamily.set(
+      invite.family_id,
+      (activeInvitesByFamily.get(invite.family_id) ?? 0) + 1
+    )
+  }
+
+  const familiesWithMetrics = managerContext.families.map((family) => {
+    const membersCount = membersCountByFamily.get(family.id) ?? 0
+    const linkedCount = linkedMembersByFamily.get(family.id)?.size ?? 0
+
+    return {
+      ...family,
+      metrics: {
+        membersCount,
+        usersCount: usersCountByFamily.get(family.id) ?? 0,
+        unlinkedMembersCount: Math.max(0, membersCount - linkedCount),
+        activeInvitesCount: activeInvitesByFamily.get(family.id) ?? 0,
+        managersCount: managersCountByFamily.get(family.id) ?? 0
+      }
+    }
+  })
 
   const profiles = (membershipsRes.data ?? []).map((row) => {
     const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles
@@ -134,8 +261,9 @@ export const load: PageServerLoad = async ({ locals, cookies, url }) => {
 
   return {
     manager: managerContext.profile,
-    families: managerContext.families,
+    families: familiesWithMetrics,
     activeFamily: managerContext.activeFamily,
+    canManageInvites: managerContext.activeFamily.role !== 'viewer',
     canManageRoles: managerContext.activeFamily.role === 'admin',
     profiles,
     invites: invitesRes.data ?? [],
@@ -162,6 +290,10 @@ export const actions: Actions = {
       })
     ) {
       return fail(409, { inviteError: FAMILY_SYNC_ERROR })
+    }
+
+    if (managerContext.activeFamily.role === 'viewer') {
+      return fail(403, { inviteError: VIEWER_MANAGE_ERROR })
     }
 
     const role = String(form.get('role') ?? 'viewer') as Role
@@ -222,6 +354,10 @@ export const actions: Actions = {
       })
     ) {
       return fail(409, { inviteError: FAMILY_SYNC_ERROR })
+    }
+
+    if (managerContext.activeFamily.role === 'viewer') {
+      return fail(403, { inviteError: VIEWER_MANAGE_ERROR })
     }
 
     const email = String(form.get('email') ?? '')
@@ -288,6 +424,10 @@ export const actions: Actions = {
       return fail(409, { inviteError: FAMILY_SYNC_ERROR })
     }
 
+    if (managerContext.activeFamily.role === 'viewer') {
+      return fail(403, { inviteError: VIEWER_MANAGE_ERROR })
+    }
+
     const inviteId = String(form.get('inviteId') ?? '').trim()
 
     if (!inviteId) return fail(400, { inviteError: 'No se recibió la invitación que quieres gestionar.' })
@@ -344,6 +484,10 @@ export const actions: Actions = {
       })
     ) {
       return fail(409, { inviteError: FAMILY_SYNC_ERROR })
+    }
+
+    if (managerContext.activeFamily.role === 'viewer') {
+      return fail(403, { inviteError: VIEWER_MANAGE_ERROR })
     }
 
     const inviteId = String(form.get('inviteId') ?? '').trim()

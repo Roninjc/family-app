@@ -17,7 +17,7 @@
       6px 6px 12px #bebebe,
       -6px -6px 12px #ffffff;
     border: none;
-    cursor: copy;
+    cursor: pointer;
 
     &::before {
       content: '+';

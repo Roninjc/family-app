@@ -200,17 +200,22 @@
 
         .remove-chip {
           border: none;
-          background: none;
+          background: #f0e8dd;
           min-width: 24px;
           min-height: 24px;
           padding: 0;
           font-size: 1rem;
           line-height: 1;
-          color: #7f7f87;
+          color: #6b5a4b;
           cursor: pointer;
+          border-radius: 999px;
+          box-shadow:
+            2px 2px 5px rgba(149, 121, 95, 0.12),
+            -2px -2px 5px rgba(255, 255, 255, 0.72);
 
           &:hover {
             color: var(--danger);
+            background: #f5ede3;
           }
 
           &:disabled {

@@ -758,8 +758,11 @@
           cursor: pointer;
           font-size: var(--fs-sm);
           font-weight: 700;
-          color: #fffaf6;
-          background: linear-gradient(140deg, #b46a3a, #c77c43);
+          color: #5b4330;
+          background: #f1e7da;
+          box-shadow:
+            5px 5px 12px rgba(149, 121, 95, 0.14),
+            -5px -5px 12px rgba(255, 255, 255, 0.72);
           transition:
             transform 0.22s var(--motion-standard),
             box-shadow 0.22s var(--motion-standard),
@@ -767,22 +770,30 @@
 
           &:hover {
             transform: translateY(-1px);
-            box-shadow: 0 10px 18px rgba(106, 61, 28, 0.18);
-            background: linear-gradient(140deg, #9f5d31, #b86f3a);
+            box-shadow:
+              7px 7px 14px rgba(149, 121, 95, 0.18),
+              -6px -6px 14px rgba(255, 255, 255, 0.78);
+            background: #f6ede2;
           }
 
           &[type='submit'] {
-            background: linear-gradient(140deg, #2f7b61, #3b8f71);
+            background: #d8dece;
+            color: #4d5a43;
+            box-shadow:
+              5px 5px 12px rgba(124, 137, 108, 0.2),
+              -5px -5px 12px rgba(250, 254, 246, 0.82);
 
             &:hover {
-              background: linear-gradient(140deg, #2b6f57, #367f65);
+              background: #dfe6d5;
+              box-shadow:
+                7px 7px 14px rgba(124, 137, 108, 0.24),
+                -6px -6px 14px rgba(252, 255, 250, 0.86);
             }
 
             &:disabled,
             &:disabled:hover {
               background-color: #c3ccd6;
               color: #5c6673;
-              border: 1px solid #aeb8c5;
             }
           }
 
@@ -792,7 +803,6 @@
             scale: 1;
             background: #c3ccd6;
             color: #5c6673;
-            border: 1px solid #aeb8c5;
             box-shadow: none;
           }
         }
@@ -809,10 +819,12 @@
 
         .summary-toggle {
           margin-top: 0.3rem;
-          background: rgba(255, 247, 236, 0.72);
-          border: 1px solid rgba(156, 90, 45, 0.28);
-          color: #8a4a22;
+          background: #f4ece2;
+          color: #6a4a31;
           font-weight: 600;
+          box-shadow:
+            4px 4px 10px rgba(149, 121, 95, 0.14),
+            -4px -4px 10px rgba(255, 255, 255, 0.72);
         }
 
         .summary-panel {

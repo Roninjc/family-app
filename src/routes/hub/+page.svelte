@@ -105,10 +105,9 @@
     )
   }
 
-  const activeFilterFor = (familyId: string): 'all' | 'news' | 'note' =>
-    notesFilterByFamily[familyId] ?? 'all'
-
   const setNotesFilter = (familyId: string, filter: 'all' | 'news' | 'note') => {
+    if ((notesFilterByFamily[familyId] ?? 'all') === filter) return
+
     notesFilterByFamily = {
       ...notesFilterByFamily,
       [familyId]: filter
@@ -336,9 +335,9 @@
                     <button
                       type="button"
                       class="filter-chip"
-                      class:active={activeFilterFor(family.id) === 'all'}
+                      class:active={(notesFilterByFamily[family.id] ?? 'all') === 'all'}
                       data-note-filter="all"
-                      aria-pressed={activeFilterFor(family.id) === 'all'}
+                      aria-pressed={(notesFilterByFamily[family.id] ?? 'all') === 'all'}
                       on:click={() => {
                         setNotesFilter(family.id, 'all')
                       }}
@@ -348,9 +347,9 @@
                     <button
                       type="button"
                       class="filter-chip"
-                      class:active={activeFilterFor(family.id) === 'news'}
+                      class:active={(notesFilterByFamily[family.id] ?? 'all') === 'news'}
                       data-note-filter="news"
-                      aria-pressed={activeFilterFor(family.id) === 'news'}
+                      aria-pressed={(notesFilterByFamily[family.id] ?? 'all') === 'news'}
                       on:click={() => {
                         setNotesFilter(family.id, 'news')
                       }}
@@ -360,9 +359,9 @@
                     <button
                       type="button"
                       class="filter-chip"
-                      class:active={activeFilterFor(family.id) === 'note'}
+                      class:active={(notesFilterByFamily[family.id] ?? 'all') === 'note'}
                       data-note-filter="note"
-                      aria-pressed={activeFilterFor(family.id) === 'note'}
+                      aria-pressed={(notesFilterByFamily[family.id] ?? 'all') === 'note'}
                       on:click={() => {
                         setNotesFilter(family.id, 'note')
                       }}
@@ -781,21 +780,48 @@
   }
 
   .filter-chip {
-    border: 1px solid rgba(130, 98, 70, 0.26);
-    background: rgba(255, 255, 255, 0.72);
+    border: none;
+    background: #f3eadf;
     color: #5e4b3c;
     border-radius: 999px;
     padding: 4px 9px;
     font-size: var(--fs-2xs);
     cursor: pointer;
+    box-shadow:
+      3px 3px 8px rgba(149, 121, 95, 0.12),
+      -3px -3px 8px rgba(255, 255, 255, 0.72);
     transition:
-      background-color 0.22s var(--motion-standard),
-      transform 0.22s var(--motion-standard);
+      background-color 0.1s var(--motion-standard),
+      transform 0.1s var(--motion-standard),
+      box-shadow 0.1s var(--motion-standard),
+      color 0.1s var(--motion-standard);
+    will-change: transform, box-shadow, background-color;
+
+    &:hover:not([aria-pressed='true']) {
+      transform: translateY(-1px);
+      background: #f7efe6;
+      box-shadow:
+        4px 4px 9px rgba(149, 121, 95, 0.14),
+        -4px -4px 9px rgba(255, 255, 255, 0.76);
+    }
   }
 
-  .filter-chip.active {
-    background: rgba(179, 141, 107, 0.34);
-    transform: translateY(-1px);
+  .filter-chip.active,
+  .filter-chip[aria-pressed='true'] {
+    background: #e8dccd;
+    transform: translateY(0);
+    color: #5a3f2b;
+    box-shadow:
+      inset 2px 2px 5px rgba(149, 121, 95, 0.2),
+      inset -2px -2px 5px rgba(255, 255, 255, 0.74);
+  }
+
+  .filter-chip[aria-pressed='true']:hover {
+    transform: translateY(0);
+    background: #e8dccd;
+    box-shadow:
+      inset 2px 2px 5px rgba(149, 121, 95, 0.2),
+      inset -2px -2px 5px rgba(255, 255, 255, 0.74);
   }
 
   .filter-chip:focus-visible {
@@ -1010,10 +1036,14 @@
     height: 8px;
     border-radius: 999px;
     border: none;
-    background: rgba(116, 95, 75, 0.24);
+    background: #d8cdbf;
+    box-shadow:
+      2px 2px 5px rgba(149, 121, 95, 0.16),
+      -2px -2px 5px rgba(255, 255, 255, 0.72);
     transition:
       transform 0.22s var(--motion-standard),
-      background-color 0.22s var(--motion-standard);
+      background-color 0.22s var(--motion-standard),
+      box-shadow 0.22s var(--motion-standard);
     cursor: pointer;
   }
 
@@ -1024,8 +1054,11 @@
   }
 
   .dot.active {
-    background: rgba(116, 95, 75, 0.76);
+    background: #bfa995;
     transform: scale(1.25);
+    box-shadow:
+      inset 1px 1px 3px rgba(149, 121, 95, 0.24),
+      inset -1px -1px 3px rgba(255, 255, 255, 0.62);
   }
 
   .loading-sheen {

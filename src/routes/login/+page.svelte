@@ -204,16 +204,28 @@
 
     .toggle-method {
       margin-top: 0.25rem;
-      background: none;
-      color: var(--brand);
+      background: #f2e9dd;
+      color: #6c4a31;
       font-size: var(--fs-xs);
-      padding: 4px;
+      padding: 8px 10px;
       min-height: 36px;
       border: none;
+      border-radius: 10px;
       text-align: left;
+      box-shadow:
+        4px 4px 10px rgba(149, 121, 95, 0.14),
+        -4px -4px 10px rgba(255, 255, 255, 0.72);
+      transition:
+        transform 0.2s var(--motion-standard),
+        box-shadow 0.2s var(--motion-standard),
+        background-color 0.2s var(--motion-standard);
 
       &:hover {
-        text-decoration: underline;
+        background: #f7efe5;
+        transform: translateY(-1px);
+        box-shadow:
+          6px 6px 12px rgba(149, 121, 95, 0.16),
+          -5px -5px 12px rgba(255, 255, 255, 0.76);
       }
     }
 
