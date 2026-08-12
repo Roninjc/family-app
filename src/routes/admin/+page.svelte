@@ -53,6 +53,13 @@
   let focusedFamilyId = ''
   let pendingFamilyId: string | null = null
   let switchFamilyTimer: ReturnType<typeof setTimeout> | null = null
+  const FAMILY_NAME_FADE_MS = 220
+  let displayedFamilyName = ''
+  let pendingFamilyName: string | null = null
+  let previousActiveFamilyName = ''
+  let familyNameSwitchTimer: ReturnType<typeof setTimeout> | null = null
+  let isFamilyNameVisible = true
+  let familyNameReady = false
 
   const inviteMatchesFilter = (
     invite: {
@@ -107,6 +114,7 @@
   onDestroy(() => {
     if (clearCopyStatusTimer) clearTimeout(clearCopyStatusTimer)
     if (switchFamilyTimer) clearTimeout(switchFamilyTimer)
+    if (familyNameSwitchTimer) clearTimeout(familyNameSwitchTimer)
   })
 
   const formatDate = (value: string | null) => {
@@ -129,11 +137,26 @@
     memberId = preselectedMemberId
   }
   $: activeFamilyId = data.activeFamily?.id ?? ''
-  $: activeFamilyName = data.activeFamily?.name ?? 'Sin familia activa'
-  $: pendingFamilyName = pendingFamilyId
-    ? data.families.find((family) => family.id === pendingFamilyId)?.name ?? ''
-    : ''
-  $: headerFamilyName = pendingFamilyName || activeFamilyName
+  $: activeFamilyName = data.families.find((family) => family.id === activeFamilyId)?.name ?? ''
+  $: if (activeFamilyName !== previousActiveFamilyName) {
+    previousActiveFamilyName = activeFamilyName
+
+    if (!familyNameReady) {
+      displayedFamilyName = activeFamilyName
+      isFamilyNameVisible = true
+      familyNameReady = true
+    } else {
+      pendingFamilyName = activeFamilyName
+      isFamilyNameVisible = false
+
+      if (familyNameSwitchTimer) clearTimeout(familyNameSwitchTimer)
+      familyNameSwitchTimer = setTimeout(() => {
+        displayedFamilyName = pendingFamilyName ?? ''
+        pendingFamilyName = null
+        isFamilyNameVisible = true
+      }, FAMILY_NAME_FADE_MS)
+    }
+  }
   $: focusedFamilyId = activeFamilyId
   $: if (pendingFamilyId && pendingFamilyId === activeFamilyId) {
     pendingFamilyId = null
@@ -244,16 +267,12 @@
       <div class="admin-content">
         <div class="page-heading">
           <h1>Administración</h1>
-          <!-- TODO: Revisar esta transición del nombre de familia; sigue viéndose inestable en algunos cambios. -->
-          {#key headerFamilyName}
-            <p
-              class="active-family-name"
-              out:fade={{ duration: 120 }}
-              in:fade={{ duration: 140 }}
-            >
-              {headerFamilyName}
-            </p>
-          {/key}
+          <p
+            class="heading-family-name"
+            class:is-hidden={!isFamilyNameVisible}
+          >
+            {displayedFamilyName}
+          </p>
         </div>
         <div class="heading-divider" aria-hidden="true"></div>
 
@@ -700,11 +719,17 @@
       flex-wrap: wrap;
     }
 
-    .active-family-name {
+    .heading-family-name {
       margin: 0;
       font-size: var(--fs-sm);
       color: var(--text-muted);
       font-weight: 700;
+      opacity: 1;
+      transition: opacity 600ms var(--motion-standard);
+
+      &.is-hidden {
+        opacity: 0;
+      }
     }
 
     .heading-divider {
