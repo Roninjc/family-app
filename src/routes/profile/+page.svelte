@@ -20,117 +20,143 @@
   <title>Mi perfil — Familia Castaño</title>
 </svelte:head>
 
+<header class="profile-header reveal-fade-up" aria-label="Cabecera del perfil">
+  <LiquidGlassWrapper>
+    <div class="profile-header-content">
+      <h1>Mi perfil</h1>
+    </div>
+  </LiquidGlassWrapper>
+</header>
+
 <main class="profile-page page-shell">
-  <section class="profile-card reveal-fade-up">
-    <LiquidGlassWrapper>
-      <div class="profile-content">
-        <h1>Mi perfil</h1>
+  <section class="profile-content reveal-fade-up reveal-delay-1">
 
-        <p class="account-info">
-          <b>{data.profile?.email}</b>
-          <span class="role-badge">{roleLabels[data.profile?.role ?? 'viewer']}</span>
-        </p>
+    <p class="account-info">
+      <b>{data.profile?.email}</b>
+      <span class="role-badge">{roleLabels[data.profile?.role ?? 'viewer']}</span>
+    </p>
 
-        <form method="POST" action="?/updateName" use:enhance>
-          <div class="input-wrapper floating-input-wrapper">
-            <input
-              id="displayName"
-              class="modern-input"
-              type="text"
-              name="display_name"
-              bind:value={displayName}
-              autocomplete="name"
-            />
-            <label for="displayName" class:label-active={displayName.length > 0}>Tu nombre</label>
-          </div>
-          <button class="app-btn app-btn--primary" type="submit">Guardar nombre</button>
-          {#if form?.nameSaved}<span class="saved-note" role="status">Guardado ✓</span>{/if}
-          {#if form?.nameError}<div class="form-error" role="alert">{form.nameError}</div>{/if}
-        </form>
-
-        <h2>Contraseña</h2>
-        <p class="hint">
-          Opcional: crea una contraseña para poder entrar sin esperar el enlace por email.
-        </p>
-        <form method="POST" action="?/setPassword" use:enhance>
-          <div class="input-wrapper floating-input-wrapper">
-            <input
-              id="newPassword"
-              class="modern-input"
-              type="password"
-              name="password"
-              bind:value={password}
-              minlength="8"
-              autocomplete="new-password"
-            />
-            <label for="newPassword" class:label-active={password.length > 0}
-              >Nueva contraseña</label
-            >
-          </div>
-          <button class="app-btn app-btn--primary" type="submit">Guardar contraseña</button>
-          {#if form?.passwordSaved}<span class="saved-note" role="status">Guardada ✓</span>{/if}
-          {#if form?.passwordError}<div class="form-error" role="alert">{form.passwordError}</div>{/if}
-        </form>
-
-        <h2>Vinculación familiar</h2>
-        <p class="hint">
-          Puedes vincular tu cuenta a un miembro libre del árbol o dejarla sin vínculo.
-        </p>
-        <form method="POST" action="?/setMemberLink" use:enhance>
-          <select class="member-select" name="member_id" bind:value={selectedMemberId}>
-            <option value="">Sin vínculo</option>
-            {#each data.availableMembers as member (member.id)}
-              <option value={member.id}>{member.name} {member.family_name}</option>
-            {/each}
-          </select>
-          <button class="app-btn app-btn--primary" type="submit">Guardar vínculo</button>
-          {#if data.linkedMember}
-            <span class="saved-note">
-              Vinculado actualmente a {data.linkedMember.name} {data.linkedMember.family_name}
-            </span>
-          {:else}
-            <span class="saved-note">Tu cuenta no está vinculada a ningún miembro.</span>
-          {/if}
-          {#if form?.linkSaved}
-            <span class="saved-note" role="status">Vínculo actualizado ✓</span>
-          {/if}
-          {#if form?.linkError}<div class="form-error" role="alert">{form.linkError}</div>{/if}
-        </form>
-
-        {#if data.profile?.role === 'admin' || data.profile?.role === 'editor'}
-          <a class="admin-link app-text-link" href="/admin">Gestionar invitaciones y usuarios</a>
-        {/if}
-
-        <form class="logout-form" method="POST" action="?/logout" use:enhance>
-          <button type="submit" class="app-btn app-btn--danger logout-button">Cerrar sesión</button>
-        </form>
+    <form method="POST" action="?/updateName" use:enhance>
+      <div class="input-wrapper floating-input-wrapper">
+        <input
+          id="displayName"
+          class="modern-input"
+          type="text"
+          name="display_name"
+          bind:value={displayName}
+          autocomplete="name"
+        />
+        <label for="displayName" class:label-active={displayName.length > 0}>Tu nombre</label>
       </div>
-    </LiquidGlassWrapper>
+      <button class="app-btn app-btn--primary" type="submit">Guardar nombre</button>
+      {#if form?.nameSaved}<span class="saved-note" role="status">Guardado ✓</span>{/if}
+      {#if form?.nameError}<div class="form-error" role="alert">{form.nameError}</div>{/if}
+    </form>
+
+    <h2>Contraseña</h2>
+    <p class="hint">
+      Opcional: crea una contraseña para poder entrar sin esperar el enlace por email.
+    </p>
+    <form method="POST" action="?/setPassword" use:enhance>
+      <div class="input-wrapper floating-input-wrapper">
+        <input
+          id="newPassword"
+          class="modern-input"
+          type="password"
+          name="password"
+          bind:value={password}
+          minlength="8"
+          autocomplete="new-password"
+        />
+        <label for="newPassword" class:label-active={password.length > 0}>Nueva contraseña</label>
+      </div>
+      <button class="app-btn app-btn--primary" type="submit">Guardar contraseña</button>
+      {#if form?.passwordSaved}<span class="saved-note" role="status">Guardada ✓</span>{/if}
+      {#if form?.passwordError}<div class="form-error" role="alert">{form.passwordError}</div>{/if}
+    </form>
+
+    <h2>Vinculación familiar</h2>
+    <p class="hint">
+      Puedes vincular tu cuenta a un miembro libre del árbol o dejarla sin vínculo.
+    </p>
+    <form method="POST" action="?/setMemberLink" use:enhance>
+      <select class="member-select" name="member_id" bind:value={selectedMemberId}>
+        <option value="">Sin vínculo</option>
+        {#each data.availableMembers as member (member.id)}
+          <option value={member.id}>{member.name} {member.family_name}</option>
+        {/each}
+      </select>
+      <button class="app-btn app-btn--primary" type="submit">Guardar vínculo</button>
+      {#if data.linkedMember}
+        <span class="saved-note">
+          Vinculado actualmente a {data.linkedMember.name} {data.linkedMember.family_name}
+        </span>
+      {:else}
+        <span class="saved-note">Tu cuenta no está vinculada a ningún miembro.</span>
+      {/if}
+      {#if form?.linkSaved}
+        <span class="saved-note" role="status">Vínculo actualizado ✓</span>
+      {/if}
+      {#if form?.linkError}<div class="form-error" role="alert">{form.linkError}</div>{/if}
+    </form>
+
+    {#if data.profile?.role === 'admin' || data.profile?.role === 'editor'}
+      <a class="admin-link app-text-link" href="/admin">Gestionar invitaciones y usuarios</a>
+    {/if}
+
+    <form class="logout-form" method="POST" action="?/logout" use:enhance>
+      <button type="submit" class="app-btn app-btn--danger logout-button">Cerrar sesión</button>
+    </form>
   </section>
 </main>
 
 <style lang="scss">
   .profile-page {
+    color: var(--text-main);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
     min-height: 100vh;
+    padding-top: 0;
     padding-bottom: max(108px, env(safe-area-inset-bottom));
   }
 
-  .profile-card {
-    width: min(920px, 100%);
-    border-radius: var(--radius-lg);
-    background-color: transparent;
+  .profile-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    pointer-events: none;
+    padding: max(8px, env(safe-area-inset-top)) 10px 0;
+    margin-bottom: var(--page-header-content-gap, 30px);
+  }
+
+  .profile-header :global(.liquid-glass-wrapper) {
+    pointer-events: auto;
+    width: min(1040px, 100%);
+    margin: 0 auto;
+  }
+
+  .profile-header-content {
+    width: 100%;
+    padding: 16px 18px 15px;
+
+    h1 {
+      margin: 0;
+      font-family: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
+      font-size: var(--fs-xl);
+      line-height: var(--lh-tight);
+      letter-spacing: 0.012em;
+      color: #4e392d;
+    }
   }
 
   .profile-content {
     display: flex;
     flex-direction: column;
-    width: 100%;
-
-    h1 {
-      margin: 0 0 1rem;
-      font-size: var(--fs-xl);
-      line-height: var(--lh-tight);
-    }
+    width: min(920px, 100%);
+    margin-inline: auto;
+    padding: 2px 4px 2px;
+    border-radius: 15px;
 
     h2 {
       margin: 1.5rem 0 0.25rem;
@@ -213,14 +239,26 @@
     }
   }
 
-  :global(.profile-card .liquid-glass-text-container) {
+  :global(.profile-header .liquid-glass-text-container) {
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;
-    padding: 24px 18px 20px;
+    padding: 0;
   }
 
   @media (min-width: 720px) {
+    .profile-header {
+      padding-inline: 14px;
+    }
+
+    .profile-header-content {
+      padding: 18px 20px 16px;
+    }
+
+    .profile-content {
+      border-radius: 16px;
+    }
+
     .profile-content {
       .logout-button {
         width: fit-content;

@@ -30,6 +30,7 @@
     z-index: 10;
     pointer-events: none;
     padding: max(8px, env(safe-area-inset-top)) 10px 0;
+    margin-bottom: var(--page-header-content-gap, 30px);
   }
 
   .header-content {

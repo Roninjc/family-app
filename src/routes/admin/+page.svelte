@@ -261,104 +261,107 @@
   <title>Administración — Familia Castaño</title>
 </svelte:head>
 
-<main>
-  <div class="admin-card reveal-fade-up">
-    <LiquidGlassWrapper>
-      <div class="admin-content">
-        <div class="page-heading">
-          <h1>Administración</h1>
-          <p
-            class="heading-family-name"
-            class:is-hidden={!isFamilyNameVisible}
-          >
-            {displayedFamilyName}
-          </p>
-        </div>
-        <div class="heading-divider" aria-hidden="true"></div>
+<header class="admin-header reveal-fade-up" aria-label="Cabecera de administración">
+  <LiquidGlassWrapper>
+    <div class="admin-header-content">
+      <div class="page-heading">
+        <h1>Administración</h1>
+        <p
+          class="heading-family-name"
+          class:is-hidden={!isFamilyNameVisible}
+        >
+          {displayedFamilyName}
+        </p>
+      </div>
+    </div>
+  </LiquidGlassWrapper>
+</header>
 
-        <section class="family-scope-section reveal-fade-up reveal-delay-1">
-          <div class="section-body family-scope-row">
-            <div class="family-carousel-shell" class:multi={data.families.length > 1}>
-              <div
-                class="family-carousel"
-                bind:this={familyCarousel}
-                on:scroll={detectCenteredFamily}
-                role="tablist"
-                aria-label="Cambiar familia administrada"
-              >
-                {#each data.families as family (family.id)}
-                  <div
-                    class="family-card"
-                    class:active={family.id === focusedFamilyId}
-                    role="tab"
-                    tabindex={family.id === focusedFamilyId ? 0 : -1}
-                    aria-selected={family.id === activeFamilyId}
-                    use:trackFamilyCard={family.id}
-                    on:click={() => {
-                      focusedFamilyId = family.id
-                      switchFamily(family.id)
-                    }}
-                    on:keydown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault()
-                        focusedFamilyId = family.id
-                        switchFamily(family.id)
-                      }
-                    }}
-                  >
-                    <div class="family-card-header">
-                      <span>{family.name}</span>
-                      <small>{roleLabels[family.role]}</small>
-                    </div>
-                    <div class="family-metrics-grid">
-                      <p>
-                        <strong>{family.metrics.membersCount}</strong>
-                        <span>Miembros</span>
-                      </p>
-                      <p>
-                        <strong>{family.metrics.usersCount}</strong>
-                        <span>Usuarios</span>
-                      </p>
-                      <p>
-                        <strong>{family.metrics.unlinkedMembersCount}</strong>
-                        <span>Sin vincular</span>
-                      </p>
-                      <p>
-                        <strong>{family.metrics.activeInvitesCount}</strong>
-                        <span>Invitaciones activas</span>
-                      </p>
-                      <p>
-                        <strong>{family.metrics.managersCount}</strong>
-                        <span>Gestores (admin/editor)</span>
-                      </p>
-                    </div>
-                  </div>
-                {/each}
+<main class="admin-page page-shell">
+
+  <section class="family-scope-section reveal-fade-up reveal-delay-1">
+    <div class="section-body family-scope-row">
+      <div class="family-carousel-shell" class:multi={data.families.length > 1}>
+        <div
+          class="family-carousel"
+          bind:this={familyCarousel}
+          on:scroll={detectCenteredFamily}
+          role="tablist"
+          aria-label="Cambiar familia administrada"
+        >
+          {#each data.families as family (family.id)}
+            <div
+              class="family-card"
+              class:active={family.id === focusedFamilyId}
+              role="tab"
+              tabindex={family.id === focusedFamilyId ? 0 : -1}
+              aria-selected={family.id === activeFamilyId}
+              use:trackFamilyCard={family.id}
+              on:click={() => {
+                focusedFamilyId = family.id
+                switchFamily(family.id)
+              }}
+              on:keydown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  focusedFamilyId = family.id
+                  switchFamily(family.id)
+                }
+              }}
+            >
+              <div class="family-card-header">
+                <span>{family.name}</span>
+                <small>{roleLabels[family.role]}</small>
+              </div>
+              <div class="family-metrics-grid">
+                <p>
+                  <strong>{family.metrics.membersCount}</strong>
+                  <span>Miembros</span>
+                </p>
+                <p>
+                  <strong>{family.metrics.usersCount}</strong>
+                  <span>Usuarios</span>
+                </p>
+                <p>
+                  <strong>{family.metrics.unlinkedMembersCount}</strong>
+                  <span>Sin vincular</span>
+                </p>
+                <p>
+                  <strong>{family.metrics.activeInvitesCount}</strong>
+                  <span>Invitaciones activas</span>
+                </p>
+                <p>
+                  <strong>{family.metrics.managersCount}</strong>
+                  <span>Gestores (admin/editor)</span>
+                </p>
               </div>
             </div>
+          {/each}
+        </div>
+      </div>
 
-            {#if data.families.length > 1}
-              <div class="carousel-dots" role="tablist" aria-label="Paginación de familias">
-                {#each data.families as family, index (family.id)}
-                  <button
-                    type="button"
-                    class="dot"
-                    class:active={family.id === focusedFamilyId}
-                    role="tab"
-                    aria-selected={family.id === focusedFamilyId}
-                    aria-label={`Ir a ${family.name}`}
-                    on:click={() => {
-                      goToFamilyAt(index)
-                    }}
-                  ></button>
-                {/each}
-              </div>
-            {/if}
-          </div>
-        </section>
+      {#if data.families.length > 1}
+        <div class="carousel-dots" role="tablist" aria-label="Paginación de familias">
+          {#each data.families as family, index (family.id)}
+            <button
+              type="button"
+              class="dot"
+              class:active={family.id === focusedFamilyId}
+              role="tab"
+              aria-selected={family.id === focusedFamilyId}
+              aria-label={`Ir a ${family.name}`}
+              on:click={() => {
+                goToFamilyAt(index)
+              }}
+            ></button>
+          {/each}
+        </div>
+      {/if}
+    </div>
+  </section>
 
-        {#if data.canManageInvites}
-        <section class="admin-section reveal-fade-up reveal-delay-1" class:open={openSection === 'general'}>
+  {#if data.canManageInvites}
+    <section class="admin-section reveal-fade-up reveal-delay-1" class:open={openSection === 'general'}>
           <button
             type="button"
             class="section-toggle"
@@ -430,9 +433,9 @@
               {#if form?.inviteError}<p class="error-note" role="alert">{form.inviteError}</p>{/if}
             </div>
           {/if}
-        </section>
+      </section>
 
-        <section class="admin-section reveal-fade-up reveal-delay-1" class:open={openSection === 'member'}>
+      <section class="admin-section reveal-fade-up reveal-delay-1" class:open={openSection === 'member'}>
           <button
             type="button"
             class="section-toggle"
@@ -489,9 +492,9 @@
               {#if form?.inviteError}<p class="error-note" role="alert">{form.inviteError}</p>{/if}
             </div>
           {/if}
-        </section>
+      </section>
 
-        <section class="admin-section reveal-fade-up reveal-delay-2" class:open={openSection === 'invites'}>
+      <section class="admin-section reveal-fade-up reveal-delay-2" class:open={openSection === 'invites'}>
           <button
             type="button"
             class="section-toggle"
@@ -627,10 +630,10 @@
               {/if}
             </div>
           {/if}
-        </section>
+    </section>
 
-        {#if data.canManageRoles}
-          <section class="admin-section reveal-fade-up reveal-delay-2" class:open={openSection === 'users'}>
+    {#if data.canManageRoles}
+      <section class="admin-section reveal-fade-up reveal-delay-2" class:open={openSection === 'users'}>
             <button
               type="button"
               class="section-toggle"
@@ -667,570 +670,579 @@
                 {#if form?.roleError}<p class="error-note" role="alert">{form.roleError}</p>{/if}
               </div>
             {/if}
-          </section>
-        {/if}
-        {:else}
-          <section class="viewer-note-section reveal-fade-up reveal-delay-1" transition:fade={{ duration: 180 }}>
-            <p>
-              Estás en modo solo lectura para esta familia. Cambia a otra familia donde seas editor o
-              administrador para gestionar invitaciones y usuarios.
-            </p>
-          </section>
-        {/if}
-
-      </div>
-    </LiquidGlassWrapper>
-  </div>
+      </section>
+    {/if}
+  {:else}
+    <section class="viewer-note-section reveal-fade-up reveal-delay-1" transition:fade={{ duration: 180 }}>
+      <p>
+        Estás en modo solo lectura para esta familia. Cambia a otra familia donde seas editor o
+        administrador para gestionar invitaciones y usuarios.
+      </p>
+    </section>
+  {/if}
 </main>
 
 <style lang="scss">
-  main {
+  .admin-page {
+    color: var(--text-main);
     display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    min-height: calc(100vh - 14px);
-    padding: max(16px, env(safe-area-inset-top)) 14px max(104px, env(safe-area-inset-bottom));
+    flex-direction: column;
+    gap: 0;
+    min-height: 100vh;
+    padding-top: 0;
+    padding-bottom: max(114px, env(safe-area-inset-bottom));
   }
 
-  .admin-card {
-    width: min(1020px, 100%);
-    border-radius: var(--radius-lg);
-    background-color: transparent;
+  .admin-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    pointer-events: none;
+    padding: max(8px, env(safe-area-inset-top)) 10px 0;
+    margin-bottom: var(--page-header-content-gap, 30px);
   }
 
-  .admin-content {
+  .admin-header :global(.liquid-glass-wrapper) {
+    pointer-events: auto;
+    width: min(1040px, 100%);
+    margin: 0 auto;
+  }
+
+  .admin-header-content {
     display: flex;
     flex-direction: column;
     width: 100%;
-    gap: 8px;
+    padding: 16px 18px 15px;
+  }
 
-    h1 {
-      margin: 0;
-      font-size: var(--fs-xl);
-      line-height: var(--lh-tight);
+  .admin-header-content h1 {
+    margin: 0;
+    font-family: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
+    font-size: var(--fs-xl);
+    line-height: var(--lh-tight);
+    letter-spacing: 0.012em;
+    color: #4e392d;
+  }
+
+  .page-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 0.55rem;
+    flex-wrap: wrap;
+  }
+
+  .heading-family-name {
+    margin: 0;
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+    font-weight: 700;
+    opacity: 1;
+    transition: opacity 600ms var(--motion-standard);
+
+    &.is-hidden {
+      opacity: 0;
+    }
+  }
+
+  .admin-section {
+    margin-bottom: 1.05rem;
+    background: transparent;
+    border: none;
+    border-radius: 15px;
+    overflow: clip;
+    box-shadow:
+      5px 5px 12px rgba(149, 121, 95, 0.14),
+      -5px -5px 12px rgba(255, 255, 255, 0.74);
+    transition:
+      box-shadow 0.22s var(--motion-standard),
+      background-color 0.22s var(--motion-standard);
+
+    &.open {
+      background: transparent;
+      box-shadow:
+        7px 7px 15px rgba(149, 121, 95, 0.18),
+        -6px -6px 15px rgba(255, 255, 255, 0.8);
     }
 
-    .page-heading {
+    .section-toggle {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      border: none;
+      background: transparent;
+      color: var(--text-main);
+      padding: 12px;
+      text-align: left;
+      cursor: pointer;
+      border-radius: 14px;
+      box-shadow: none;
+      transition:
+        background-color 0.22s var(--motion-standard),
+        transform 0.22s var(--motion-standard),
+        box-shadow 0.22s var(--motion-standard);
+
+      &[aria-expanded='false']:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-1px);
+        box-shadow: none;
+      }
+
+      span {
+        font-size: var(--fs-md);
+        font-weight: 700;
+      }
+
+      small {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: var(--fs-2xs);
+        color: var(--text-muted);
+        font-weight: 600;
+
+        .toggle-state {
+          display: inline-grid;
+          place-items: center;
+          width: 18px;
+          height: 18px;
+          border-radius: 999px;
+          font-size: 0.9rem;
+          line-height: 1;
+          font-weight: 700;
+          color: #6b4b31;
+          background: #f1e6d8;
+          box-shadow:
+            inset 2px 2px 5px rgba(149, 121, 95, 0.16),
+            inset -2px -2px 5px rgba(255, 255, 255, 0.74);
+        }
+      }
+    }
+
+    .section-body {
+      padding: 12px 12px 14px;
+    }
+  }
+
+  .family-scope-section {
+    margin-bottom: 0.8rem;
+
+    .section-body {
+      padding: 2px 2px 6px;
+    }
+  }
+
+  .family-scope-row {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .family-carousel-shell {
+    width: min(980px, 100%);
+    border-radius: 15px;
+    padding: 6px;
+    background: color-mix(in srgb, var(--neu-surface) 74%, transparent);
+    box-shadow:
+      inset 2px 2px 6px rgba(149, 121, 95, 0.12),
+      inset -2px -2px 6px rgba(255, 255, 255, 0.64);
+
+    &.multi {
+      margin-inline: auto;
+    }
+  }
+
+  .family-carousel {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(100%, 100%);
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    padding: 4px;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .family-card {
+    scroll-snap-align: center;
+    min-width: 0;
+    border-radius: 13px;
+    border: none;
+    border-radius: inherit;
+    min-height: 168px;
+    width: 100%;
+    padding: 0.8rem 0.9rem;
+    background: transparent;
+    color: #5d4735;
+    cursor: default;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.7rem;
+
+    &:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--brand) 86%, #fff 14%);
+      outline-offset: 2px;
+    }
+
+    .family-card-header {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 0.55rem;
-      flex-wrap: wrap;
-    }
-
-    .heading-family-name {
-      margin: 0;
-      font-size: var(--fs-sm);
-      color: var(--text-muted);
-      font-weight: 700;
-      opacity: 1;
-      transition: opacity 600ms var(--motion-standard);
-
-      &.is-hidden {
-        opacity: 0;
-      }
-    }
-
-    .heading-divider {
-      height: 1px;
-      width: 100%;
-      margin-bottom: 0.95rem;
-      background: linear-gradient(
-        90deg,
-        rgba(149, 121, 95, 0.26),
-        rgba(149, 121, 95, 0.08) 40%,
-        rgba(149, 121, 95, 0)
-      );
-    }
-
-    .admin-section {
-      margin-bottom: 1.05rem;
-      background: #f2e9de;
-      border: none;
-      border-radius: 14px;
-      overflow: clip;
-      box-shadow:
-        5px 5px 12px rgba(149, 121, 95, 0.14),
-        -5px -5px 12px rgba(255, 255, 255, 0.74);
-      transition:
-        box-shadow 0.22s var(--motion-standard),
-        background-color 0.22s var(--motion-standard);
-
-      &.open {
-        background: #f3eadf;
-        box-shadow:
-          7px 7px 15px rgba(149, 121, 95, 0.18),
-          -6px -6px 15px rgba(255, 255, 255, 0.8);
-      }
-
-      .section-toggle {
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        gap: 10px;
-        border: none;
-        background: transparent;
-        color: var(--text-main);
-        padding: 12px;
-        text-align: left;
-        cursor: pointer;
-        border-radius: 14px;
-        box-shadow: none;
-        transition:
-          background-color 0.22s var(--motion-standard),
-          transform 0.22s var(--motion-standard),
-          box-shadow 0.22s var(--motion-standard);
-
-        &[aria-expanded="false"]:hover {
-          background: rgba(255, 255, 255, 0.3);
-          transform: translateY(-1px);
-          box-shadow: none;
-        }
-
-        span {
-          font-size: var(--fs-md);
-          font-weight: 700;
-        }
-
-        small {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: var(--fs-2xs);
-          color: var(--text-muted);
-          font-weight: 600;
-
-          .toggle-state {
-            display: inline-grid;
-            place-items: center;
-            width: 18px;
-            height: 18px;
-            border-radius: 999px;
-            font-size: 0.9rem;
-            line-height: 1;
-            font-weight: 700;
-            color: #6b4b31;
-            background: #f1e6d8;
-            box-shadow:
-              inset 2px 2px 5px rgba(149, 121, 95, 0.16),
-              inset -2px -2px 5px rgba(255, 255, 255, 0.74);
-          }
-        }
-      }
-
-      .section-body {
-        padding: 12px 12px 14px;
-      }
-    }
-
-    .family-scope-section {
-      margin-bottom: 1.05rem;
-
-      .section-body {
-        padding: 2px 2px 6px;
-      }
-    }
-
-    .family-scope-row {
-      display: flex;
-      justify-content: center;
-      align-items: stretch;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .family-carousel-shell {
-      width: min(980px, 100%);
-      border-radius: 14px;
-      padding: 6px;
-      background: rgba(255, 255, 255, 0.24);
-      box-shadow:
-        inset 2px 2px 6px rgba(149, 121, 95, 0.12),
-        inset -2px -2px 6px rgba(255, 255, 255, 0.64);
-
-      &.multi {
-        margin-inline: auto;
-      }
-    }
-
-    .family-carousel {
-      display: grid;
-      grid-auto-flow: column;
-      grid-auto-columns: minmax(100%, 100%);
-      gap: 12px;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      scroll-behavior: smooth;
-      padding: 4px;
-      scrollbar-width: none;
-
-      &::-webkit-scrollbar {
-        display: none;
-      }
-    }
-
-    .family-card {
-      scroll-snap-align: center;
-      min-width: 0;
-      border-radius: 12px;
-      border: none;
-      border-radius: inherit;
-      min-height: 168px;
-      width: 100%;
-      padding: 0.8rem 0.9rem;
-      background: transparent;
-      color: #5d4735;
-      cursor: default;
-      text-align: left;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 0.7rem;
-
-      &:focus-visible {
-        outline: 2px solid color-mix(in srgb, var(--brand) 86%, #fff 14%);
-        outline-offset: 2px;
-      }
-
-      .family-card-header {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 8px;
-
-        span {
-          font-size: var(--fs-md);
-          font-weight: 800;
-          color: #5d4735;
-        }
-
-        small {
-          font-size: var(--fs-xs);
-          color: var(--text-muted);
-        }
-      }
-
-      .family-metrics-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
-
-        p {
-          margin: 0;
-          padding: 0.48rem 0.55rem;
-          border-radius: 10px;
-          background: rgba(255, 255, 255, 0.48);
-          box-shadow:
-            inset 2px 2px 5px rgba(149, 121, 95, 0.1),
-            inset -2px -2px 5px rgba(255, 255, 255, 0.7);
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-
-          strong {
-            font-size: var(--fs-md);
-            line-height: 1;
-            color: #5a402d;
-          }
-
-          span {
-            font-size: var(--fs-2xs);
-            color: var(--text-muted);
-          }
-        }
-
-        p:last-child {
-          grid-column: 1 / -1;
-        }
-      }
-
-      &.active,
-      &[aria-selected='true'] {
-        background: transparent;
-        border: none;
-      }
-    }
-
-    .carousel-dots {
-      display: flex;
-      justify-content: center;
       gap: 8px;
-      margin-top: 0.55rem;
 
-      .dot {
-        width: 9px;
-        height: 9px;
-        border-radius: 999px;
-        border: none;
-        background: #d7ccbe;
-        cursor: pointer;
-        box-shadow:
-          2px 2px 5px rgba(149, 121, 95, 0.14),
-          -2px -2px 5px rgba(255, 255, 255, 0.72);
-        transition:
-          transform 0.2s var(--motion-standard),
-          background-color 0.2s var(--motion-standard),
-          box-shadow 0.2s var(--motion-standard);
+      span {
+        font-size: var(--fs-md);
+        font-weight: 800;
+        color: #5d4735;
+      }
 
-        &.active {
-          transform: scale(1.2);
-          background: #bfa58f;
-          box-shadow:
-            inset 1px 1px 3px rgba(149, 121, 95, 0.2),
-            inset -1px -1px 3px rgba(255, 255, 255, 0.6);
-        }
+      small {
+        font-size: var(--fs-xs);
+        color: var(--text-muted);
       }
     }
 
-    .viewer-note-section {
-      margin-top: -0.2rem;
-      padding: 10px 12px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.52);
-      color: var(--text-muted);
-      box-shadow: var(--neu-shadow-out-soft);
+    .family-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
 
       p {
         margin: 0;
-        font-size: var(--fs-sm);
-        line-height: var(--lh-copy);
-      }
-    }
-
-    .invite-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-
-      .modern-input {
-        flex: 1 1 220px;
-        min-height: 44px;
-        padding: 0.52rem 0.76rem;
-        border: none;
+        padding: 0.48rem 0.55rem;
         border-radius: 10px;
-        background: var(--field-bg);
-        font-size: 0.95rem;
-        color: var(--text-main);
-
-        &:focus {
-          outline: none;
-          border-color: var(--brand);
-          box-shadow: 0 0 0 3px rgba(156, 90, 45, 0.16);
-        }
-      }
-
-      &.member-row {
-        .modern-input {
-          min-width: 220px;
-        }
-      }
-    }
-
-    select {
-      min-width: 170px;
-      min-height: 44px;
-      border: none;
-      border-radius: 10px;
-      background: var(--field-bg);
-      color: var(--text-main);
-      padding: 0.4rem 0.6rem;
-      font-size: var(--fs-sm);
-    }
-
-    .app-btn.small {
-      min-height: 34px;
-      padding: 0.44rem 0.72rem;
-      font-size: var(--fs-xs);
-    }
-
-    .list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-
-      li {
+        background: rgba(255, 255, 255, 0.48);
+        box-shadow:
+          inset 2px 2px 5px rgba(149, 121, 95, 0.1),
+          inset -2px -2px 5px rgba(255, 255, 255, 0.7);
         display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        align-items: center;
-        gap: 10px;
-        background: rgba(255, 255, 255, 0.44);
-        border: none;
-        border-radius: 10px;
-        padding: 10px 12px;
-        transition:
-          transform 0.22s var(--motion-standard),
-          box-shadow 0.22s var(--motion-standard);
+        flex-direction: column;
+        gap: 2px;
 
-        &:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 10px 18px rgba(106, 61, 28, 0.14);
+        strong {
+          font-size: var(--fs-md);
+          line-height: 1;
+          color: #5a402d;
         }
 
         span {
-          display: flex;
-          flex-direction: column;
-          color: #4a3426;
-          font-size: var(--fs-sm);
-
-          small {
-            color: var(--text-muted);
-            font-size: var(--fs-2xs);
-          }
+          font-size: var(--fs-2xs);
+          color: var(--text-muted);
         }
+      }
 
-        form {
-          display: flex;
-          gap: 6px;
-          align-items: center;
-          flex-wrap: wrap;
-        }
+      p:last-child {
+        grid-column: 1 / -1;
       }
     }
 
-    .ok-note {
-      color: #16a31a;
-      font-size: var(--fs-xs);
-      margin: 0.5rem 0 0;
-
-      &.invite-link {
-        word-break: break-all;
-
-        a {
-          color: #8a4a22;
-        }
-      }
-    }
-
-    .invite-link-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 8px;
-
-      .inline-help {
-        color: var(--text-muted);
-        font-size: var(--fs-2xs);
-      }
-    }
-
-    .invite-link-card {
-      margin-top: 0.5rem;
-      background: rgba(255, 255, 255, 0.5);
-      border-radius: 10px;
-      padding: 8px 10px;
-    }
-
-    .invite-filters {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 8px;
-    }
-
-    .filter-chip {
+    &.active,
+    &[aria-selected='true'] {
+      background: transparent;
       border: none;
-      background: #f3eadf;
-      color: var(--text-main);
-      border-radius: var(--radius-pill);
-      font-size: var(--fs-2xs);
-      font-weight: 600;
-      min-height: 30px;
-      padding: 0.28rem 0.62rem;
-      cursor: pointer;
-      box-shadow:
-        3px 3px 8px rgba(149, 121, 95, 0.12),
-        -3px -3px 8px rgba(255, 255, 255, 0.72);
-      transition:
-        transform 0.2s var(--motion-standard),
-        box-shadow 0.2s var(--motion-standard),
-        background-color 0.2s var(--motion-standard);
-
-      &:hover {
-        transform: translateY(-1px);
-        background: #f7efe6;
-      }
-
-      &.active {
-        background: #e9dccd;
-        box-shadow:
-          inset 2px 2px 5px rgba(149, 121, 95, 0.16),
-          inset -2px -2px 5px rgba(255, 255, 255, 0.7);
-      }
     }
-
-    .filter-summary {
-      margin: 0 0 10px;
-      color: var(--text-muted);
-      font-size: var(--fs-2xs);
-    }
-
-    .copy-status {
-      margin: 0.4rem 0 0;
-      font-size: var(--fs-2xs);
-      color: #166534;
-
-      &.error {
-        color: #b91c1c;
-      }
-    }
-
-    .error-note {
-      color: #dc2626;
-      font-size: var(--fs-xs);
-      margin: 0.5rem 0 0;
-    }
-
-    .status-ok {
-      color: #166534;
-      font-weight: 600;
-    }
-
-    .status-warn {
-      color: #9a3412;
-      font-weight: 600;
-    }
-
-    .empty-note {
-      margin: 0;
-      font-size: var(--fs-sm);
-      color: var(--text-muted);
-      background: rgba(255, 255, 255, 0.55);
-      border-radius: 10px;
-      padding: 10px 12px;
-    }
-
   }
 
-  :global(.admin-card .liquid-glass-text-container) {
+  .carousel-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 0.55rem;
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      border: none;
+      background: #d7ccbe;
+      cursor: pointer;
+      box-shadow:
+        2px 2px 5px rgba(149, 121, 95, 0.14),
+        -2px -2px 5px rgba(255, 255, 255, 0.72);
+      transition:
+        transform 0.2s var(--motion-standard),
+        background-color 0.2s var(--motion-standard),
+        box-shadow 0.2s var(--motion-standard);
+
+      &.active {
+        transform: scale(1.2);
+        background: #bfa58f;
+        box-shadow:
+          inset 1px 1px 3px rgba(149, 121, 95, 0.2),
+          inset -1px -1px 3px rgba(255, 255, 255, 0.6);
+      }
+    }
+  }
+
+  .viewer-note-section {
+    margin-top: -0.2rem;
+    padding: 10px 12px;
+    border-radius: 13px;
+    background: rgba(255, 255, 255, 0.52);
+    color: var(--text-muted);
+    box-shadow: var(--neu-shadow-out-soft);
+
+    p {
+      margin: 0;
+      font-size: var(--fs-sm);
+      line-height: var(--lh-copy);
+    }
+  }
+
+  .invite-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+
+    .modern-input {
+      flex: 1 1 220px;
+      min-height: 44px;
+      padding: 0.52rem 0.76rem;
+      border: none;
+      border-radius: 10px;
+      background: var(--field-bg);
+      font-size: 0.95rem;
+      color: var(--text-main);
+
+      &:focus {
+        outline: none;
+        border-color: var(--brand);
+        box-shadow: 0 0 0 3px rgba(156, 90, 45, 0.16);
+      }
+    }
+
+    &.member-row {
+      .modern-input {
+        min-width: 220px;
+      }
+    }
+  }
+
+  select {
+    min-width: 170px;
+    min-height: 44px;
+    border: none;
+    border-radius: 10px;
+    background: var(--field-bg);
+    color: var(--text-main);
+    padding: 0.4rem 0.6rem;
+    font-size: var(--fs-sm);
+  }
+
+  .app-btn.small {
+    min-height: 34px;
+    padding: 0.44rem 0.72rem;
+    font-size: var(--fs-xs);
+  }
+
+  .list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    li {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.44);
+      border: none;
+      border-radius: 10px;
+      padding: 10px 12px;
+      transition:
+        transform 0.22s var(--motion-standard),
+        box-shadow 0.22s var(--motion-standard);
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 18px rgba(106, 61, 28, 0.14);
+      }
+
+      span {
+        display: flex;
+        flex-direction: column;
+        color: #4a3426;
+        font-size: var(--fs-sm);
+
+        small {
+          color: var(--text-muted);
+          font-size: var(--fs-2xs);
+        }
+      }
+
+      form {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+    }
+  }
+
+  .ok-note {
+    color: #16a31a;
+    font-size: var(--fs-xs);
+    margin: 0.5rem 0 0;
+
+    &.invite-link {
+      word-break: break-all;
+
+      a {
+        color: #8a4a22;
+      }
+    }
+  }
+
+  .invite-link-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+
+    .inline-help {
+      color: var(--text-muted);
+      font-size: var(--fs-2xs);
+    }
+  }
+
+  .invite-link-card {
+    margin-top: 0.5rem;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+    padding: 8px 10px;
+  }
+
+  .invite-filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  .filter-chip {
+    border: none;
+    background: #f3eadf;
+    color: var(--text-main);
+    border-radius: var(--radius-pill);
+    font-size: var(--fs-2xs);
+    font-weight: 600;
+    min-height: 30px;
+    padding: 0.28rem 0.62rem;
+    cursor: pointer;
+    box-shadow:
+      3px 3px 8px rgba(149, 121, 95, 0.12),
+      -3px -3px 8px rgba(255, 255, 255, 0.72);
+    transition:
+      transform 0.2s var(--motion-standard),
+      box-shadow 0.2s var(--motion-standard),
+      background-color 0.2s var(--motion-standard);
+
+    &:hover {
+      transform: translateY(-1px);
+      background: #f7efe6;
+    }
+
+    &.active {
+      background: #e9dccd;
+      box-shadow:
+        inset 2px 2px 5px rgba(149, 121, 95, 0.16),
+        inset -2px -2px 5px rgba(255, 255, 255, 0.7);
+    }
+  }
+
+  .filter-summary {
+    margin: 0 0 10px;
+    color: var(--text-muted);
+    font-size: var(--fs-2xs);
+  }
+
+  .copy-status {
+    margin: 0.4rem 0 0;
+    font-size: var(--fs-2xs);
+    color: #166534;
+
+    &.error {
+      color: #b91c1c;
+    }
+  }
+
+  .error-note {
+    color: #dc2626;
+    font-size: var(--fs-xs);
+    margin: 0.5rem 0 0;
+  }
+
+  .status-ok {
+    color: #166534;
+    font-weight: 600;
+  }
+
+  .status-warn {
+    color: #9a3412;
+    font-weight: 600;
+  }
+
+  .empty-note {
+    margin: 0;
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.55);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+
+  :global(.admin-header .liquid-glass-text-container) {
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;
-    padding: 24px 18px 18px;
+    padding: 0;
   }
 
   @media (max-width: 720px) {
-    .admin-content {
-      .invite-row {
-        > * {
-          width: 100%;
-        }
-      }
-
-      .list li form {
+    .invite-row {
+      > * {
         width: 100%;
-
-        select,
-        button {
-          flex: 1 1 auto;
-        }
       }
+    }
+
+    .list li form {
+      width: 100%;
+
+      select,
+      button {
+        flex: 1 1 auto;
+      }
+    }
+  }
+
+  @media (min-width: 760px) {
+    .admin-header {
+      padding-inline: 14px;
+    }
+
+    .admin-header-content {
+      padding: 18px 20px 16px;
+    }
+
+    .admin-section {
+      border-radius: 16px;
     }
   }
 </style>

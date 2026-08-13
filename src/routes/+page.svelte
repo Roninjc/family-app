@@ -95,7 +95,6 @@
     height: 100%;
     min-height: 100vh;
     padding: 24px;
-    padding-top: max(108px, env(safe-area-inset-top));
     padding-bottom: max(154px, env(safe-area-inset-bottom));
     overflow: scroll;
     scroll-behavior: smooth;
@@ -106,7 +105,6 @@
       --tree-band-height: calc(var(--tree-row-height) + 8px);
       gap: 80px;
       padding: 16px;
-      padding-top: max(116px, env(safe-area-inset-top));
       padding-bottom: max(182px, env(safe-area-inset-bottom));
     }
   }
@@ -139,9 +137,4 @@
     }
   }
 
-  @media (max-width: 820px) {
-    #family-tree-wrapper {
-      padding-top: max(122px, env(safe-area-inset-top));
-    }
-  }
 </style>

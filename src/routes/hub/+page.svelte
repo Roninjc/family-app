@@ -247,25 +247,26 @@
   <title>Hub familiar — Familia Castaño</title>
 </svelte:head>
 
-<main class="hub-page page-shell" class:is-loading={isNavigating} aria-busy={isNavigating}>
-  <section class="hub-header reveal-fade-up">
-    <LiquidGlassWrapper>
-      <div class="header-content">
-        <p class="crumb">Hub / {selectedFamily?.name ?? 'Sin familia'}</p>
-        <h1>Hola, {data.displayName}</h1>
-        <p class="welcome">Te damos la bienvenida. Estás en {selectedFamily?.name ?? 'tu espacio familiar'}.</p>
-        <div class="chips-row">
-          <span class="role-chip">{roleLabels[data.role]}</span>
-          {#if data.showPendingInvitations}
-            <a class="pending-chip" href="/admin">
-              Invitaciones pendientes {data.pendingInvitations > 0 ? `(${data.pendingInvitations})` : '(0)'}
-            </a>
-          {/if}
-        </div>
-        <div class="loading-sheen" aria-hidden="true"></div>
+<header class="hub-header reveal-fade-up" aria-label="Cabecera del hub">
+  <LiquidGlassWrapper>
+    <div class="header-content">
+      <p class="crumb">Hub / {selectedFamily?.name ?? 'Sin familia'}</p>
+      <h1>Hola, {data.displayName}</h1>
+      <p class="welcome">Te damos la bienvenida. Estás en {selectedFamily?.name ?? 'tu espacio familiar'}.</p>
+      <div class="chips-row">
+        <span class="role-chip">{roleLabels[data.role]}</span>
+        {#if data.showPendingInvitations}
+          <a class="pending-chip" href="/admin">
+            Invitaciones pendientes {data.pendingInvitations > 0 ? `(${data.pendingInvitations})` : '(0)'}
+          </a>
+        {/if}
       </div>
-    </LiquidGlassWrapper>
-  </section>
+      <div class="loading-sheen" aria-hidden="true"></div>
+    </div>
+  </LiquidGlassWrapper>
+</header>
+
+<main class="hub-page page-shell" class:is-loading={isNavigating} aria-busy={isNavigating}>
 
   <section class="families-zone reveal-fade-up reveal-delay-1" aria-label="Familias del usuario">
     <div class="zone-title-row">
@@ -516,13 +517,25 @@
     color: var(--text-main);
     display: flex;
     flex-direction: column;
-    gap: 30px;
+    gap: 0;
     min-height: 100vh;
+    padding-top: 0;
     padding-bottom: max(114px, env(safe-area-inset-bottom));
   }
 
+  .hub-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    pointer-events: none;
+    padding: max(8px, env(safe-area-inset-top)) 10px 0;
+    margin-bottom: var(--page-header-content-gap, 30px);
+  }
+
   .hub-header :global(.liquid-glass-wrapper) {
-    width: 100%;
+    pointer-events: auto;
+    width: min(1040px, 100%);
+    margin: 0 auto;
   }
 
   .header-content {
@@ -533,6 +546,12 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+  }
+
+  @media (min-width: 760px) {
+    .hub-header {
+      padding-inline: 14px;
+    }
   }
 
   .crumb {

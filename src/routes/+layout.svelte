@@ -118,6 +118,7 @@
     --radius-lg: 16px;
     --radius-md: 12px;
     --radius-pill: 999px;
+    --page-header-content-gap: 30px;
     --motion-standard: cubic-bezier(0.22, 1, 0.36, 1);
     --fs-2xs: clamp(0.78rem, 0.74rem + 0.15vw, 0.84rem);
     --fs-xs: clamp(0.84rem, 0.8rem + 0.2vw, 0.9rem);
