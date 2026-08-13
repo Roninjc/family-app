@@ -21,6 +21,16 @@ const MOCK_INVITE_ERROR =
 const VIEWER_MANAGE_ERROR =
   'No tienes permisos para gestionar invitaciones en esta familia (solo lectura).'
 
+const VIEWER_ROLE_ERROR = 'No tienes permisos para cambiar roles en esta familia (solo lectura).'
+const VIEWER_LINK_SCOPE_ERROR = 'En modo solo lectura solo puedes editar tu propia vinculación.'
+const EDITOR_ADMIN_ROLE_ERROR = 'Un editor no puede asignar ni modificar roles de administrador.'
+
+interface UserBulkChangeInput {
+  profileId: string
+  role: Role
+  memberId: string | null
+}
+
 const MOCK_FAMILY_ROLE_ROTATION: Role[] = ['admin', 'editor', 'viewer']
 
 const expiryFromPreset = (preset: string): string | null => {
@@ -123,31 +133,103 @@ export const load: PageServerLoad = async ({ locals, cookies, url }) => {
   if (isMockFamilyMode()) {
     const rows = toRowsFromFamilyData(mockFamilyData)
     const groups = buildFamilyGroups(rows.members, rows.relationships)
+    const activeGroup = groups.find((candidate) => candidate.id === managerContext.activeFamily.id)
+    const activeMemberIds = new Set(activeGroup?.memberIds ?? [])
+    const members = rows.members
+      .filter((member) => activeMemberIds.has(member.id))
+      .map((member) => ({
+        id: member.id,
+        name: member.name,
+        family_name: member.family_name
+      }))
+
+    const roleByFamily = new Map(managerContext.families.map((family) => [family.id, family.role]))
+    const buildMockProfilesForFamily = (familyId: string, memberIds: string[]): Profile[] => {
+      const roleForCurrentUser = roleByFamily.get(familyId) ?? 'viewer'
+      const pickMemberId = (index: number) => memberIds[index] ?? null
+
+      return [
+        {
+          id: 'mock-user',
+          email: 'mock@localhost',
+          display_name: 'Modo mock (tú)',
+          role: roleForCurrentUser,
+          member_id: pickMemberId(0),
+          created_at: ''
+        },
+        {
+          id: `${familyId}-admin`,
+          email: 'admin.mock@familia.local',
+          display_name: 'Admin familiar',
+          role: 'admin',
+          member_id: pickMemberId(1),
+          created_at: ''
+        },
+        {
+          id: `${familyId}-editor`,
+          email: 'editor.mock@familia.local',
+          display_name: 'Editor familiar',
+          role: 'editor',
+          member_id: pickMemberId(2),
+          created_at: ''
+        },
+        {
+          id: `${familyId}-viewer`,
+          email: 'viewer.mock@familia.local',
+          display_name: 'Lector familiar',
+          role: 'viewer',
+          member_id: pickMemberId(3),
+          created_at: ''
+        }
+      ]
+    }
+
+    const profiles = buildMockProfilesForFamily(
+      managerContext.activeFamily.id,
+      [...activeMemberIds]
+    )
+
+    const linkedCount = profiles.filter((profile) => profile.member_id).length
+    const managersCount = profiles.filter(
+      (profile) => profile.role === 'admin' || profile.role === 'editor'
+    ).length
+
     const familiesWithMetrics = managerContext.families.map((family) => {
       const group = groups.find((candidate) => candidate.id === family.id)
       const membersCount = group?.membersCount ?? 0
+      const mockProfiles = buildMockProfilesForFamily(family.id, group?.memberIds ?? [])
+      const mockLinkedCount = mockProfiles.filter((profile) => profile.member_id).length
+      const mockManagersCount = mockProfiles.filter(
+        (profile) => profile.role === 'admin' || profile.role === 'editor'
+      ).length
 
       return {
         ...family,
         metrics: {
           membersCount,
-          usersCount: 0,
-          unlinkedMembersCount: membersCount,
+          usersCount: mockProfiles.length,
+          unlinkedMembersCount: Math.max(0, membersCount - mockLinkedCount),
           activeInvitesCount: 0,
-          managersCount: 1
+          managersCount: mockManagersCount
         }
       }
     })
 
     return {
       manager: managerContext.profile,
+      currentUserId: 'mock-user',
       families: familiesWithMetrics,
       activeFamily: managerContext.activeFamily,
       canManageInvites: managerContext.activeFamily.role !== 'viewer',
-      canManageRoles: managerContext.activeFamily.role === 'admin',
-      profiles: [] as Profile[],
+      canManageRoles:
+        managerContext.activeFamily.role === 'admin' || managerContext.activeFamily.role === 'editor',
+      profiles,
       invites: [],
-      members: []
+      members,
+      mockSummary: {
+        linkedCount,
+        managersCount
+      }
     }
   }
 
@@ -162,7 +244,7 @@ export const load: PageServerLoad = async ({ locals, cookies, url }) => {
   const [membershipsRes, invitesRes, allMembersRes, allMembershipsRes, allInvitesRes] = await Promise.all([
     locals.supabase
       .from('family_memberships')
-      .select('profile_id, role, profiles!inner(id, email, display_name, member_id, created_at)')
+      .select('profile_id, role, member_id, profiles!inner(id, email, display_name, created_at)')
       .eq('family_id', managerContext.activeFamily.id),
     locals.supabase
       .from('invitations')
@@ -175,7 +257,7 @@ export const load: PageServerLoad = async ({ locals, cookies, url }) => {
     familyIds.length > 0
       ? locals.supabase
           .from('family_memberships')
-          .select('family_id, profile_id, role, profiles(member_id)')
+          .select('family_id, profile_id, role, member_id')
           .in('family_id', familyIds)
       : Promise.resolve({ data: [], error: null }),
     familyIds.length > 0
@@ -208,8 +290,7 @@ export const load: PageServerLoad = async ({ locals, cookies, url }) => {
       )
     }
 
-    const profile = Array.isArray(membership.profiles) ? membership.profiles[0] : membership.profiles
-    const linkedMemberId = profile?.member_id ?? null
+    const linkedMemberId = membership.member_id ?? null
     if (!linkedMemberId) continue
 
     const linkedSet = linkedMembersByFamily.get(membership.family_id) ?? new Set<string>()
@@ -253,7 +334,7 @@ export const load: PageServerLoad = async ({ locals, cookies, url }) => {
       id: profile?.id,
       email: profile?.email,
       display_name: profile?.display_name,
-      member_id: profile?.member_id ?? null,
+      member_id: row.member_id ?? null,
       created_at: profile?.created_at ?? '',
       role: row.role
     } as Profile
@@ -261,10 +342,11 @@ export const load: PageServerLoad = async ({ locals, cookies, url }) => {
 
   return {
     manager: managerContext.profile,
+    currentUserId: locals.user?.id ?? managerContext.profile?.id ?? null,
     families: familiesWithMetrics,
     activeFamily: managerContext.activeFamily,
     canManageInvites: managerContext.activeFamily.role !== 'viewer',
-    canManageRoles: managerContext.activeFamily.role === 'admin',
+    canManageRoles: managerContext.activeFamily.role === 'admin' || managerContext.activeFamily.role === 'editor',
     profiles,
     invites: invitesRes.data ?? [],
     members: membersRes.data ?? []
@@ -547,6 +629,244 @@ export const actions: Actions = {
     }
   },
 
+  saveUsers: async ({ request, locals, cookies }) => {
+    if (isMockFamilyMode()) {
+      return fail(400, {
+        usersError:
+          'Estás en modo mock. Los cambios de usuarios no se guardan en este modo. Usa el modo normal para persistir cambios.'
+      })
+    }
+
+    const form = await request.formData()
+    const requestedFamilyId = String(form.get('familyId') ?? '').trim() || null
+    const managerContext = await resolveManagerFamily({ locals, cookies, requestedFamilyId })
+    const cookieFamilyId = cookies.get(ACTIVE_FAMILY_COOKIE) ?? null
+
+    if (
+      !ensureActionFamilyInSync({
+        requestedFamilyId,
+        cookieFamilyId,
+        resolvedFamilyId: managerContext.activeFamily.id
+      })
+    ) {
+      return fail(409, { usersError: FAMILY_SYNC_ERROR })
+    }
+
+    const rawChanges = String(form.get('changesJson') ?? '[]').trim()
+    let parsedChanges: unknown
+
+    try {
+      parsedChanges = JSON.parse(rawChanges || '[]')
+    } catch {
+      return fail(400, { usersError: 'No pudimos leer los cambios. Recarga la página e inténtalo de nuevo.' })
+    }
+
+    if (!Array.isArray(parsedChanges)) {
+      return fail(400, { usersError: 'El formato de cambios no es válido.' })
+    }
+
+    const changes: UserBulkChangeInput[] = []
+    for (const entry of parsedChanges) {
+      if (!entry || typeof entry !== 'object') {
+        return fail(400, { usersError: 'Hay cambios inválidos en la lista.' })
+      }
+
+      const row = entry as Record<string, unknown>
+      const profileId = String(row.profileId ?? '').trim()
+      const role = String(row.role ?? '') as Role
+      const memberIdValue = String(row.memberId ?? '').trim()
+      const memberId = memberIdValue.length > 0 ? memberIdValue : null
+
+      if (!profileId || !VALID_ROLES.includes(role)) {
+        return fail(400, { usersError: 'Hay cambios con usuarios o roles no válidos.' })
+      }
+
+      changes.push({ profileId, role, memberId })
+    }
+
+    if (changes.length === 0) {
+      return { usersSaved: 0 }
+    }
+
+    const uniqueProfileIds = [...new Set(changes.map((change) => change.profileId))]
+    if (uniqueProfileIds.length !== changes.length) {
+      return fail(400, { usersError: 'Hay usuarios repetidos en el envío de cambios.' })
+    }
+
+    const { data: membershipsInFamily, error: membershipsError } = await locals.supabase
+      .from('family_memberships')
+      .select('profile_id, role, member_id')
+      .eq('family_id', managerContext.activeFamily.id)
+      .in('profile_id', uniqueProfileIds)
+
+    if (membershipsError) {
+      return fail(400, { usersError: membershipsError.message })
+    }
+
+    const membershipByProfile = new Map(
+      (membershipsInFamily ?? []).map((membership) => [membership.profile_id, membership])
+    )
+
+    if (membershipByProfile.size !== uniqueProfileIds.length) {
+      return fail(404, { usersError: 'Alguno de los usuarios ya no pertenece a la familia activa.' })
+    }
+
+    const targetMemberIds = [...new Set(changes.map((change) => change.memberId).filter(Boolean))] as string[]
+    if (targetMemberIds.length > 0) {
+      const { data: membersInFamily, error: membersError } = await locals.supabase
+        .from('members')
+        .select('id')
+        .eq('family_id', managerContext.activeFamily.id)
+        .in('id', targetMemberIds)
+
+      if (membersError) {
+        return fail(400, { usersError: membersError.message })
+      }
+
+      const validIds = new Set((membersInFamily ?? []).map((member) => member.id))
+      if (validIds.size !== targetMemberIds.length) {
+        return fail(400, { usersError: 'Hay miembros seleccionados que no pertenecen a la familia activa.' })
+      }
+    }
+
+    const actorRole = managerContext.activeFamily.role
+    let appliedChanges = 0
+
+    for (const change of changes) {
+      const currentMembership = membershipByProfile.get(change.profileId)
+      if (!currentMembership) continue
+
+      const roleChanged = currentMembership.role !== change.role
+      const linkChanged = (currentMembership.member_id ?? null) !== change.memberId
+
+      if (!roleChanged && !linkChanged) continue
+
+      if (roleChanged) {
+        if (actorRole === 'viewer') {
+          return fail(403, { usersError: VIEWER_ROLE_ERROR })
+        }
+
+        if (actorRole === 'editor') {
+          if (currentMembership.role === 'admin' || change.role === 'admin') {
+            return fail(403, { usersError: EDITOR_ADMIN_ROLE_ERROR })
+          }
+        }
+
+        if (change.profileId === locals.user?.id && change.role !== 'admin' && actorRole === 'admin') {
+          return fail(400, { usersError: 'No puedes quitarte tu propio rol de administrador.' })
+        }
+      }
+
+      if (linkChanged && actorRole === 'viewer' && change.profileId !== locals.user?.id) {
+        return fail(403, { usersError: VIEWER_LINK_SCOPE_ERROR })
+      }
+
+      const updatePayload: { role?: Role; member_id?: string | null } = {}
+      if (roleChanged) updatePayload.role = change.role
+      if (linkChanged) updatePayload.member_id = change.memberId
+
+      const { error } = await locals.supabase
+        .from('family_memberships')
+        .update(updatePayload)
+        .eq('family_id', managerContext.activeFamily.id)
+        .eq('profile_id', change.profileId)
+
+      if (error) {
+        if (error.code === '23505') {
+          return fail(400, { usersError: 'Uno de los miembros ya está vinculado a otra cuenta en esta familia.' })
+        }
+        if (error.code === '23503') {
+          return fail(400, { usersError: 'Hay referencias a miembros no válidos.' })
+        }
+        return fail(400, { usersError: error.message })
+      }
+
+      appliedChanges += 1
+    }
+
+    return {
+      usersSaved: appliedChanges,
+      usersSavedFamilyId: managerContext.activeFamily.id
+    }
+  },
+
+  setMemberLink: async ({ request, locals, cookies }) => {
+    if (isMockFamilyMode()) {
+      return fail(400, {
+        linkError:
+          'Estás en modo mock. Las vinculaciones no se guardan en este modo. Usa el modo normal para persistir cambios.'
+      })
+    }
+
+    const form = await request.formData()
+    const requestedFamilyId = String(form.get('familyId') ?? '').trim() || null
+    const managerContext = await resolveManagerFamily({ locals, cookies, requestedFamilyId })
+    const cookieFamilyId = cookies.get(ACTIVE_FAMILY_COOKIE) ?? null
+
+    if (
+      !ensureActionFamilyInSync({
+        requestedFamilyId,
+        cookieFamilyId,
+        resolvedFamilyId: managerContext.activeFamily.id
+      })
+    ) {
+      return fail(409, { linkError: FAMILY_SYNC_ERROR })
+    }
+
+    const profileId = String(form.get('profileId') ?? '').trim()
+    const memberId = String(form.get('memberId') ?? '').trim()
+
+    if (!profileId) {
+      return fail(400, { linkError: 'No se recibió el usuario que quieres vincular.' })
+    }
+
+    if (managerContext.activeFamily.role === 'viewer' && profileId !== locals.user?.id) {
+      return fail(403, { linkError: VIEWER_LINK_SCOPE_ERROR })
+    }
+
+    const { data: membershipInFamily } = await locals.supabase
+      .from('family_memberships')
+      .select('profile_id')
+      .eq('family_id', managerContext.activeFamily.id)
+      .eq('profile_id', profileId)
+      .maybeSingle()
+
+    if (!membershipInFamily) {
+      return fail(404, { linkError: 'Ese usuario no pertenece a la familia activa.' })
+    }
+
+    if (memberId) {
+      const { data: memberInFamily } = await locals.supabase
+        .from('members')
+        .select('id')
+        .eq('id', memberId)
+        .eq('family_id', managerContext.activeFamily.id)
+        .maybeSingle()
+
+      if (!memberInFamily) {
+        return fail(400, { linkError: 'El miembro seleccionado no pertenece a la familia activa.' })
+      }
+    }
+
+    const { error } = await locals.supabase
+      .from('family_memberships')
+      .update({ member_id: memberId || null })
+      .eq('family_id', managerContext.activeFamily.id)
+      .eq('profile_id', profileId)
+
+    if (error) {
+      if (error.code === '23505') {
+        return fail(400, { linkError: 'Ese miembro ya está vinculado a otra cuenta en esta familia.' })
+      }
+      if (error.code === '23503') {
+        return fail(400, { linkError: 'El miembro seleccionado no existe.' })
+      }
+      return fail(400, { linkError: error.message })
+    }
+
+    return { linkUpdated: profileId, familyId: managerContext.activeFamily.id }
+  },
+
   setRole: async ({ request, locals, cookies }) => {
     if (isMockFamilyMode()) {
       return fail(400, {
@@ -569,12 +889,31 @@ export const actions: Actions = {
       return fail(409, { roleError: FAMILY_SYNC_ERROR })
     }
 
-    if (managerContext.activeFamily.role !== 'admin') redirect(303, '/hub')
+    if (managerContext.activeFamily.role === 'viewer') {
+      return fail(403, { roleError: VIEWER_ROLE_ERROR })
+    }
 
     const profileId = String(form.get('profileId') ?? '')
     const role = String(form.get('role') ?? '') as Role
 
     if (!VALID_ROLES.includes(role)) return fail(400, { roleError: 'Rol no válido.' })
+
+    const { data: targetMembership } = await locals.supabase
+      .from('family_memberships')
+      .select('profile_id, role')
+      .eq('family_id', managerContext.activeFamily.id)
+      .eq('profile_id', profileId)
+      .maybeSingle()
+
+    if (!targetMembership) {
+      return fail(404, { roleError: 'Ese usuario no pertenece a la familia activa.' })
+    }
+
+    if (managerContext.activeFamily.role === 'editor') {
+      if (role === 'admin' || targetMembership.role === 'admin') {
+        return fail(403, { roleError: EDITOR_ADMIN_ROLE_ERROR })
+      }
+    }
 
     if (profileId === locals.user?.id && role !== 'admin') {
       return fail(400, { roleError: 'No puedes quitarte tu propio rol de administrador.' })

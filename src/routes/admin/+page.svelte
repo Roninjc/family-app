@@ -2,6 +2,7 @@
   import { goto } from '$app/navigation'
   import { enhance } from '$app/forms'
   import { page } from '$app/stores'
+  import type { SubmitFunction } from '@sveltejs/kit'
   import { onDestroy, onMount } from 'svelte'
   import { fade, slide } from 'svelte/transition'
   import LiquidGlassWrapper from '../../components/liquidGlassWrapper.svelte'
@@ -162,11 +163,209 @@
     pendingFamilyId = null
   }
   $: filteredInvites = data.invites.filter((invite) => inviteMatchesFilter(invite, inviteFilter))
+  $: activeFamilyRole = data.activeFamily?.role ?? 'viewer'
+  $: currentUserId = data.currentUserId ?? data.manager?.id ?? ''
 
-  let openSection: 'general' | 'member' | 'invites' | 'users' | null = 'general'
+  type UserDraft = {
+    role: string
+    memberId: string
+  }
+
+  type UserDraftChange = {
+    profileId: string
+    displayName: string
+    previousRole: string
+    nextRole: string
+    previousMemberId: string
+    nextMemberId: string
+    roleChanged: boolean
+    linkChanged: boolean
+  }
+
+  let userDraftsById: Record<string, UserDraft> = {}
+  let userDraftsSeed = ''
+  let usersChanges: UserDraftChange[] = []
+  let usersChangesJson = '[]'
+  let showUsersConfirmModal = false
+  let roleChanges: UserDraftChange[] = []
+  let linkChanges: UserDraftChange[] = []
+  let availableMembersByProfileId: Record<
+    string,
+    Array<{ id: string; name: string; family_name: string }>
+  > = {}
+
+  const normalizeMemberId = (value: string | null | undefined) => value?.trim() ?? ''
+
+  const memberDisplayName = (memberId: string) => {
+    if (!memberId) return 'Sin vínculo'
+    return memberNameById.get(memberId) ?? memberId
+  }
+
+  const initializeUserDrafts = () => {
+    userDraftsById = Object.fromEntries(
+      data.profiles.map((profile) => [
+        profile.id,
+        {
+          role: profile.role,
+          memberId: normalizeMemberId(profile.member_id)
+        }
+      ])
+    )
+  }
+
+  const profileDisplayName = (profile: { display_name: string | null; email: string }) =>
+    profile.display_name?.trim() || profile.email
+
+  const updateUserDraftRole = (profileId: string, value: string) => {
+    const current = userDraftsById[profileId]
+    if (!current) return
+    userDraftsById = {
+      ...userDraftsById,
+      [profileId]: {
+        ...current,
+        role: value
+      }
+    }
+  }
+
+  const updateUserDraftMember = (profileId: string, value: string) => {
+    const current = userDraftsById[profileId]
+    if (!current) return
+    userDraftsById = {
+      ...userDraftsById,
+      [profileId]: {
+        ...current,
+        memberId: value
+      }
+    }
+  }
+
+  const onRoleDraftChange = (profileId: string, event: Event) => {
+    const select = event.currentTarget as HTMLSelectElement | null
+    if (!select) return
+    updateUserDraftRole(profileId, select.value)
+  }
+
+  const onMemberDraftChange = (profileId: string, event: Event) => {
+    const select = event.currentTarget as HTMLSelectElement | null
+    if (!select) return
+    updateUserDraftMember(profileId, select.value)
+  }
+
+  const linkedMemberByProfileId = (profileId: string) => normalizeMemberId(userDraftsById[profileId]?.memberId)
+
+  const buildAvailableMembersForProfile = (profileId: string) => {
+    const selectedMemberId = linkedMemberByProfileId(profileId)
+    const linkedByOthers = new Set(
+      Object.entries(userDraftsById)
+        .filter(([otherProfileId]) => otherProfileId !== profileId)
+        .map(([, draft]) => normalizeMemberId(draft.memberId))
+        .filter((memberId) => memberId.length > 0)
+    )
+
+    return data.members.filter((member) => {
+      if (member.id === selectedMemberId) return true
+      return !linkedByOthers.has(member.id)
+    })
+  }
+
+  const openUsersConfirmDialog = () => {
+    if (usersChanges.length === 0) return
+    showUsersConfirmModal = true
+  }
+
+  const closeUsersConfirmDialog = () => {
+    showUsersConfirmModal = false
+  }
+
+  const usersSaveEnhance: SubmitFunction = () => {
+    return async ({ update }) => {
+      await update()
+      showUsersConfirmModal = false
+    }
+  }
+
+  let openSection: 'general' | 'member' | 'invites' | 'users' | null = data.canManageInvites
+    ? 'general'
+    : 'users'
 
   const toggleSection = (section: 'general' | 'member' | 'invites' | 'users') => {
     openSection = openSection === section ? null : section
+  }
+
+  const canEditLink = (profileId: string) =>
+    activeFamilyRole === 'admin' || activeFamilyRole === 'editor' || profileId === currentUserId
+
+  const canEditRole = (profileRole: string) => {
+    if (activeFamilyRole === 'admin') return true
+    if (activeFamilyRole === 'editor') return profileRole !== 'admin'
+    return false
+  }
+
+  const canShowAdminRole = (profileRole: string, draftRole: string) =>
+    activeFamilyRole === 'admin' || profileRole === 'admin' || draftRole === 'admin'
+
+  $: if (!data.canManageInvites && openSection === 'general') {
+    openSection = 'users'
+  }
+
+  $: {
+    const nextSeed = `${activeFamilyId}|${data.profiles
+      .map((profile) => `${profile.id}:${profile.role}:${normalizeMemberId(profile.member_id)}`)
+      .join('|')}`
+    if (nextSeed !== userDraftsSeed) {
+      initializeUserDrafts()
+      userDraftsSeed = nextSeed
+    }
+  }
+
+  $: {
+    usersChanges = data.profiles
+      .map((profile) => {
+        const draft = userDraftsById[profile.id]
+        if (!draft) return null
+
+        const previousMemberId = normalizeMemberId(profile.member_id)
+        const nextMemberId = normalizeMemberId(draft.memberId)
+        const roleChanged = profile.role !== draft.role
+        const linkChanged = previousMemberId !== nextMemberId
+
+        if (!roleChanged && !linkChanged) return null
+
+        return {
+          profileId: profile.id,
+          displayName: profileDisplayName(profile),
+          previousRole: profile.role,
+          nextRole: draft.role,
+          previousMemberId,
+          nextMemberId,
+          roleChanged,
+          linkChanged
+        } as UserDraftChange
+      })
+      .filter((entry): entry is UserDraftChange => Boolean(entry))
+
+    usersChangesJson = JSON.stringify(
+      usersChanges.map((change) => ({
+        profileId: change.profileId,
+        role: change.nextRole,
+        memberId: change.nextMemberId
+      }))
+    )
+
+    roleChanges = usersChanges.filter((change) => change.roleChanged)
+    linkChanges = usersChanges.filter((change) => change.linkChanged)
+  }
+
+  $: {
+    // TODO: Revisar actualización en vivo de opciones de vínculo entre filas.
+    // En ciertos flujos el borrador no refleja inmediatamente la disponibilidad
+    // al cambiar de usuario; retomar este ajuste en una iteración posterior.
+    const nextByProfileId: Record<string, Array<{ id: string; name: string; family_name: string }>> = {}
+    for (const profile of data.profiles) {
+      nextByProfileId[profile.id] = buildAvailableMembersForProfile(profile.id)
+    }
+    availableMembersByProfileId = nextByProfileId
   }
 
   const switchFamily = async (familyId: string) => {
@@ -631,55 +830,186 @@
             </div>
           {/if}
     </section>
+  {/if}
 
-    {#if data.canManageRoles}
-      <section class="admin-section reveal-fade-up reveal-delay-2" class:open={openSection === 'users'}>
+    <section class="admin-section reveal-fade-up reveal-delay-2" class:open={openSection === 'users'}>
+      <button
+        type="button"
+        class="section-toggle"
+        on:click={() => {
+          toggleSection('users')
+        }}
+        aria-expanded={openSection === 'users'}
+      >
+        <span>Usuarios</span>
+        <small>
+          {data.profiles.length} usuarios
+          <b class="toggle-state" aria-hidden="true">{openSection === 'users' ? '−' : '+'}</b>
+        </small>
+      </button>
+      {#if openSection === 'users'}
+        <div class="section-body" transition:slide={{ duration: 220 }}>
+          <div class="bulk-save-row">
             <button
               type="button"
-              class="section-toggle"
-              on:click={() => {
-                toggleSection('users')
-              }}
-              aria-expanded={openSection === 'users'}
+              class="app-btn app-btn--primary"
+              on:click={openUsersConfirmDialog}
+              disabled={usersChanges.length === 0}
             >
-              <span>Usuarios y roles</span>
-              <small>
-                {data.profiles.length} usuarios
-                <b class="toggle-state" aria-hidden="true">{openSection === 'users' ? '−' : '+'}</b>
-              </small>
+              Guardar cambios ({usersChanges.length})
             </button>
-            {#if openSection === 'users'}
-              <div class="section-body" transition:slide={{ duration: 220 }}>
-                <ul class="list">
-                  {#each data.profiles as profile (profile.id)}
+          </div>
+
+          <ul class="list">
+            {#each data.profiles as profile (profile.id)}
+              <li>
+                <span class="user-name">{profile.display_name ?? profile.email}</span>
+                <div class="user-edit-controls">
+                  <label>
+                    <span>Rol</span>
+                    <select
+                      value={userDraftsById[profile.id]?.role ?? profile.role}
+                      disabled={!canEditRole(profile.role)}
+                      on:change={(event) => onRoleDraftChange(profile.id, event)}
+                    >
+                      {#if canShowAdminRole(profile.role, userDraftsById[profile.id]?.role ?? profile.role)}
+                        <option value="admin">Administrador</option>
+                      {/if}
+                      <option value="editor">Editor</option>
+                      <option value="viewer">Solo lectura</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Vinculación</span>
+                    <select
+                      value={userDraftsById[profile.id]?.memberId ?? ''}
+                      disabled={!canEditLink(profile.id)}
+                      on:input={(event) => onMemberDraftChange(profile.id, event)}
+                      on:change={(event) => onMemberDraftChange(profile.id, event)}
+                    >
+                      <option value="">Sin vínculo</option>
+                      {#each availableMembersByProfileId[profile.id] ?? [] as member (member.id)}
+                        <option value={member.id}>
+                          {member.name} {member.family_name}
+                        </option>
+                      {/each}
+                    </select>
+                  </label>
+                </div>
+              </li>
+            {/each}
+          </ul>
+
+          <div class="bulk-save-row bottom">
+            <button
+              type="button"
+              class="app-btn app-btn--primary"
+              on:click={openUsersConfirmDialog}
+              disabled={usersChanges.length === 0}
+            >
+              Guardar cambios ({usersChanges.length})
+            </button>
+          </div>
+
+          {#if form?.usersSaved !== undefined}
+            <p class="ok-note" role="status">
+              Cambios guardados: {form.usersSaved}
+            </p>
+          {/if}
+          {#if form?.usersError}<p class="error-note" role="alert">{form.usersError}</p>{/if}
+        </div>
+      {/if}
+    </section>
+
+    {#if showUsersConfirmModal}
+      <div
+        class="users-modal-backdrop"
+        role="button"
+        tabindex="0"
+        aria-label="Cerrar confirmación"
+        on:click|stopPropagation={closeUsersConfirmDialog}
+        on:keydown={(event) => {
+          if (event.key === 'Escape') closeUsersConfirmDialog()
+        }}
+      >
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+        <div
+          class="users-confirm-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="users-save-title"
+          on:click|stopPropagation
+        >
+          <LiquidGlassWrapper>
+            <div class="users-confirm-card" in:fade={{ duration: 140 }}>
+              <h3 id="users-save-title">Confirmar cambios</h3>
+
+              {#if usersChanges.length > 0}
+                <div class="users-summary-grid" role="status" aria-live="polite">
+                  <p>
+                    <strong>{usersChanges.length}</strong>
+                    <span>Total</span>
+                  </p>
+                  <p>
+                    <strong>{roleChanges.length}</strong>
+                    <span>Roles</span>
+                  </p>
+                  <p>
+                    <strong>{linkChanges.length}</strong>
+                    <span>Vínculos</span>
+                  </p>
+                </div>
+
+                <ul class="users-changes-list">
+                  {#each usersChanges as change (change.profileId)}
                     <li>
-                      <span>{profile.display_name ?? profile.email}<small>{profile.email}</small></span>
-                      <form method="POST" action="?/setRole" use:enhance>
-                        <input type="hidden" name="familyId" value={activeFamilyId} />
-                        <input type="hidden" name="profileId" value={profile.id} />
-                        <select name="role" value={profile.role}>
-                          <option value="admin">Administrador</option>
-                          <option value="editor">Editor</option>
-                          <option value="viewer">Solo lectura</option>
-                        </select>
-                        <button type="submit" class="app-btn app-btn--secondary small">Guardar</button>
-                      </form>
+                      <strong>{change.displayName}</strong>
+                      {#if change.roleChanged}
+                        <small>Rol: {roleLabels[change.previousRole]} → {roleLabels[change.nextRole]}</small>
+                      {/if}
+                      {#if change.linkChanged}
+                        <small>
+                          Vínculo: {memberDisplayName(change.previousMemberId)} →
+                          {memberDisplayName(change.nextMemberId)}
+                        </small>
+                      {/if}
                     </li>
                   {/each}
                 </ul>
-                {#if form?.roleError}<p class="error-note" role="alert">{form.roleError}</p>{/if}
-              </div>
-            {/if}
-      </section>
+
+                <form method="POST" action="?/saveUsers" use:enhance={usersSaveEnhance}>
+                  <input type="hidden" name="familyId" value={activeFamilyId} />
+                  <input type="hidden" name="changesJson" value={usersChangesJson} />
+                  <div class="users-confirm-actions">
+                    <button
+                      type="button"
+                      class="app-btn app-btn--secondary"
+                      on:click={closeUsersConfirmDialog}
+                    >
+                      Cancelar
+                    </button>
+                    <button type="submit" class="app-btn app-btn--primary">Confirmar y guardar</button>
+                  </div>
+                </form>
+              {:else}
+                <p class="users-confirm-summary">No hay cambios para guardar.</p>
+                <div class="users-confirm-actions">
+                  <button
+                    type="button"
+                    class="app-btn app-btn--secondary"
+                    on:click={closeUsersConfirmDialog}
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              {/if}
+            </div>
+          </LiquidGlassWrapper>
+        </div>
+      </div>
     {/if}
-  {:else}
-    <section class="viewer-note-section reveal-fade-up reveal-delay-1" transition:fade={{ duration: 180 }}>
-      <p>
-        Estás en modo solo lectura para esta familia. Cambia a otra familia donde seas editor o
-        administrador para gestionar invitaciones y usuarios.
-      </p>
-    </section>
-  {/if}
 </main>
 
 <style lang="scss">
@@ -986,21 +1316,6 @@
     }
   }
 
-  .viewer-note-section {
-    margin-top: -0.2rem;
-    padding: 10px 12px;
-    border-radius: 13px;
-    background: rgba(255, 255, 255, 0.52);
-    color: var(--text-muted);
-    box-shadow: var(--neu-shadow-out-soft);
-
-    p {
-      margin: 0;
-      font-size: var(--fs-sm);
-      line-height: var(--lh-copy);
-    }
-  }
-
   .invite-row {
     display: flex;
     flex-wrap: wrap;
@@ -1065,34 +1380,157 @@
       border: none;
       border-radius: 10px;
       padding: 10px 12px;
-      transition:
-        transform 0.22s var(--motion-standard),
-        box-shadow 0.22s var(--motion-standard);
 
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 18px rgba(106, 61, 28, 0.14);
+      .user-name {
+        color: #4a3426;
+        font-size: var(--fs-sm);
+        font-weight: 700;
+      }
+
+      .user-edit-controls {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(180px, 1fr));
+        gap: 8px;
+        width: min(100%, 560px);
+
+        label {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+
+          span {
+            color: var(--text-muted);
+            font-size: var(--fs-2xs);
+            font-weight: 600;
+          }
+        }
+      }
+    }
+  }
+
+  .bulk-save-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+
+    &.bottom {
+      margin-top: 10px;
+      margin-bottom: 0;
+    }
+  }
+
+  .users-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(241, 236, 228, 0.68);
+    backdrop-filter: blur(2px);
+    z-index: 999;
+  }
+
+  .users-confirm-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 16px;
+    background-color: transparent;
+    z-index: 1000;
+    width: min(680px, calc(100vw - 24px));
+
+    .users-confirm-card {
+      h3 {
+        margin: 0;
+        font-size: var(--fs-lg);
+        color: #4a3426;
+      }
+    }
+  }
+
+  .users-confirm-modal :global(.liquid-glass-wrapper) {
+    width: 100%;
+  }
+
+  .users-confirm-modal :global(.liquid-glass-text-container) {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: 0;
+  }
+
+  .users-confirm-card {
+    padding: 12px;
+  }
+
+  .users-summary-grid {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+
+    p {
+      margin: 0;
+      padding: 0.45rem 0.5rem;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.5);
+      box-shadow:
+        inset 2px 2px 5px rgba(149, 121, 95, 0.1),
+        inset -2px -2px 5px rgba(255, 255, 255, 0.68);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      strong {
+        font-size: var(--fs-md);
+        line-height: 1;
+        color: #5a402d;
       }
 
       span {
-        display: flex;
-        flex-direction: column;
-        color: #4a3426;
-        font-size: var(--fs-sm);
-
-        small {
-          color: var(--text-muted);
-          font-size: var(--fs-2xs);
-        }
-      }
-
-      form {
-        display: flex;
-        gap: 6px;
-        align-items: center;
-        flex-wrap: wrap;
+        color: var(--text-muted);
+        font-size: var(--fs-2xs);
       }
     }
+  }
+
+  .users-changes-list {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    max-height: min(42vh, 360px);
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    li {
+      background: rgba(255, 255, 255, 0.52);
+      border-radius: 10px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+
+      strong {
+        font-size: var(--fs-sm);
+        color: #4a3426;
+      }
+
+      small {
+        font-size: var(--fs-xs);
+        color: var(--text-muted);
+      }
+    }
+  }
+
+  .users-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
   }
 
   .ok-note {
@@ -1222,13 +1660,27 @@
       }
     }
 
-    .list li form {
+    .list li .user-edit-controls {
       width: 100%;
+      grid-template-columns: 1fr;
+    }
 
-      select,
-      button {
-        flex: 1 1 auto;
+    .bulk-save-row {
+      justify-content: stretch;
+
+      .app-btn {
+        width: 100%;
       }
+    }
+
+    .users-confirm-actions {
+      > * {
+        width: 100%;
+      }
+    }
+
+    .users-summary-grid {
+      grid-template-columns: 1fr;
     }
   }
 

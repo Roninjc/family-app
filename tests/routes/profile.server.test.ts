@@ -8,109 +8,50 @@ const makeRequest = (fields: Record<string, string>) => {
 }
 
 describe('profile load', () => {
-  it('returns available members excluding ones linked to another profile', async () => {
-    const members = [
-      { id: 'm1', name: 'Ana', family_name: 'A' },
-      { id: 'm2', name: 'Beto', family_name: 'B' },
-      { id: 'm3', name: 'Cris', family_name: 'C' }
-    ]
+  it('returns an empty payload for authenticated users', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await (load as any)({ locals: { user: { id: 'u1' } } })
 
-    const takenRows = [{ member_id: 'm2' }]
+    expect(data).toEqual({})
+  })
+})
 
+describe('setPassword action', () => {
+  it('returns a friendly error when password is too short', async () => {
     const supabase = {
-      from: (table: string) => {
-        if (table === 'profiles') {
-          return {
-            select: () => ({
-              eq: () => ({ single: async () => ({ data: { member_id: 'm1' } }) }),
-              not: async () => ({ data: takenRows })
-            })
-          }
-        }
-
-        if (table === 'members') {
-          return {
-            select: () => ({ order: async () => ({ data: members }) })
-          }
-        }
-
-        throw new Error(`Unexpected table: ${table}`)
+      auth: {
+        updateUser: async () => ({ error: null })
       }
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = await (load as any)({ locals: { supabase, user: { id: 'u1' } } })
-
-    expect(data.linkedMember.id).toBe('m1')
-    expect(data.availableMembers.map((member: { id: string }) => member.id)).toEqual(['m1', 'm3'])
-  })
-})
-
-describe('setMemberLink action', () => {
-  it('updates the current user profile member_id', async () => {
-    const calls: Array<string | null> = []
-
-    const supabase = {
-      from: () => ({
-        update: ({ member_id }: { member_id: string | null }) => {
-          calls.push(member_id)
-          return {
-            eq: async () => ({ error: null })
-          }
-        }
-      })
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await (actions.setMemberLink as any)({
-      request: makeRequest({ member_id: 'member-1' }),
-      locals: { supabase, user: { id: 'u1' } }
-    })
-
-    expect(calls).toEqual(['member-1'])
-    expect(result).toEqual({ linkSaved: true })
-  })
-
-  it('returns a friendly message when member is already linked', async () => {
-    const supabase = {
-      from: () => ({
-        update: () => ({
-          eq: async () => ({ error: { code: '23505', message: 'duplicate key value' } })
-        })
-      })
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await (actions.setMemberLink as any)({
-      request: makeRequest({ member_id: 'member-1' }),
+    const result = await (actions.setPassword as any)({
+      request: makeRequest({ password: '123' }),
       locals: { supabase, user: { id: 'u1' } }
     })
 
     expect(result.status).toBe(400)
-    expect(result.data.linkError).toBe('Ese miembro ya está vinculado a otra cuenta.')
+    expect(result.data.passwordError).toBe('La contraseña debe tener al menos 8 caracteres.')
   })
 
-  it('allows unlinking when member_id is empty', async () => {
-    const calls: Array<string | null> = []
-
+  it('updates password when valid input is provided', async () => {
+    const updates: Array<string> = []
     const supabase = {
-      from: () => ({
-        update: ({ member_id }: { member_id: string | null }) => {
-          calls.push(member_id)
-          return {
-            eq: async () => ({ error: null })
-          }
+      auth: {
+        updateUser: async ({ password }: { password: string }) => {
+          updates.push(password)
+          return { error: null }
         }
-      })
+      }
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await (actions.setMemberLink as any)({
-      request: makeRequest({ member_id: '' }),
+    const result = await (actions.setPassword as any)({
+      request: makeRequest({ password: 'new-password-123' }),
       locals: { supabase, user: { id: 'u1' } }
     })
 
-    expect(calls).toEqual([null])
-    expect(result).toEqual({ linkSaved: true })
+    expect(updates).toEqual(['new-password-123'])
+    expect(result).toEqual({ passwordSaved: true })
   })
 })

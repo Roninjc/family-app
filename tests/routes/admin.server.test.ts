@@ -18,11 +18,11 @@ describe('admin load family scope', () => {
       {
         profile_id: 'u2',
         role: 'viewer',
+        member_id: null,
         profiles: {
           id: 'u2',
           email: 'viewer@test.dev',
           display_name: 'Viewer',
-          member_id: null,
           created_at: '2026-08-01T00:00:00.000Z'
         }
       }
@@ -46,7 +46,18 @@ describe('admin load family scope', () => {
                 return { eq: async () => ({ data: userFamilies, error: null }) }
               }
 
-              return { eq: async () => ({ data: profileRows, error: null }) }
+              return {
+                eq: async () => ({ data: profileRows, error: null }),
+                in: async () => ({
+                  data: profileRows.map((row) => ({
+                    family_id: 'f2',
+                    profile_id: row.profile_id,
+                    role: row.role,
+                    member_id: row.member_id
+                  })),
+                  error: null
+                })
+              }
             }
           }
         }
@@ -56,6 +67,10 @@ describe('admin load family scope', () => {
             select: () => {
               const eqBuilder = {
                 eq: (_column: string, _value: string) => eqBuilder,
+                in: async () => ({
+                  data: members.map((member) => ({ id: member.id, family_id: 'f2' })),
+                  error: null
+                }),
                 order: async () => ({ data: members, error: null })
               }
               return eqBuilder
@@ -68,7 +83,8 @@ describe('admin load family scope', () => {
             select: () => ({
               eq: (_column: string, _value: string) => ({
                 order: async () => ({ data: invites, error: null })
-              })
+              }),
+              in: async () => ({ data: [], error: null })
             })
           }
         }
@@ -122,7 +138,15 @@ describe('admin setRole family scope', () => {
                 }
               }
 
-              throw new Error('Unexpected select in this test')
+              const membershipBuilder = {
+                eq: (_column: string, _value: string) => membershipBuilder,
+                maybeSingle: async () => ({
+                  data: { profile_id: 'u2', role: 'viewer' },
+                  error: null
+                })
+              }
+
+              return membershipBuilder
             },
             update: (_row: { role: string }) => {
               const builder = {
@@ -197,6 +221,395 @@ describe('admin setRole family scope', () => {
     expect(result.data.roleError).toBe(
       'La familia activa cambió mientras completabas la acción. Recarga la página y vuelve a intentarlo.'
     )
+  })
+})
+
+describe('admin setMemberLink family scope', () => {
+  it('updates member link in family_memberships for selected family', async () => {
+    const updates: Array<{ column: string; value: string }> = []
+
+    const supabase = {
+      from: (table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: () => ({ eq: () => ({ single: async () => ({ data: { id: 'u1' } }) }) })
+          }
+        }
+
+        if (table === 'family_memberships') {
+          return {
+            select: (columns: string) => {
+              if (columns.includes('families!inner')) {
+                return {
+                  eq: async () => ({
+                    data: [{ family_id: 'f2', role: 'admin', families: { id: 'f2', name: 'Luna' } }],
+                    error: null
+                  })
+                }
+              }
+
+              const membershipBuilder = {
+                eq: (_column: string, _value: string) => membershipBuilder,
+                maybeSingle: async () => ({ data: { profile_id: 'u2' }, error: null })
+              }
+
+              return membershipBuilder
+            },
+            update: () => {
+              const builder = {
+                eq: (column: string, value: string) => {
+                  updates.push({ column, value })
+                  return builder
+                },
+                then: (resolve: (value: { error: null }) => void) => resolve({ error: null })
+              }
+              return builder
+            }
+          }
+        }
+
+        if (table === 'members') {
+          return {
+            select: () => {
+              const memberBuilder = {
+                eq: (_column: string, _value: string) => memberBuilder,
+                maybeSingle: async () => ({ data: { id: 'm2' }, error: null })
+              }
+
+              return memberBuilder
+            }
+          }
+        }
+
+        throw new Error(`Unexpected table: ${table}`)
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await (actions.setMemberLink as any)({
+      request: makeRequest({ familyId: 'f2', profileId: 'u2', memberId: 'm2' }),
+      locals: { supabase, user: { id: 'u1' } },
+      cookies: { get: () => 'f2', set: () => {} }
+    })
+
+    expect(result).toEqual({ linkUpdated: 'u2', familyId: 'f2' })
+    expect(updates).toContainEqual({ column: 'family_id', value: 'f2' })
+    expect(updates).toContainEqual({ column: 'profile_id', value: 'u2' })
+  })
+
+  it('allows a viewer to edit only their own link', async () => {
+    const updates: Array<{ column: string; value: string }> = []
+
+    const supabase = {
+      from: (table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: () => ({ eq: () => ({ single: async () => ({ data: { id: 'u3' } }) }) })
+          }
+        }
+
+        if (table === 'family_memberships') {
+          return {
+            select: (columns: string) => {
+              if (columns.includes('families!inner')) {
+                return {
+                  eq: async () => ({
+                    data: [{ family_id: 'f2', role: 'viewer', families: { id: 'f2', name: 'Luna' } }],
+                    error: null
+                  })
+                }
+              }
+
+              const membershipBuilder = {
+                eq: (_column: string, _value: string) => membershipBuilder,
+                maybeSingle: async () => ({ data: { profile_id: 'u3' }, error: null })
+              }
+
+              return membershipBuilder
+            },
+            update: () => {
+              const builder = {
+                eq: (column: string, value: string) => {
+                  updates.push({ column, value })
+                  return builder
+                },
+                then: (resolve: (value: { error: null }) => void) => resolve({ error: null })
+              }
+              return builder
+            }
+          }
+        }
+
+        if (table === 'members') {
+          return {
+            select: () => {
+              const memberBuilder = {
+                eq: (_column: string, _value: string) => memberBuilder,
+                maybeSingle: async () => ({ data: { id: 'm2' }, error: null })
+              }
+
+              return memberBuilder
+            }
+          }
+        }
+
+        throw new Error(`Unexpected table: ${table}`)
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await (actions.setMemberLink as any)({
+      request: makeRequest({ familyId: 'f2', profileId: 'u3', memberId: 'm2' }),
+      locals: { supabase, user: { id: 'u3' } },
+      cookies: { get: () => 'f2', set: () => {} }
+    })
+
+    expect(result).toEqual({ linkUpdated: 'u3', familyId: 'f2' })
+    expect(updates).toContainEqual({ column: 'profile_id', value: 'u3' })
+  })
+
+  it('rejects viewer editing another user link', async () => {
+    const supabase = {
+      from: (table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: () => ({ eq: () => ({ single: async () => ({ data: { id: 'u3' } }) }) })
+          }
+        }
+
+        if (table === 'family_memberships') {
+          return {
+            select: (columns: string) => {
+              if (columns.includes('families!inner')) {
+                return {
+                  eq: async () => ({
+                    data: [{ family_id: 'f2', role: 'viewer', families: { id: 'f2', name: 'Luna' } }],
+                    error: null
+                  })
+                }
+              }
+
+              throw new Error('Should not query target membership when viewer edits another user')
+            },
+            update: () => {
+              throw new Error('Should not update links for other users as viewer')
+            }
+          }
+        }
+
+        throw new Error(`Unexpected table: ${table}`)
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await (actions.setMemberLink as any)({
+      request: makeRequest({ familyId: 'f2', profileId: 'u2', memberId: 'm2' }),
+      locals: { supabase, user: { id: 'u3' } },
+      cookies: { get: () => 'f2', set: () => {} }
+    })
+
+    expect(result.status).toBe(403)
+    expect(result.data.linkError).toBe('En modo solo lectura solo puedes editar tu propia vinculación.')
+  })
+})
+
+describe('admin setRole permissions', () => {
+  it('rejects editor assigning admin role', async () => {
+    const supabase = {
+      from: (table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: () => ({ eq: () => ({ single: async () => ({ data: { id: 'u1' } }) }) })
+          }
+        }
+
+        if (table === 'family_memberships') {
+          return {
+            select: (columns: string) => {
+              if (columns.includes('families!inner')) {
+                return {
+                  eq: async () => ({
+                    data: [{ family_id: 'f1', role: 'editor', families: { id: 'f1', name: 'Castaño' } }],
+                    error: null
+                  })
+                }
+              }
+
+              const membershipBuilder = {
+                eq: (_column: string, _value: string) => membershipBuilder,
+                maybeSingle: async () => ({
+                  data: { profile_id: 'u2', role: 'viewer' },
+                  error: null
+                })
+              }
+
+              return membershipBuilder
+            },
+            update: () => {
+              throw new Error('Should not update admin role from editor')
+            }
+          }
+        }
+
+        throw new Error(`Unexpected table: ${table}`)
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await (actions.setRole as any)({
+      request: makeRequest({ familyId: 'f1', profileId: 'u2', role: 'admin' }),
+      locals: { supabase, user: { id: 'u1' } },
+      cookies: { get: () => 'f1', set: () => {} }
+    })
+
+    expect(result.status).toBe(403)
+    expect(result.data.roleError).toBe('Un editor no puede asignar ni modificar roles de administrador.')
+  })
+})
+
+describe('admin saveUsers action', () => {
+  it('applies bulk role/link updates for admin', async () => {
+    const updates: Array<{ row: Record<string, unknown>; filters: Array<{ column: string; value: string }> }> = []
+
+    const supabase = {
+      from: (table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: () => ({ eq: () => ({ single: async () => ({ data: { id: 'u1' } }) }) })
+          }
+        }
+
+        if (table === 'family_memberships') {
+          return {
+            select: (columns: string) => {
+              if (columns.includes('families!inner')) {
+                return {
+                  eq: async () => ({
+                    data: [{ family_id: 'f1', role: 'admin', families: { id: 'f1', name: 'Castaño' } }],
+                    error: null
+                  })
+                }
+              }
+
+              const membershipRows = [
+                { profile_id: 'u2', role: 'viewer', member_id: null },
+                { profile_id: 'u3', role: 'editor', member_id: 'm1' }
+              ]
+
+              return {
+                eq: (_column: string, _value: string) => ({
+                  in: async () => ({ data: membershipRows, error: null })
+                })
+              }
+            },
+            update: (row: Record<string, unknown>) => {
+              const filters: Array<{ column: string; value: string }> = []
+              const builder = {
+                eq: (column: string, value: string) => {
+                  filters.push({ column, value })
+                  return builder
+                },
+                then: (resolve: (value: { error: null }) => void) => {
+                  updates.push({ row, filters: [...filters] })
+                  resolve({ error: null })
+                }
+              }
+              return builder
+            }
+          }
+        }
+
+        if (table === 'members') {
+          return {
+            select: () => ({
+              eq: (_column: string, _value: string) => ({
+                in: async () => ({ data: [{ id: 'm2' }], error: null })
+              })
+            })
+          }
+        }
+
+        throw new Error(`Unexpected table: ${table}`)
+      }
+    }
+
+    const changesJson = JSON.stringify([
+      { profileId: 'u2', role: 'editor', memberId: 'm2' },
+      { profileId: 'u3', role: 'viewer', memberId: '' }
+    ])
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await (actions.saveUsers as any)({
+      request: makeRequest({ familyId: 'f1', changesJson }),
+      locals: { supabase, user: { id: 'u1' } },
+      cookies: { get: () => 'f1', set: () => {} }
+    })
+
+    expect(result).toEqual({ usersSaved: 2, usersSavedFamilyId: 'f1' })
+    expect(updates).toHaveLength(2)
+  })
+
+  it('rejects viewer trying to change another user link', async () => {
+    const supabase = {
+      from: (table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: () => ({ eq: () => ({ single: async () => ({ data: { id: 'u3' } }) }) })
+          }
+        }
+
+        if (table === 'family_memberships') {
+          return {
+            select: (columns: string) => {
+              if (columns.includes('families!inner')) {
+                return {
+                  eq: async () => ({
+                    data: [{ family_id: 'f1', role: 'viewer', families: { id: 'f1', name: 'Castaño' } }],
+                    error: null
+                  })
+                }
+              }
+
+              return {
+                eq: (_column: string, _value: string) => ({
+                  in: async () => ({
+                    data: [{ profile_id: 'u2', role: 'viewer', member_id: null }],
+                    error: null
+                  })
+                })
+              }
+            },
+            update: () => {
+              throw new Error('Viewer should not update other profiles')
+            }
+          }
+        }
+
+        if (table === 'members') {
+          return {
+            select: () => ({
+              eq: (_column: string, _value: string) => ({
+                in: async () => ({ data: [{ id: 'm2' }], error: null })
+              })
+            })
+          }
+        }
+
+        throw new Error(`Unexpected table: ${table}`)
+      }
+    }
+
+    const changesJson = JSON.stringify([{ profileId: 'u2', role: 'viewer', memberId: 'm2' }])
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await (actions.saveUsers as any)({
+      request: makeRequest({ familyId: 'f1', changesJson }),
+      locals: { supabase, user: { id: 'u3' } },
+      cookies: { get: () => 'f1', set: () => {} }
+    })
+
+    expect(result.status).toBe(403)
+    expect(result.data.usersError).toBe('En modo solo lectura solo puedes editar tu propia vinculación.')
   })
 })
 
