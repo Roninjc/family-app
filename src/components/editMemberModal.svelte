@@ -7,7 +7,8 @@
   import { canEdit } from '$lib/types/auth'
   import { suggestedChildren, suggestedParents } from '$lib/utils/relationSuggestions'
   import { editingMemberId, showEditMemberModal } from '../stores/modals'
-  import SurfaceWrapper from './surfaceWrapper.svelte'
+  import GearIcon from './icons/gearIcon.svelte'
+  import ModalShell from './ui/modalShell.svelte'
   import RelationChipsEditor from './relationChipsEditor.svelte'
 
   let name = ''
@@ -141,27 +142,15 @@
   }
 </script>
 
-{#if $showEditMemberModal && member}
-  <div
-    class="edit-member-modal-backdrop"
-    role="button"
-    tabindex="0"
-    aria-label="Cerrar el modal de edición"
-    on:click|stopPropagation={closeModal}
-    on:keydown={(e) => {
-      if (e.key === 'Escape') closeModal()
-    }}
-  >
-    <!-- svelte-ignore a11y-click-events-have-key-events -->
-    <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-    <div
-      class="edit-member-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="edit-member-title"
-      on:click|stopPropagation
-    >
-      <SurfaceWrapper>
+<ModalShell
+  open={Boolean($showEditMemberModal && member)}
+  ariaLabel="Cerrar el modal de edición"
+  ariaLabelledby="edit-member-title"
+  onClose={closeModal}
+  size="compact"
+>
+  {#if member}
+    <div class="edit-member-modal">
         <div class="member-header">
           <div class="member-avatar" aria-hidden="true">
             {#if memberAvatar}
@@ -213,11 +202,7 @@
                 activeSection = 'ajustes'
               }}
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path
-                  d="M19.14 12.94a7.9 7.9 0 0 0 .05-.94 7.9 7.9 0 0 0-.05-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.27 7.27 0 0 0-1.63-.94l-.36-2.54A.5.5 0 0 0 13.9 2h-3.8a.5.5 0 0 0-.49.42l-.36 2.54a7.27 7.27 0 0 0-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 8.48a.5.5 0 0 0 .12.64l2.03 1.58a7.9 7.9 0 0 0-.05.94 7.9 7.9 0 0 0 .05.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96c.5.39 1.05.71 1.63.94l.36 2.54a.5.5 0 0 0 .49.42h3.8a.5.5 0 0 0 .49-.42l.36-2.54c.58-.23 1.13-.55 1.63-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.4A3.4 3.4 0 1 1 12 8.6a3.4 3.4 0 0 1 0 6.8Z"
-                />
-              </svg>
+              <GearIcon />
             </button>
           {/if}
         </div>
@@ -398,31 +383,12 @@
         {#if error}
           <div class="form-error">{error}</div>
         {/if}
-      </SurfaceWrapper>
     </div>
-  </div>
-{/if}
+  {/if}
+</ModalShell>
 
 <style lang="scss">
-  .edit-member-modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(241, 236, 228, 0.68);
-    backdrop-filter: blur(2px);
-    z-index: 999;
-
-    .edit-member-modal {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      border-radius: 16px;
-      background-color: transparent;
-      z-index: 1000;
-      min-width: 280px;
+  .edit-member-modal {
 
       .member-header {
         display: flex;
@@ -745,25 +711,10 @@
         }
       }
 
-      .form-error {
-        margin-top: 1rem;
-        color: #dc2626;
-        font-size: 0.9rem;
-      }
+    .form-error {
+      margin-top: 1rem;
+      color: #dc2626;
+      font-size: 0.9rem;
     }
-  }
-
-  :global(.edit-member-modal .surface-content) {
-    flex-direction: column;
-    align-items: stretch;
-    // flex-start: with justify-content center (the wrapper's default), content
-    // overflowing at the top gets clipped and unreachable by scrolling
-    justify-content: flex-start;
-    padding: 30px 20px 20px;
-    box-sizing: border-box;
-    width: 340px;
-    // The modal grows with the relations: internal scroll on short screens
-    max-height: 80vh;
-    overflow-y: auto;
   }
 </style>

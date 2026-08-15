@@ -3,8 +3,8 @@
   export let onAddMember: () => void = () => {}
 </script>
 
-<header class="tree-header" aria-label="Cabecera del árbol">
-  <div class="header-content glass-panel reveal-fade-up">
+<header class="tree-header app-page-header" aria-label="Cabecera del árbol">
+  <div class="header-content app-page-header-shell glass-panel reveal-fade-up">
     <div class="title-wrap">
       <p class="section-indicator">Árbol familiar</p>
       <h1>Familia Castaño</h1>
@@ -25,18 +25,12 @@
 
 <style lang="scss">
   .tree-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    pointer-events: none;
-    padding: max(8px, env(safe-area-inset-top)) 10px 0;
     margin-bottom: var(--page-header-content-gap, 30px);
   }
 
   .header-content {
     pointer-events: auto;
     width: min(1080px, 100%);
-    margin: 0 auto;
     border: none;
     padding: 10px 14px;
     display: flex;

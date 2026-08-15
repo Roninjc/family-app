@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import SurfaceWrapper from '../../components/surfaceWrapper.svelte'
+  import FamilyNotesCard from '../../components/hub/familyNotesCard.svelte'
+  import FamilyPreviewCard from '../../components/hub/familyPreviewCard.svelte'
+  import PageHeader from '../../components/ui/pageHeader.svelte'
   import type { Role } from '$lib/types/auth'
 
   export let form:
@@ -86,6 +88,12 @@
     viewer: 'Solo lectura'
   }
 
+  const notesFilterOptions = [
+    { value: 'all', label: 'Todas' },
+    { value: 'news', label: 'Noticias' },
+    { value: 'note', label: 'Notas' }
+  ]
+
   $: if (data.activeFamilyId !== syncedServerActiveFamilyId) {
     syncedServerActiveFamilyId = data.activeFamilyId
     selectedFamilyId = data.activeFamilyId ?? data.families[0]?.id ?? null
@@ -111,6 +119,13 @@
     notesFilterByFamily = {
       ...notesFilterByFamily,
       [familyId]: filter
+    }
+  }
+
+  const onNotesFilterChange = (familyId: string, event: CustomEvent<string>) => {
+    const value = event.detail
+    if (value === 'all' || value === 'news' || value === 'note') {
+      setNotesFilter(familyId, value)
     }
   }
 
@@ -247,24 +262,24 @@
   <title>Hub familiar — Familia Castaño</title>
 </svelte:head>
 
-<header class="hub-header reveal-fade-up" aria-label="Cabecera del hub">
-  <SurfaceWrapper>
-    <div class="header-content">
+<PageHeader className="hub-header reveal-fade-up" ariaLabel="Cabecera del hub">
+  <div class="header-content">
       <p class="crumb">Hub / {selectedFamily?.name ?? 'Sin familia'}</p>
       <h1>Hola, {data.displayName}</h1>
-      <p class="welcome">Te damos la bienvenida. Estás en {selectedFamily?.name ?? 'tu espacio familiar'}.</p>
+      <p class="welcome app-page-header-note">
+        Te damos la bienvenida. Estás en {selectedFamily?.name ?? 'tu espacio familiar'}.
+      </p>
       <div class="chips-row">
-        <span class="role-chip">{roleLabels[data.role]}</span>
+        <span class="role-chip app-chip app-chip--accent">{roleLabels[data.role]}</span>
         {#if data.showPendingInvitations}
-          <a class="pending-chip" href="/admin">
+          <a class="pending-chip app-chip app-chip--interactive" href="/admin">
             Invitaciones pendientes {data.pendingInvitations > 0 ? `(${data.pendingInvitations})` : '(0)'}
           </a>
         {/if}
       </div>
       <div class="loading-sheen" aria-hidden="true"></div>
-    </div>
-  </SurfaceWrapper>
-</header>
+  </div>
+</PageHeader>
 
 <main class="hub-page page-shell" class:is-loading={isNavigating} aria-busy={isNavigating}>
 
@@ -297,188 +312,24 @@
               </div>
 
               <div class="family-center">
-                <div class="preview-card" aria-label={`Previsualización de ${family.name}`}>
-                  <div class="preview-stats">
-                    <p>
-                      <strong>{family.membersCount}</strong>
-                      <span>miembros</span>
-                    </p>
-                    <p>
-                      <strong>{family.linksCount}</strong>
-                      <span>relaciones</span>
-                    </p>
-                  </div>
-                  <ul class="preview-members">
-                    {#each family.previewMembers as memberName}
-                      <li>{memberName}</li>
-                    {/each}
-                  </ul>
-                </div>
+                <FamilyPreviewCard {family} />
 
-                <div class="notes-card">
-                  <div class="notes-header">
-                    <h4>Noticias y notas</h4>
-                    {#if family.canManageNotes}
-                      <button
-                        type="button"
-                        class="note-create-toggle"
-                        aria-label={creatingForFamilyId === family.id ? 'Cerrar editor de nota' : 'Crear nueva nota'}
-                        title={creatingForFamilyId === family.id ? 'Cerrar editor' : 'Nueva nota'}
-                        on:click={() => {
-                          toggleCreate(family.id)
-                        }}
-                      >
-                        {creatingForFamilyId === family.id ? '×' : '+'}
-                      </button>
-                    {/if}
-                  </div>
-                  <div class="notes-filter-row" role="group" aria-label={`Filtros de notas en ${family.name}`}>
-                    <button
-                      type="button"
-                      class="filter-chip"
-                      class:active={(notesFilterByFamily[family.id] ?? 'all') === 'all'}
-                      data-note-filter="all"
-                      aria-pressed={(notesFilterByFamily[family.id] ?? 'all') === 'all'}
-                      on:click={() => {
-                        setNotesFilter(family.id, 'all')
-                      }}
-                    >
-                      Todas
-                    </button>
-                    <button
-                      type="button"
-                      class="filter-chip"
-                      class:active={(notesFilterByFamily[family.id] ?? 'all') === 'news'}
-                      data-note-filter="news"
-                      aria-pressed={(notesFilterByFamily[family.id] ?? 'all') === 'news'}
-                      on:click={() => {
-                        setNotesFilter(family.id, 'news')
-                      }}
-                    >
-                      Noticias
-                    </button>
-                    <button
-                      type="button"
-                      class="filter-chip"
-                      class:active={(notesFilterByFamily[family.id] ?? 'all') === 'note'}
-                      data-note-filter="note"
-                      aria-pressed={(notesFilterByFamily[family.id] ?? 'all') === 'note'}
-                      on:click={() => {
-                        setNotesFilter(family.id, 'note')
-                      }}
-                    >
-                      Notas
-                    </button>
-                  </div>
-
-                    {#if family.canManageNotes && creatingForFamilyId === family.id}
-                      <form method="POST" action="?/createNote" class="note-form">
-                        <input type="hidden" name="familyId" value={family.id} />
-                        <label>
-                          Título
-                          <input class="modern-input" name="title" maxlength="120" required />
-                        </label>
-                        <label>
-                          Tipo
-                          <select class="modern-select" name="noteType">
-                            <option value="note">Nota</option>
-                            <option value="news">Noticia</option>
-                          </select>
-                        </label>
-                        <label>
-                          Contenido
-                          <textarea class="modern-textarea" name="body" rows="3" required></textarea>
-                        </label>
-                        <button class="app-btn app-btn--primary" type="submit">Guardar nota</button>
-                      </form>
-                    {/if}
-
-                    {#if form?.noteError && (!form.familyId || form.familyId === family.id)}
-                      <p class="note-error" role="alert">{form.noteError}</p>
-                    {/if}
-
-                    {#if form?.noteCreated && form.familyId === family.id}
-                      <p class="note-ok" role="status">Nota creada.</p>
-                    {/if}
-                    {#if form?.noteUpdated && form.familyId === family.id}
-                      <p class="note-ok" role="status">Nota actualizada.</p>
-                    {/if}
-                    {#if form?.noteDeleted && form.familyId === family.id}
-                      <p class="note-ok" role="status">Nota eliminada.</p>
-                    {/if}
-
-                    <ul>
-                      {#each filteredNotesByFamily[family.id] ?? [] as note (note.id)}
-                        <li>
-                          <div class="note-head">
-                            <h5>{note.title}</h5>
-                            <span class="note-type" class:news={note.noteType === 'news'}>
-                              {note.noteType === 'news' ? 'Noticia' : 'Nota'}
-                            </span>
-                          </div>
-
-                          {#if editingNoteId === note.id}
-                            <form method="POST" action="?/updateNote" class="note-form note-form-inline">
-                              <input type="hidden" name="familyId" value={family.id} />
-                              <input type="hidden" name="noteId" value={note.id} />
-                              <label>
-                                Título
-                                <input class="modern-input" name="title" bind:value={draftTitle} maxlength="120" required />
-                              </label>
-                              <label>
-                                Tipo
-                                <select class="modern-select" name="noteType" bind:value={draftType}>
-                                  <option value="note">Nota</option>
-                                  <option value="news">Noticia</option>
-                                </select>
-                              </label>
-                              <label>
-                                Contenido
-                                <textarea class="modern-textarea" name="body" rows="3" bind:value={draftBody} required></textarea>
-                              </label>
-                              <div class="note-actions">
-                                <button class="app-btn app-btn--primary" type="submit">Guardar</button>
-                                <button
-                                  class="app-btn app-btn--ghost"
-                                  type="button"
-                                  on:click={() => {
-                                    closeEditor()
-                                  }}
-                                >
-                                  Cancelar
-                                </button>
-                              </div>
-                            </form>
-                          {:else}
-                            <p>{note.body}</p>
-                            {#if family.canManageNotes}
-                              <div class="note-actions">
-                                <button
-                                  type="button"
-                                  class="app-btn app-btn--ghost note-action-btn"
-                                  on:click={() => {
-                                    openEditor(note)
-                                  }}
-                                >
-                                  Editar
-                                </button>
-                                <form method="POST" action="?/deleteNote">
-                                  <input type="hidden" name="familyId" value={family.id} />
-                                  <input type="hidden" name="noteId" value={note.id} />
-                                  <button class="app-btn app-btn--danger note-action-btn" type="submit">
-                                    Eliminar
-                                  </button>
-                                </form>
-                              </div>
-                            {/if}
-                          {/if}
-                        </li>
-                      {/each}
-                    </ul>
-                    {#if (filteredNotesByFamily[family.id] ?? []).length === 0}
-                      <p class="notes-empty">No hay elementos para este filtro.</p>
-                    {/if}
-                </div>
+                <FamilyNotesCard
+                  {family}
+                  notes={filteredNotesByFamily[family.id] ?? []}
+                  noteFilter={notesFilterByFamily[family.id] ?? 'all'}
+                  noteFilterOptions={notesFilterOptions}
+                  {form}
+                  {creatingForFamilyId}
+                  {editingNoteId}
+                  bind:draftTitle
+                  bind:draftBody
+                  bind:draftType
+                  onToggleCreate={toggleCreate}
+                  onFilterChange={(event) => onNotesFilterChange(family.id, event)}
+                  onOpenEditor={openEditor}
+                  onCloseEditor={closeEditor}
+                />
               </div>
               <div class="loading-sheen" aria-hidden="true"></div>
             </div>
@@ -523,35 +374,10 @@
     padding-bottom: max(114px, env(safe-area-inset-bottom));
   }
 
-  .hub-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    pointer-events: none;
-    padding: max(8px, env(safe-area-inset-top)) 10px 0;
-    margin-bottom: var(--page-header-content-gap, 30px);
-  }
-
-  .hub-header :global(.surface-wrapper) {
-    pointer-events: auto;
-    width: min(1040px, 100%);
-    margin: 0 auto;
-  }
-
   .header-content {
     position: relative;
     overflow: hidden;
-    width: 100%;
-    padding: 18px;
-    display: flex;
-    flex-direction: column;
     gap: 8px;
-  }
-
-  @media (min-width: 760px) {
-    .hub-header {
-      padding-inline: 14px;
-    }
   }
 
   .crumb {
@@ -582,27 +408,8 @@
     flex-wrap: wrap;
   }
 
-  .role-chip,
-  .pending-chip {
-    font-size: var(--fs-2xs);
-    border-radius: 999px;
-    padding: 4px 10px;
-  }
-
-  .role-chip {
-    color: #6f4a2e;
-    background: rgba(205, 140, 92, 0.25);
-  }
-
   .pending-chip {
     color: #5c4634;
-    background: rgba(168, 132, 101, 0.18);
-    text-decoration: none;
-    transition: background-color 0.2s var(--motion-standard);
-  }
-
-  .pending-chip:hover {
-    background: rgba(168, 132, 101, 0.28);
   }
 
   .families-zone {
@@ -695,328 +502,11 @@
     letter-spacing: 0.01em;
   }
 
-  .note-create-toggle:focus-visible,
-  .note-action-btn:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--brand) 86%, #fff 14%);
-    outline-offset: 3px;
-    box-shadow: 0 0 0 5px rgba(223, 203, 182, 0.38);
-  }
-
-  .preview-card,
-  .notes-card {
-    border-radius: 14px;
-    background: color-mix(in srgb, var(--neu-surface-soft) 88%, #ffffff 12%);
-    border: none;
-    box-shadow:
-      4px 4px 9px rgba(154, 132, 109, 0.17),
-      -4px -4px 9px rgba(255, 255, 255, 0.72);
-    transition:
-      transform 0.22s var(--motion-standard),
-      box-shadow 0.22s var(--motion-standard);
-  }
-
-  .family-panel.active .preview-card,
-  .family-panel.active .notes-card {
+  .family-panel.active :global(.preview-card),
+  .family-panel.active :global(.notes-card) {
     box-shadow:
       5px 5px 10px rgba(154, 132, 109, 0.18),
       -5px -5px 10px rgba(255, 255, 255, 0.74);
-  }
-
-  .preview-card {
-    padding: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .preview-stats {
-    display: flex;
-    gap: 10px;
-  }
-
-  .preview-stats p {
-    margin: 0;
-    flex: 1;
-    border-radius: 10px;
-    padding: 8px 10px;
-    background: transparent;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    color: #5b4430;
-  }
-
-  .preview-stats strong {
-    font-size: 1.08rem;
-    line-height: 1;
-  }
-
-  .preview-stats span {
-    font-size: var(--fs-2xs);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .preview-members {
-    list-style: none;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-evenly;
-    gap: 6px;
-    margin: 0;
-    padding: 0;
-  }
-
-  .preview-members li {
-    border-radius: 999px;
-    background: rgba(127, 94, 66, 0.14);
-    color: #5c4534;
-    padding: 5px 9px;
-    font-size: var(--fs-xs);
-  }
-
-  .notes-card {
-    position: relative;
-    padding: 14px;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-  }
-
-  .notes-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 2px;
-  }
-
-  .notes-filter-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 8px;
-  }
-
-  .filter-chip {
-    border: none;
-    background: #f3eadf;
-    color: #5e4b3c;
-    border-radius: 999px;
-    padding: 4px 9px;
-    font-size: var(--fs-2xs);
-    cursor: pointer;
-    box-shadow:
-      3px 3px 8px rgba(149, 121, 95, 0.12),
-      -3px -3px 8px rgba(255, 255, 255, 0.72);
-    transition:
-      background-color 0.1s var(--motion-standard),
-      transform 0.1s var(--motion-standard),
-      box-shadow 0.1s var(--motion-standard),
-      color 0.1s var(--motion-standard);
-    will-change: transform, box-shadow, background-color;
-
-    &:hover:not([aria-pressed='true']) {
-      transform: translateY(-1px);
-      background: #f7efe6;
-      box-shadow:
-        4px 4px 9px rgba(149, 121, 95, 0.14),
-        -4px -4px 9px rgba(255, 255, 255, 0.76);
-    }
-  }
-
-  .filter-chip.active,
-  .filter-chip[aria-pressed='true'] {
-    background: #e8dccd;
-    transform: translateY(0);
-    color: #5a3f2b;
-    box-shadow:
-      inset 2px 2px 5px rgba(149, 121, 95, 0.2),
-      inset -2px -2px 5px rgba(255, 255, 255, 0.74);
-  }
-
-  .filter-chip[aria-pressed='true']:hover {
-    transform: translateY(0);
-    background: #e8dccd;
-    box-shadow:
-      inset 2px 2px 5px rgba(149, 121, 95, 0.2),
-      inset -2px -2px 5px rgba(255, 255, 255, 0.74);
-  }
-
-  .filter-chip:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--brand) 86%, #fff 14%);
-    outline-offset: 2px;
-  }
-
-  .note-create-toggle {
-    margin: -3px -2px 0 0;
-    width: 34px;
-    height: 34px;
-    border-radius: 999px;
-    border: none;
-    background: color-mix(in srgb, var(--neu-surface-soft) 86%, #ffffff 14%);
-    color: var(--brand);
-    font-size: 1.2rem;
-    font-weight: 700;
-    line-height: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow:
-      3px 3px 7px rgba(154, 132, 109, 0.16),
-      -3px -3px 7px rgba(255, 255, 255, 0.72);
-    transition:
-      transform 0.22s var(--motion-standard),
-      box-shadow 0.22s var(--motion-standard),
-      background-color 0.22s var(--motion-standard);
-  }
-
-  .note-create-toggle:hover {
-    transform: translateY(-1px);
-    box-shadow:
-      4px 4px 9px rgba(154, 132, 109, 0.2),
-      -4px -4px 9px rgba(255, 255, 255, 0.76);
-  }
-
-  .note-create-toggle:active {
-    transform: translateY(0);
-    box-shadow:
-      inset 3px 3px 6px rgba(154, 132, 109, 0.18),
-      inset -3px -3px 6px rgba(255, 255, 255, 0.72);
-  }
-
-  .note-form {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 10px;
-  }
-
-  .note-form label {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    font-size: var(--fs-xs);
-    color: var(--text-muted);
-  }
-
-  .modern-input,
-  .modern-select,
-  .modern-textarea {
-    width: 100%;
-    border: 1px solid rgba(168, 132, 101, 0.32);
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.78);
-    color: var(--text-main);
-    font-family: inherit;
-    font-size: var(--fs-sm);
-  }
-
-  .modern-input,
-  .modern-select {
-    min-height: 40px;
-    padding: 0.42rem 0.58rem;
-  }
-
-  .modern-textarea {
-    padding: 0.52rem 0.58rem;
-    resize: vertical;
-  }
-
-  .note-actions {
-    display: flex;
-    gap: 6px;
-    margin-top: 8px;
-    flex-wrap: wrap;
-  }
-
-  .note-action-btn {
-    min-height: 34px;
-    font-size: var(--fs-xs);
-    padding: 0.45rem 0.68rem;
-  }
-
-  .note-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 4px;
-  }
-
-  .note-type {
-    border-radius: 999px;
-    padding: 2px 8px;
-    font-size: var(--fs-2xs);
-    background: rgba(117, 108, 96, 0.16);
-    color: #5e4c3e;
-    white-space: nowrap;
-  }
-
-  .note-type.news {
-    background: rgba(161, 120, 80, 0.2);
-    color: #6f4a2e;
-  }
-
-  .note-ok,
-  .note-error {
-    margin: 0 0 8px;
-    font-size: var(--fs-xs);
-  }
-
-  .note-ok {
-    color: var(--ok);
-  }
-
-  .note-error {
-    color: var(--danger);
-  }
-
-  h4 {
-    margin: 0;
-    font-size: var(--fs-md);
-  }
-
-  .notes-card ul {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin: 0;
-    padding: 0;
-    min-height: 0;
-  }
-
-  .notes-card li {
-    padding: 10px 11px;
-    border-radius: 10px;
-    background: color-mix(in srgb, var(--neu-surface-soft) 90%, #ffffff 10%);
-    border: none;
-    box-shadow:
-      3px 3px 7px rgba(154, 132, 109, 0.14),
-      -3px -3px 7px rgba(255, 255, 255, 0.7);
-  }
-
-  h5,
-  .notes-card p {
-    margin: 0;
-  }
-
-  h5 {
-    font-size: var(--fs-sm);
-    margin-bottom: 4px;
-  }
-
-  .notes-card p {
-    color: var(--text-muted);
-    font-size: var(--fs-xs);
-  }
-
-  .notes-empty {
-    margin: 8px 0 0;
-    color: var(--text-muted);
-    font-size: var(--fs-xs);
   }
 
   .edge-glow {
@@ -1100,7 +590,6 @@
     animation: loading-sweep 1.2s var(--motion-standard) infinite;
   }
 
-  .is-loading .header-content > :not(.loading-sheen),
   .is-loading .family-content > :not(.loading-sheen) {
     opacity: 0.72;
   }

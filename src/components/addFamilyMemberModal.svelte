@@ -7,7 +7,8 @@
   import { invalidateAll } from '$app/navigation'
   import { page } from '$app/stores'
   import { showAddMemberModal } from '../stores/modals'
-  import SurfaceWrapper from './surfaceWrapper.svelte'
+  import MemberAutocompleteSuggestions from './ui/memberAutocompleteSuggestions.svelte'
+  import ModalShell from './ui/modalShell.svelte'
 
   let showAddMemberModalValue = false
   showAddMemberModal.subscribe((value) => {
@@ -256,31 +257,19 @@
   )
 </script>
 
-{#if showAddMemberModalValue}
-  <div
-    class="add-member-modal-backdrop"
-    role="button"
-    tabindex="0"
-    aria-label="Cerrar modal de nuevo miembro"
-    on:click|stopPropagation={closeModal}
-    on:keydown={(e) => {
-      if (e.key === 'Escape') closeModal()
-    }}
-  >
-    <!-- svelte-ignore a11y-click-events-have-key-events -->
-    <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-    <div
-      class="add-member-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="add-member-title"
-      on:click|stopPropagation
-    >
-      <SurfaceWrapper>
+<ModalShell
+  open={showAddMemberModalValue}
+  ariaLabel="Cerrar modal de nuevo miembro"
+  ariaLabelledby="add-member-title"
+  onClose={closeModal}
+  size="compact"
+>
+  <div class="add-member-modal">
         <h2 id="add-member-title">Nuevo miembro familiar</h2>
         <p class="step-caption">
           Paso {formStep} de 2 · {formStep === 1 ? 'Datos básicos' : 'Conexiones familiares'}
         </p>
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
         <form
           method="POST"
           action="?/addMember"
@@ -358,19 +347,12 @@
                 <label for="fatherAutocomplete" class:label-active={fatherSearch.length > 0}
                   >Padre</label
                 >
-                {#if showFatherSuggestions && filteredFatherSuggestions.length > 0}
-                  <ul class="autocomplete-suggestions">
-                    {#each filteredFatherSuggestions as member (member.id)}
-                      <li
-                        class:active={member.id === fatherId}
-                        on:mousedown={() => selectFather(member)}
-                      >
-                        {member.name}
-                        {member.familyName}
-                      </li>
-                    {/each}
-                  </ul>
-                {/if}
+                <MemberAutocompleteSuggestions
+                  show={showFatherSuggestions}
+                  items={filteredFatherSuggestions}
+                  activeIds={fatherId ? [fatherId] : []}
+                  on:select={(event) => selectFather(event.detail)}
+                />
               </div>
               <div class="input-wrapper floating-input-wrapper autocomplete-wrapper">
                 <input
@@ -393,19 +375,12 @@
                 <label for="motherAutocomplete" class:label-active={motherSearch.length > 0}
                   >Madre</label
                 >
-                {#if showMotherSuggestions && filteredMotherSuggestions.length > 0}
-                  <ul class="autocomplete-suggestions">
-                    {#each filteredMotherSuggestions as member (member.id)}
-                      <li
-                        class:active={member.id === motherId}
-                        on:mousedown={() => selectMother(member)}
-                      >
-                        {member.name}
-                        {member.familyName}
-                      </li>
-                    {/each}
-                  </ul>
-                {/if}
+                <MemberAutocompleteSuggestions
+                  show={showMotherSuggestions}
+                  items={filteredMotherSuggestions}
+                  activeIds={motherId ? [motherId] : []}
+                  on:select={(event) => selectMother(event.detail)}
+                />
               </div>
               <h3>Hermanos</h3>
               <div class="input-wrapper floating-input-wrapper autocomplete-wrapper">
@@ -425,19 +400,12 @@
                   class:label-active={siblingsSearch && siblingsSearch.length > 0}
                   >Añadir hermano/a</label
                 >
-                {#if showSiblingsSuggestions && filteredSiblingSuggestions.length > 0}
-                  <ul class="autocomplete-suggestions">
-                    {#each filteredSiblingSuggestions as member (member.id)}
-                      <li
-                        class:active={siblingsIds.includes(member.id)}
-                        on:mousedown={() => addSibling(member)}
-                      >
-                        {member.name}
-                        {member.familyName}
-                      </li>
-                    {/each}
-                  </ul>
-                {/if}
+                <MemberAutocompleteSuggestions
+                  show={showSiblingsSuggestions}
+                  items={filteredSiblingSuggestions}
+                  activeIds={siblingsIds}
+                  on:select={(event) => addSibling(event.detail)}
+                />
               </div>
               {#if siblingsIds.length > 0}
                 <div class="selected-list">
@@ -463,19 +431,12 @@
                   class:label-active={childrenSearch && childrenSearch.length > 0}
                   >Añadir hijo/a</label
                 >
-                {#if showChildrenSuggestions && filteredChildrenSuggestions.length > 0}
-                  <ul class="autocomplete-suggestions">
-                    {#each filteredChildrenSuggestions as member (member.id)}
-                      <li
-                        class:active={childrenIds.includes(member.id)}
-                        on:mousedown={() => addChild(member)}
-                      >
-                        {member.name}
-                        {member.familyName}
-                      </li>
-                    {/each}
-                  </ul>
-                {/if}
+                <MemberAutocompleteSuggestions
+                  show={showChildrenSuggestions}
+                  items={filteredChildrenSuggestions}
+                  activeIds={childrenIds}
+                  on:select={(event) => addChild(event.detail)}
+                />
               </div>
               {#if childrenIds.length > 0}
                 <div class="selected-list">
@@ -489,7 +450,7 @@
                   {#each suggestedChildrenList as suggestedChild (suggestedChild.id)}
                     <button
                       type="button"
-                      class="suggested-chip"
+                      class="suggested-chip app-suggested-chip"
                       on:click={() => addChild(suggestedChild)}
                     >
                       + {suggestedChild.name}
@@ -522,19 +483,12 @@
                   class:label-active={actualPartnerSearch && actualPartnerSearch.length > 0}
                   >Añadir pareja</label
                 >
-                {#if showActualPartnerSuggestions && filteredActualPartnerSuggestions.length > 0}
-                  <ul class="autocomplete-suggestions">
-                    {#each filteredActualPartnerSuggestions as member (member.id)}
-                      <li
-                        class:active={member.id === actualPartnerId}
-                        on:mousedown={() => selectActualPartner(member)}
-                      >
-                        {member.name}
-                        {member.familyName}
-                      </li>
-                    {/each}
-                  </ul>
-                {/if}
+                <MemberAutocompleteSuggestions
+                  show={showActualPartnerSuggestions}
+                  items={filteredActualPartnerSuggestions}
+                  activeIds={actualPartnerId ? [actualPartnerId] : []}
+                  on:select={(event) => selectActualPartner(event.detail)}
+                />
               </div>
               <h3>Exparejas</h3>
               <div class="input-wrapper floating-input-wrapper autocomplete-wrapper">
@@ -554,19 +508,12 @@
                   class:label-active={previousPartnersSearch && previousPartnersSearch.length > 0}
                   >Añadir expareja</label
                 >
-                {#if showPreviousPartnersSuggestions && filteredPreviousPartnerSuggestions.length > 0}
-                  <ul class="autocomplete-suggestions">
-                    {#each filteredPreviousPartnerSuggestions as member (member.id)}
-                      <li
-                        class:active={previousPartnersIds.includes(member.id)}
-                        on:mousedown={() => addPreviousPartner(member)}
-                      >
-                        {member.name}
-                        {member.familyName}
-                      </li>
-                    {/each}
-                  </ul>
-                {/if}
+                <MemberAutocompleteSuggestions
+                  show={showPreviousPartnersSuggestions}
+                  items={filteredPreviousPartnerSuggestions}
+                  activeIds={previousPartnersIds}
+                  on:select={(event) => addPreviousPartner(event.detail)}
+                />
               </div>
               {#if previousPartnersIds.length > 0}
                 <div class="selected-list">
@@ -627,31 +574,11 @@
             <div class="form-error">{error}</div>
           {/if}
         </form>
-      </SurfaceWrapper>
-    </div>
   </div>
-{/if}
+</ModalShell>
 
 <style lang="scss">
-  .add-member-modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(241, 236, 228, 0.68);
-    backdrop-filter: blur(2px);
-    z-index: 999;
-
-    .add-member-modal {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      border-radius: 16px;
-      background-color: transparent;
-      z-index: 1000;
-      min-width: 280px;
+  .add-member-modal {
 
       h2 {
         margin-top: 0;
@@ -671,33 +598,6 @@
 
         .input-wrapper {
           margin-bottom: 1.5rem;
-
-          .autocomplete-suggestions {
-            position: absolute;
-            top: 110%;
-            left: 0;
-            right: 0;
-            background: #fffdf9;
-            border: 1px solid rgba(220, 191, 162, 0.6);
-            border-radius: 8px;
-            box-shadow: 0 8px 18px rgba(106, 62, 30, 0.14);
-            z-index: 10;
-            max-height: 180px;
-            overflow-y: auto;
-            margin: 0;
-            padding: 0;
-            list-style: none;
-          }
-          .autocomplete-suggestions li {
-            padding: 10px 16px;
-            cursor: pointer;
-            transition: background 0.2s;
-          }
-          .autocomplete-suggestions li:hover,
-          .autocomplete-suggestions li.active {
-            background: rgba(246, 225, 203, 0.58);
-            color: #8a4a22;
-          }
         }
 
         button {
@@ -829,36 +729,7 @@
           margin-bottom: 1rem;
           font-size: var(--fs-xs);
           color: #8a4a22;
-
-          .suggested-chip {
-            width: auto;
-            padding: 3px 10px;
-            border: 1px dashed rgba(156, 90, 45, 0.48);
-            border-radius: 999px;
-            background: rgba(255, 243, 228, 0.72);
-            font-size: var(--fs-xs);
-            color: #8a4a22;
-            cursor: pointer;
-            transition: background 0.2s;
-
-            &:hover {
-              background: rgba(250, 229, 205, 0.82);
-              scale: 1;
-            }
-          }
         }
-      }
     }
-  }
-
-  :global(.add-member-modal .surface-content) {
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: stretch;
-    padding: 30px 20px 20px;
-    box-sizing: border-box;
-    width: 340px;
-    max-height: 80vh;
-    overflow-y: auto;
   }
 </style>

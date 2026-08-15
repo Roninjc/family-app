@@ -4,6 +4,7 @@
   import { createEventDispatcher, tick } from 'svelte'
   import { enhance } from '$app/forms'
   import { invalidateAll } from '$app/navigation'
+  import MemberAutocompleteSuggestions from './ui/memberAutocompleteSuggestions.svelte'
 
   export let label: string
   export let addPlaceholder: string
@@ -116,22 +117,13 @@
           autocomplete="off"
           aria-label={`Buscar para ${label.toLowerCase()}`}
         />
-        {#if showSuggestions && suggestions.length > 0}
-          <ul class="autocomplete-suggestions">
-            {#each suggestions as candidate (candidate.id)}
-              <li>
-                <!-- mousedown|preventDefault: selects before the input's blur fires -->
-                <button
-                  type="button"
-                  on:mousedown|preventDefault={() => selectCandidate(candidate)}
-                >
-                  {candidate.name}
-                  {candidate.familyName}
-                </button>
-              </li>
-            {/each}
-          </ul>
-        {/if}
+        <MemberAutocompleteSuggestions
+          show={showSuggestions}
+          items={suggestions}
+          activeIds={[]}
+          tone="neutral"
+          on:select={(event) => selectCandidate(event.detail)}
+        />
       </div>
     </form>
     {#if suggested.length > 0}
@@ -140,7 +132,7 @@
         {#each suggested as candidate (candidate.id)}
           <button
             type="button"
-            class="suggested-chip"
+            class="suggested-chip app-suggested-chip"
             disabled={saving}
             on:click={() => selectCandidate(candidate)}
           >
@@ -236,20 +228,6 @@
       color: var(--brand);
 
       .suggested-chip {
-        min-height: 30px;
-        padding: 4px 10px;
-        border: 1px dashed rgba(156, 90, 45, 0.45);
-        border-radius: 999px;
-        background: rgba(255, 243, 228, 0.78);
-        font-size: var(--fs-xs);
-        color: #7e4520;
-        cursor: pointer;
-        transition: background 0.2s;
-
-        &:hover {
-          background: rgba(249, 227, 203, 0.88);
-        }
-
         &:disabled {
           opacity: 1;
           border-color: #aeb8c5;
@@ -292,42 +270,6 @@
           color: #6b7280;
           border-color: #cdd5df;
           box-shadow: none;
-        }
-      }
-
-      .autocomplete-suggestions {
-        position: absolute;
-        top: 110%;
-        left: 0;
-        right: 0;
-        background: #fff;
-        border: 1px solid var(--field-border);
-        border-radius: 10px;
-        box-shadow: 0 8px 18px rgba(106, 62, 30, 0.14);
-        z-index: 10;
-        max-height: 180px;
-        overflow-y: auto;
-        margin: 0;
-        padding: 0;
-        list-style: none;
-
-        li button {
-          width: 100%;
-          min-height: 38px;
-          padding: 8px 14px;
-          border: none;
-          background: none;
-          font: inherit;
-          color: inherit;
-          text-align: left;
-          cursor: pointer;
-          transition: background 0.2s;
-
-          &:hover,
-          &:focus {
-            background: rgba(249, 227, 203, 0.64);
-            color: #7e4520;
-          }
         }
       }
     }

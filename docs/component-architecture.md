@@ -1,0 +1,109 @@
+# Component Architecture Audit and Unification
+
+## Scope analyzed
+
+- `src/components/*.svelte`
+- `src/routes/**/*.svelte` (layout, admin, login, profile, hub, tree page)
+
+## Main findings
+
+1. Modals had duplicated shell logic (`backdrop`, `Escape`, dialog wrapper, width/scroll rules).
+2. Gear icon SVG was duplicated across tree and admin UIs.
+3. Filter chip groups were duplicated across Admin and Hub.
+4. Header wrappers (`SurfaceWrapper` + repeated shell/content markup) were duplicated across pages.
+5. Some component styles were too coupled to local wrappers, reducing reuse.
+
+## Refactor applied
+
+1. Added reusable modal primitive:
+   - `src/components/ui/modalShell.svelte`
+   - Handles: open/close, backdrop click, `Escape`, role/aria attributes, shared shell sizing.
+   - Size variants: `compact`, `default`, `wide`.
+
+2. Added reusable icon primitive:
+   - `src/components/icons/gearIcon.svelte`
+   - Replaces duplicated inline SVG paths.
+
+3. Extracted Admin modal components:
+   - `src/components/admin/usersConfirmModal.svelte`
+   - `src/components/admin/familySettingsModal.svelte`
+   - Both use `ModalShell` internally.
+
+4. Migrated tree modals to `ModalShell`:
+   - `addFamilyMemberModal`
+   - `editMemberModal`
+
+5. Added reusable page header primitive:
+   - `src/components/ui/pageHeader.svelte`
+   - Migrated Admin, Hub, and Profile page headers.
+
+6. Added reusable chip toggle primitive:
+   - `src/components/ui/chipToggleGroup.svelte`
+   - Migrated filters in Admin (invites) and Hub (notes).
+
+7. Added shared global visual primitives in layout:
+   - chips, stat tiles/grids, soft cards, autocomplete suggestion lists, page header shell/content classes.
+
+8. Unified gear trigger icon usage:
+   - Tree member edit modal uses `GearIcon`.
+   - Admin family settings trigger uses `GearIcon`.
+
+9. Extracted reusable member autocomplete suggestions:
+   - `src/components/ui/memberAutocompleteSuggestions.svelte`
+   - Migrated repeated suggestions in `addFamilyMemberModal` and `relationChipsEditor`.
+
+10. Split Hub family panel internals into reusable feature components:
+   - `src/components/hub/familyPreviewCard.svelte`
+   - `src/components/hub/familyNotesCard.svelte`
+   - `src/routes/hub/+page.svelte` now orchestrates state and delegates section rendering.
+
+11. Split Admin family scope carousel into a dedicated component:
+   - `src/components/admin/familyScopeCarousel.svelte`
+   - `src/routes/admin/+page.svelte` keeps ownership of family switch state and handlers.
+
+12. Split Admin management sections into dedicated panels:
+   - `src/components/admin/usersManagementPanel.svelte`
+   - `src/components/admin/issuedInvitesPanel.svelte`
+   - `src/routes/admin/+page.svelte` keeps business logic and delegates section rendering.
+
+13. Split Admin invite creation forms into dedicated panels:
+   - `src/components/admin/generalInvitePanel.svelte`
+   - `src/components/admin/memberInvitePanel.svelte`
+   - `src/routes/admin/+page.svelte` keeps section toggling and transient copy-feedback state.
+
+14. Unified Admin section chrome into a shared collapsible container:
+   - `src/components/admin/collapsibleAdminSection.svelte`
+   - Used by general invite, member invite, issued invites, and users sections.
+
+## Current reusable primitives
+
+- Surface container: `src/components/surfaceWrapper.svelte`
+- Modal shell: `src/components/ui/modalShell.svelte`
+- Page header shell: `src/components/ui/pageHeader.svelte`
+- Chip toggle group: `src/components/ui/chipToggleGroup.svelte`
+- Member autocomplete suggestions: `src/components/ui/memberAutocompleteSuggestions.svelte`
+- Shared buttons and input patterns: global styles in `src/routes/+layout.svelte`
+- Gear icon: `src/components/icons/gearIcon.svelte`
+- Admin modal components: `src/components/admin/usersConfirmModal.svelte`, `src/components/admin/familySettingsModal.svelte`
+- Admin family scope: `src/components/admin/familyScopeCarousel.svelte`
+- Admin users panel: `src/components/admin/usersManagementPanel.svelte`
+- Admin issued invites panel: `src/components/admin/issuedInvitesPanel.svelte`
+- Admin general invite panel: `src/components/admin/generalInvitePanel.svelte`
+- Admin member invite panel: `src/components/admin/memberInvitePanel.svelte`
+- Admin collapsible section shell: `src/components/admin/collapsibleAdminSection.svelte`
+- Hub feature components: `src/components/hub/familyPreviewCard.svelte`, `src/components/hub/familyNotesCard.svelte`
+
+## Recommended next migration steps
+
+1. Continue splitting remaining large route sections (especially `admin/+page.svelte`) into feature subcomponents.
+2. Extract reusable section/toggle components for Admin and Hub cards.
+3. Move more repeated list-item card patterns into dedicated reusable components.
+
+## Definition of done for full unification
+
+- All dialogs use `ModalShell`.
+- No repeated inline icon SVG paths.
+- No duplicated modal backdrop/shell CSS in route/component files.
+- Header wrappers use `PageHeader` where applicable.
+- Filter chips use `ChipToggleGroup` where applicable.
+- Shared primitives are used consistently across tree/admin/login/profile/hub where applicable.

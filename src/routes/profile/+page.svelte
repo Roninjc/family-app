@@ -1,6 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
-  import SurfaceWrapper from '../../components/surfaceWrapper.svelte'
+  import PageHeader from '../../components/ui/pageHeader.svelte'
 
   export let data
   export let form
@@ -12,16 +12,16 @@
   <title>Mi perfil — Familia Castaño</title>
 </svelte:head>
 
-<header class="profile-header reveal-fade-up" aria-label="Cabecera del perfil">
-  <SurfaceWrapper>
-    <div class="profile-header-content">
+<PageHeader className="profile-header reveal-fade-up" ariaLabel="Cabecera del perfil">
+  <div class="profile-header-content">
       <h1>Mi perfil</h1>
       {#if data.profile?.email}
-        <p class="profile-email" aria-label="Email de la cuenta">{data.profile.email}</p>
+        <p class="profile-email app-page-header-note" aria-label="Email de la cuenta">
+          {data.profile.email}
+        </p>
       {/if}
-    </div>
-  </SurfaceWrapper>
-</header>
+  </div>
+</PageHeader>
 
 <main class="profile-page page-shell">
   <section class="profile-content reveal-fade-up reveal-delay-1">
@@ -64,41 +64,8 @@
     padding-bottom: max(108px, env(safe-area-inset-bottom));
   }
 
-  .profile-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    pointer-events: none;
-    padding: max(8px, env(safe-area-inset-top)) 10px 0;
-    margin-bottom: var(--page-header-content-gap, 30px);
-  }
-
-  .profile-header :global(.surface-wrapper) {
-    pointer-events: auto;
-    width: min(1040px, 100%);
-    margin: 0 auto;
-  }
-
   .profile-header-content {
-    width: 100%;
-    padding: 16px 18px 15px;
-
-    h1 {
-      margin: 0;
-      font-family: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
-      font-size: var(--fs-xl);
-      line-height: var(--lh-tight);
-      letter-spacing: 0.012em;
-      color: #4e392d;
-    }
-
-    .profile-email {
-      margin: 0.35rem 0 0;
-      color: var(--text-muted);
-      font-size: var(--fs-sm);
-      line-height: var(--lh-copy);
-      word-break: break-word;
-    }
+    font-family: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
   }
 
   .profile-content {
@@ -156,18 +123,7 @@
     }
   }
 
-  :global(.profile-header .surface-content) {
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
-    padding: 0;
-  }
-
   @media (min-width: 720px) {
-    .profile-header {
-      padding-inline: 14px;
-    }
-
     .profile-header-content {
       padding: 18px 20px 16px;
     }
