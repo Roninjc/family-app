@@ -1,6 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
-  import LiquidGlassWrapper from '../../components/liquidGlassWrapper.svelte'
+  import SurfaceWrapper from '../../components/surfaceWrapper.svelte'
 
   export let data
   export let form
@@ -13,14 +13,14 @@
 </svelte:head>
 
 <header class="profile-header reveal-fade-up" aria-label="Cabecera del perfil">
-  <LiquidGlassWrapper>
+  <SurfaceWrapper>
     <div class="profile-header-content">
       <h1>Mi perfil</h1>
       {#if data.profile?.email}
         <p class="profile-email" aria-label="Email de la cuenta">{data.profile.email}</p>
       {/if}
     </div>
-  </LiquidGlassWrapper>
+  </SurfaceWrapper>
 </header>
 
 <main class="profile-page page-shell">
@@ -73,7 +73,7 @@
     margin-bottom: var(--page-header-content-gap, 30px);
   }
 
-  .profile-header :global(.liquid-glass-wrapper) {
+  .profile-header :global(.surface-wrapper) {
     pointer-events: auto;
     width: min(1040px, 100%);
     margin: 0 auto;
@@ -156,7 +156,7 @@
     }
   }
 
-  :global(.profile-header .liquid-glass-text-container) {
+  :global(.profile-header .surface-content) {
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;

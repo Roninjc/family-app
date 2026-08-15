@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import LiquidGlassWrapper from '../../components/liquidGlassWrapper.svelte'
+  import SurfaceWrapper from '../../components/surfaceWrapper.svelte'
   import type { Role } from '$lib/types/auth'
 
   export let form:
@@ -248,7 +248,7 @@
 </svelte:head>
 
 <header class="hub-header reveal-fade-up" aria-label="Cabecera del hub">
-  <LiquidGlassWrapper>
+  <SurfaceWrapper>
     <div class="header-content">
       <p class="crumb">Hub / {selectedFamily?.name ?? 'Sin familia'}</p>
       <h1>Hola, {data.displayName}</h1>
@@ -263,7 +263,7 @@
       </div>
       <div class="loading-sheen" aria-hidden="true"></div>
     </div>
-  </LiquidGlassWrapper>
+  </SurfaceWrapper>
 </header>
 
 <main class="hub-page page-shell" class:is-loading={isNavigating} aria-busy={isNavigating}>
@@ -532,7 +532,7 @@
     margin-bottom: var(--page-header-content-gap, 30px);
   }
 
-  .hub-header :global(.liquid-glass-wrapper) {
+  .hub-header :global(.surface-wrapper) {
     pointer-events: auto;
     width: min(1040px, 100%);
     margin: 0 auto;

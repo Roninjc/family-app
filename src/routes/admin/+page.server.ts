@@ -17,9 +17,13 @@ const FAMILY_SYNC_ERROR =
 
 const MOCK_INVITE_ERROR =
   'Estás en modo mock. Las invitaciones no se guardan en este modo. Usa el modo normal para enviar invitaciones reales.'
+const MOCK_FAMILY_SETTINGS_ERROR =
+  'Estás en modo mock. Los ajustes de familia no se guardan en este modo. Usa el modo normal para persistir cambios.'
 
 const VIEWER_MANAGE_ERROR =
   'No tienes permisos para gestionar invitaciones en esta familia (solo lectura).'
+const VIEWER_FAMILY_SETTINGS_ERROR =
+  'No tienes permisos para modificar los ajustes de esta familia (solo lectura).'
 
 const VIEWER_ROLE_ERROR = 'No tienes permisos para cambiar roles en esta familia (solo lectura).'
 const VIEWER_LINK_SCOPE_ERROR = 'En modo solo lectura solo puedes editar tu propia vinculación.'
@@ -354,6 +358,54 @@ export const load: PageServerLoad = async ({ locals, cookies, url }) => {
 }
 
 export const actions: Actions = {
+  updateFamilySettings: async ({ request, locals, cookies }) => {
+    if (isMockFamilyMode()) {
+      return fail(400, { familySettingsError: MOCK_FAMILY_SETTINGS_ERROR })
+    }
+
+    const form = await request.formData()
+    const requestedFamilyId = String(form.get('familyId') ?? '').trim() || null
+    const familyName = String(form.get('familyName') ?? '').trim()
+    const managerContext = await resolveManagerFamily({ locals, cookies, requestedFamilyId })
+    const cookieFamilyId = cookies.get(ACTIVE_FAMILY_COOKIE) ?? null
+
+    if (
+      !ensureActionFamilyInSync({
+        requestedFamilyId,
+        cookieFamilyId,
+        resolvedFamilyId: managerContext.activeFamily.id
+      })
+    ) {
+      return fail(409, { familySettingsError: FAMILY_SYNC_ERROR })
+    }
+
+    if (managerContext.activeFamily.role === 'viewer') {
+      return fail(403, { familySettingsError: VIEWER_FAMILY_SETTINGS_ERROR })
+    }
+
+    if (!familyName) {
+      return fail(400, { familySettingsError: 'El nombre de la familia no puede estar vacío.' })
+    }
+
+    if (familyName.length > 80) {
+      return fail(400, { familySettingsError: 'El nombre de la familia no puede superar 80 caracteres.' })
+    }
+
+    const { error } = await locals.supabase
+      .from('families')
+      .update({ name: familyName })
+      .eq('id', managerContext.activeFamily.id)
+
+    if (error) {
+      return fail(400, { familySettingsError: error.message })
+    }
+
+    return {
+      familySettingsSuccess: 'Ajustes guardados correctamente.',
+      familySettingsFamilyId: managerContext.activeFamily.id
+    }
+  },
+
   inviteGeneral: async ({ request, locals, url, cookies }) => {
     if (isMockFamilyMode()) {
       return fail(400, { inviteError: MOCK_INVITE_ERROR })

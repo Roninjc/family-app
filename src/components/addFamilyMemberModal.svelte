@@ -7,7 +7,7 @@
   import { invalidateAll } from '$app/navigation'
   import { page } from '$app/stores'
   import { showAddMemberModal } from '../stores/modals'
-  import LiquidGlassWrapper from './liquidGlassWrapper.svelte'
+  import SurfaceWrapper from './surfaceWrapper.svelte'
 
   let showAddMemberModalValue = false
   showAddMemberModal.subscribe((value) => {
@@ -88,6 +88,10 @@
         error = 'No se pudo guardar el miembro.'
       }
     }
+  }
+
+  function closeModal() {
+    showAddMemberModal.set(false)
   }
 
   function resetForm() {
@@ -258,9 +262,9 @@
     role="button"
     tabindex="0"
     aria-label="Cerrar modal de nuevo miembro"
-    on:click|stopPropagation={() => showAddMemberModal.set(false)}
+    on:click|stopPropagation={closeModal}
     on:keydown={(e) => {
-      if (e.key === 'Escape') showAddMemberModal.set(false)
+      if (e.key === 'Escape') closeModal()
     }}
   >
     <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -272,7 +276,7 @@
       aria-labelledby="add-member-title"
       on:click|stopPropagation
     >
-      <LiquidGlassWrapper>
+      <SurfaceWrapper>
         <h2 id="add-member-title">Nuevo miembro familiar</h2>
         <p class="step-caption">
           Paso {formStep} de 2 · {formStep === 1 ? 'Datos básicos' : 'Conexiones familiares'}
@@ -623,63 +627,8 @@
             <div class="form-error">{error}</div>
           {/if}
         </form>
-      </LiquidGlassWrapper>
+      </SurfaceWrapper>
     </div>
-    <svg style="display: none">
-      <filter
-        id="glass-distortion"
-        x="0%"
-        y="0%"
-        width="100%"
-        height="100%"
-        filterUnits="objectBoundingBox"
-      >
-        <feTurbulence
-          type="fractalNoise"
-          baseFrequency="0.01 0.01"
-          numOctaves="1"
-          seed="5"
-          result="turbulence"
-        />
-
-        <feComponentTransfer in="turbulence" result="mapped">
-          <feFuncR type="gamma" amplitude="1" exponent="10" offset="0.5" />
-          <feFuncG type="gamma" amplitude="0" exponent="1" offset="0" />
-          <feFuncB type="gamma" amplitude="0" exponent="1" offset="0.5" />
-        </feComponentTransfer>
-
-        <feGaussianBlur in="turbulence" stdDeviation="3" result="softMap" />
-
-        <feSpecularLighting
-          in="softMap"
-          surfaceScale="5"
-          specularConstant="1"
-          specularExponent="100"
-          lighting-color="white"
-          result="specLight"
-        >
-          <fePointLight x="-200" y="-200" z="300" />
-        </feSpecularLighting>
-
-        <feComposite
-          in="specLight"
-          operator="arithmetic"
-          k1="0"
-          k2="1"
-          k3="1"
-          k4="0"
-          result="litImage"
-        />
-
-        <feDisplacementMap
-          in="SourceGraphic"
-          in2="softMap"
-          scale="150"
-          xChannelSelector="R"
-          yChannelSelector="G"
-        />
-      </filter>
-    </svg>
   </div>
 {/if}
 
@@ -690,7 +639,8 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(255, 255, 255, 0.4);
+    background: rgba(241, 236, 228, 0.68);
+    backdrop-filter: blur(2px);
     z-index: 999;
 
     .add-member-modal {
@@ -699,8 +649,9 @@
       left: 50%;
       transform: translate(-50%, -50%);
       border-radius: 16px;
-      background-color: rgba(255, 255, 255, 0.3);
+      background-color: transparent;
       z-index: 1000;
+      min-width: 280px;
 
       h2 {
         margin-top: 0;
@@ -900,15 +851,14 @@
     }
   }
 
-  :global(.add-member-modal .liquid-glass-text-container) {
+  :global(.add-member-modal .surface-content) {
     flex-direction: column;
-    // flex-start: with justify-content center (the wrapper's default), content
-    // overflowing at the top gets clipped and unreachable by scrolling
     justify-content: flex-start;
     align-items: stretch;
     padding: 30px 20px 20px;
     box-sizing: border-box;
-    max-height: 85vh;
+    width: 340px;
+    max-height: 80vh;
     overflow-y: auto;
   }
 </style>

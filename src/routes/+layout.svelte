@@ -298,6 +298,54 @@
     color: var(--brand);
   }
 
+  :global(.app-settings-trigger) {
+    width: 38px;
+    min-width: 38px;
+    min-height: 38px;
+    padding: 8px;
+    border: none;
+    border-radius: 12px;
+    background: #efe7dc;
+    color: #1f1f1f;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow:
+      4px 4px 10px rgba(149, 121, 95, 0.14),
+      -4px -4px 10px rgba(255, 255, 255, 0.6);
+    transition:
+      transform 0.2s var(--motion-standard),
+      background-color 0.2s var(--motion-standard),
+      color 0.2s var(--motion-standard),
+      box-shadow 0.2s var(--motion-standard);
+  }
+
+  :global(.app-settings-trigger svg) {
+    display: block;
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+    margin: 0 auto;
+  }
+
+  :global(.app-settings-trigger:hover:not(:disabled):not([aria-disabled='true'])) {
+    background: #f3ece2;
+    color: #111111;
+    transform: translateY(-1px);
+    box-shadow:
+      6px 6px 12px rgba(149, 121, 95, 0.15),
+      -5px -5px 12px rgba(255, 255, 255, 0.72);
+  }
+
+  :global(.app-settings-trigger.active),
+  :global(.app-settings-trigger[aria-pressed='true']) {
+    background: #ebe1d4;
+    color: #6c3d20;
+    box-shadow:
+      inset 3px 3px 7px rgba(149, 121, 95, 0.2),
+      inset -3px -3px 7px rgba(255, 255, 255, 0.75);
+  }
+
   :global(.app-bottom-nav) {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));

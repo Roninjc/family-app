@@ -2,11 +2,11 @@
   export let rounded: boolean = false
 </script>
 
-<div class="liquid-glass-wrapper round-corners" class:rounded>
-  <div class="liquid-glass-effect round-corners" class:rounded></div>
-  <div class="liquid-glass-tint round-corners" class:rounded></div>
-  <div class="liquid-glass-shine round-corners" class:rounded></div>
-  <div class="liquid-glass-text-container">
+<div class="surface-wrapper round-corners" class:rounded>
+  <div class="surface-effect round-corners" class:rounded></div>
+  <div class="surface-tint round-corners" class:rounded></div>
+  <div class="surface-shine round-corners" class:rounded></div>
+  <div class="surface-content">
     <slot />
   </div>
   <svg style="display: none">
@@ -67,7 +67,7 @@
 </div>
 
 <style lang="scss">
-  .liquid-glass-wrapper {
+  .surface-wrapper {
     position: relative;
     display: flex;
     font-weight: 600;
@@ -82,19 +82,19 @@
       transform 0.25s var(--motion-standard);
   }
 
-  .liquid-glass-effect {
+  .surface-effect {
     display: none;
   }
 
-  .liquid-glass-tint {
+  .surface-tint {
     display: none;
   }
 
-  .liquid-glass-shine {
+  .surface-shine {
     display: none;
   }
 
-  .liquid-glass-text-container {
+  .surface-content {
     z-index: 3;
     display: flex;
     justify-content: center;

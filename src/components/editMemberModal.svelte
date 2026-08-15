@@ -7,7 +7,7 @@
   import { canEdit } from '$lib/types/auth'
   import { suggestedChildren, suggestedParents } from '$lib/utils/relationSuggestions'
   import { editingMemberId, showEditMemberModal } from '../stores/modals'
-  import LiquidGlassWrapper from './liquidGlassWrapper.svelte'
+  import SurfaceWrapper from './surfaceWrapper.svelte'
   import RelationChipsEditor from './relationChipsEditor.svelte'
 
   let name = ''
@@ -161,7 +161,7 @@
       aria-labelledby="edit-member-title"
       on:click|stopPropagation
     >
-      <LiquidGlassWrapper>
+      <SurfaceWrapper>
         <div class="member-header">
           <div class="member-avatar" aria-hidden="true">
             {#if memberAvatar}
@@ -205,7 +205,7 @@
           {#if editable}
             <button
               type="button"
-              class="settings-tab"
+              class="app-settings-trigger"
               class:active={activeSection === 'ajustes'}
               title="Ajustes"
               aria-label="Abrir ajustes"
@@ -398,7 +398,7 @@
         {#if error}
           <div class="form-error">{error}</div>
         {/if}
-      </LiquidGlassWrapper>
+      </SurfaceWrapper>
     </div>
   </div>
 {/if}
@@ -505,44 +505,6 @@
         }
       }
 
-      .settings-tab {
-        width: 38px;
-        min-height: 38px;
-        padding: 8px;
-        border-radius: 12px;
-        background: #efe7dc;
-        color: #1f1f1f;
-        box-shadow:
-          4px 4px 10px rgba(149, 121, 95, 0.14),
-          -4px -4px 10px rgba(255, 255, 255, 0.6);
-
-        svg {
-          display: block;
-          width: 18px;
-          height: 18px;
-          fill: currentColor;
-          margin: 0 auto;
-        }
-
-        &:hover {
-          background: #f3ece2;
-          color: #111111;
-          transform: translateY(-1px);
-          box-shadow:
-            6px 6px 12px rgba(149, 121, 95, 0.15),
-            -5px -5px 12px rgba(255, 255, 255, 0.72);
-        }
-
-        &.active {
-          background: #ebe1d4;
-          color: #6c3d20;
-          box-shadow:
-            inset 3px 3px 7px rgba(149, 121, 95, 0.2),
-            inset -3px -3px 7px rgba(255, 255, 255, 0.75);
-          border-color: rgba(126, 69, 32, 0.22);
-        }
-      }
-
       .viewer-note {
         margin: 0 0 0.8rem;
         padding: 8px 10px;
@@ -561,7 +523,7 @@
         margin-bottom: 1.5rem;
       }
 
-      button {
+      button:not(.app-settings-trigger) {
         width: 100%;
         min-height: 42px;
         padding: 10px;
@@ -791,7 +753,7 @@
     }
   }
 
-  :global(.edit-member-modal .liquid-glass-text-container) {
+  :global(.edit-member-modal .surface-content) {
     flex-direction: column;
     align-items: stretch;
     // flex-start: with justify-content center (the wrapper's default), content

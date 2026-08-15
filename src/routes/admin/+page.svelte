@@ -5,7 +5,7 @@
   import type { SubmitFunction } from '@sveltejs/kit'
   import { onDestroy, onMount } from 'svelte'
   import { fade, slide } from 'svelte/transition'
-  import LiquidGlassWrapper from '../../components/liquidGlassWrapper.svelte'
+  import SurfaceWrapper from '../../components/surfaceWrapper.svelte'
 
   export let data
   export let form
@@ -56,11 +56,17 @@
   let switchFamilyTimer: ReturnType<typeof setTimeout> | null = null
   const FAMILY_NAME_FADE_MS = 220
   let displayedFamilyName = ''
+  let displayedFamilyRoleLabel = ''
   let pendingFamilyName: string | null = null
+  let pendingFamilyRoleLabel: string | null = null
   let previousActiveFamilyName = ''
+  let previousActiveFamilyRole = ''
   let familyNameSwitchTimer: ReturnType<typeof setTimeout> | null = null
   let isFamilyNameVisible = true
   let familyNameReady = false
+  let showFamilySettingsModal = false
+  let familySettingsFamilyId = ''
+  let familyNameDraft = ''
 
   const inviteMatchesFilter = (
     invite: {
@@ -138,22 +144,30 @@
     memberId = preselectedMemberId
   }
   $: activeFamilyId = data.activeFamily?.id ?? ''
-  $: activeFamilyName = data.families.find((family) => family.id === activeFamilyId)?.name ?? ''
-  $: if (activeFamilyName !== previousActiveFamilyName) {
+  $: activeFamily = data.families.find((family) => family.id === activeFamilyId) ?? null
+  $: activeFamilyName = activeFamily?.name ?? ''
+  $: activeFamilyRole = activeFamily?.role ?? 'viewer'
+  $: activeFamilyRoleLabel = roleLabels[activeFamilyRole] ?? roleLabels.viewer
+  $: if (activeFamilyName !== previousActiveFamilyName || activeFamilyRole !== previousActiveFamilyRole) {
     previousActiveFamilyName = activeFamilyName
+    previousActiveFamilyRole = activeFamilyRole
 
     if (!familyNameReady) {
       displayedFamilyName = activeFamilyName
+      displayedFamilyRoleLabel = activeFamilyRoleLabel
       isFamilyNameVisible = true
       familyNameReady = true
     } else {
       pendingFamilyName = activeFamilyName
+      pendingFamilyRoleLabel = activeFamilyRoleLabel
       isFamilyNameVisible = false
 
       if (familyNameSwitchTimer) clearTimeout(familyNameSwitchTimer)
       familyNameSwitchTimer = setTimeout(() => {
         displayedFamilyName = pendingFamilyName ?? ''
+        displayedFamilyRoleLabel = pendingFamilyRoleLabel ?? roleLabels.viewer
         pendingFamilyName = null
+        pendingFamilyRoleLabel = null
         isFamilyNameVisible = true
       }, FAMILY_NAME_FADE_MS)
     }
@@ -163,7 +177,6 @@
     pendingFamilyId = null
   }
   $: filteredInvites = data.invites.filter((invite) => inviteMatchesFilter(invite, inviteFilter))
-  $: activeFamilyRole = data.activeFamily?.role ?? 'viewer'
   $: currentUserId = data.currentUserId ?? data.manager?.id ?? ''
 
   type UserDraft = {
@@ -383,6 +396,17 @@
     }
   }
 
+  const openFamilySettingsModal = (family: { id: string; name: string; role: string }) => {
+    if (family.role === 'viewer') return
+    familySettingsFamilyId = family.id
+    familyNameDraft = family.name
+    showFamilySettingsModal = true
+  }
+
+  const closeFamilySettingsModal = () => {
+    showFamilySettingsModal = false
+  }
+
   const goToFamilyAt = (index: number) => {
     const family = data.families[index]
     if (!family) return
@@ -461,19 +485,27 @@
 </svelte:head>
 
 <header class="admin-header reveal-fade-up" aria-label="Cabecera de administración">
-  <LiquidGlassWrapper>
+  <SurfaceWrapper>
     <div class="admin-header-content">
       <div class="page-heading">
         <h1>Administración</h1>
-        <p
-          class="heading-family-name"
-          class:is-hidden={!isFamilyNameVisible}
-        >
-          {displayedFamilyName}
-        </p>
+        <div class="heading-family-context">
+          <p
+            class="heading-family-name"
+            class:is-hidden={!isFamilyNameVisible}
+          >
+            {displayedFamilyName}
+          </p>
+          <p
+            class="heading-family-role"
+            class:is-hidden={!isFamilyNameVisible}
+          >
+            {displayedFamilyRoleLabel}
+          </p>
+        </div>
       </div>
     </div>
-  </LiquidGlassWrapper>
+  </SurfaceWrapper>
 </header>
 
 <main class="admin-page page-shell">
@@ -510,7 +542,29 @@
             >
               <div class="family-card-header">
                 <span>{family.name}</span>
-                <small>{roleLabels[family.role]}</small>
+                {#if family.role !== 'viewer'}
+                  <button
+                    type="button"
+                    class="app-settings-trigger"
+                    aria-label={`Abrir ajustes de ${family.name}`}
+                    title="Ajustes de familia"
+                    on:click|stopPropagation={() => {
+                      openFamilySettingsModal(family)
+                    }}
+                    on:keydown|stopPropagation={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault()
+                        openFamilySettingsModal(family)
+                      }
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path
+                        d="M19.14 12.94a7.9 7.9 0 0 0 .05-.94 7.9 7.9 0 0 0-.05-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.27 7.27 0 0 0-1.63-.94l-.36-2.54A.5.5 0 0 0 13.9 2h-3.8a.5.5 0 0 0-.49.42l-.36 2.54a7.27 7.27 0 0 0-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 8.48a.5.5 0 0 0 .12.64l2.03 1.58a7.9 7.9 0 0 0-.05.94 7.9 7.9 0 0 0 .05.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96c.5.39 1.05.71 1.63.94l.36 2.54a.5.5 0 0 0 .49.42h3.8a.5.5 0 0 0 .49-.42l.36-2.54c.58-.23 1.13-.55 1.63-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.4A3.4 3.4 0 1 1 12 8.6a3.4 3.4 0 0 1 0 6.8Z"
+                      />
+                    </svg>
+                  </button>
+                {/if}
               </div>
               <div class="family-metrics-grid">
                 <p>
@@ -936,15 +990,15 @@
         <!-- svelte-ignore a11y-click-events-have-key-events -->
         <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
         <div
-          class="users-confirm-modal"
+          class="users-confirm-modal modal-shell modal-shell--wide"
           role="dialog"
           aria-modal="true"
           aria-labelledby="users-save-title"
           on:click|stopPropagation
         >
-          <LiquidGlassWrapper>
+          <SurfaceWrapper>
             <div class="users-confirm-card" in:fade={{ duration: 140 }}>
-              <h3 id="users-save-title">Confirmar cambios</h3>
+              <h2 id="users-save-title">Confirmar cambios</h2>
 
               {#if usersChanges.length > 0}
                 <div class="users-summary-grid" role="status" aria-live="polite">
@@ -1006,7 +1060,76 @@
                 </div>
               {/if}
             </div>
-          </LiquidGlassWrapper>
+          </SurfaceWrapper>
+        </div>
+      </div>
+    {/if}
+
+    {#if showFamilySettingsModal}
+      <div
+        class="users-modal-backdrop"
+        role="button"
+        tabindex="0"
+        aria-label="Cerrar ajustes de familia"
+        on:click|stopPropagation={closeFamilySettingsModal}
+        on:keydown={(event) => {
+          if (event.key === 'Escape') closeFamilySettingsModal()
+        }}
+      >
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+        <div
+          class="users-confirm-modal family-settings-modal modal-shell modal-shell--compact"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="family-settings-title"
+          on:click|stopPropagation
+        >
+          <SurfaceWrapper>
+            <div class="users-confirm-card family-settings-card" in:fade={{ duration: 140 }}>
+              <h2 id="family-settings-title">Ajustes de familia</h2>
+
+              <form method="POST" action="?/updateFamilySettings" use:enhance>
+                <input type="hidden" name="familyId" value={familySettingsFamilyId} />
+                <div class="input-wrapper floating-input-wrapper family-settings-field">
+                  <input
+                    id="familySettingsName"
+                    class="modern-input"
+                    type="text"
+                    name="familyName"
+                    maxlength="80"
+                    bind:value={familyNameDraft}
+                    required
+                    autocomplete="off"
+                  />
+                  <label
+                    for="familySettingsName"
+                    class:label-active={familyNameDraft.length > 0}
+                  >
+                    Nombre de la familia
+                  </label>
+                </div>
+
+                {#if form?.familySettingsSuccess && form?.familySettingsFamilyId === familySettingsFamilyId}
+                  <p class="ok-note" role="status">{form.familySettingsSuccess}</p>
+                {/if}
+                {#if form?.familySettingsError}
+                  <p class="error-note" role="alert">{form.familySettingsError}</p>
+                {/if}
+
+                <div class="users-confirm-actions">
+                  <button
+                    type="button"
+                    class="app-btn app-btn--secondary"
+                    on:click={closeFamilySettingsModal}
+                  >
+                    Cancelar
+                  </button>
+                  <button type="submit" class="app-btn app-btn--primary">Guardar</button>
+                </div>
+              </form>
+            </div>
+          </SurfaceWrapper>
         </div>
       </div>
     {/if}
@@ -1032,7 +1155,7 @@
     margin-bottom: var(--page-header-content-gap, 30px);
   }
 
-  .admin-header :global(.liquid-glass-wrapper) {
+  .admin-header :global(.surface-wrapper) {
     pointer-events: auto;
     width: min(1040px, 100%);
     margin: 0 auto;
@@ -1056,11 +1179,18 @@
 
   .page-heading {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     gap: 10px;
     margin-bottom: 0.55rem;
     flex-wrap: wrap;
+  }
+
+  .heading-family-context {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
   }
 
   .heading-family-name {
@@ -1068,6 +1198,19 @@
     font-size: var(--fs-sm);
     color: var(--text-muted);
     font-weight: 700;
+    opacity: 1;
+    transition: opacity 600ms var(--motion-standard);
+
+    &.is-hidden {
+      opacity: 0;
+    }
+  }
+
+  .heading-family-role {
+    margin: 0;
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+    font-weight: 600;
     opacity: 1;
     transition: opacity 600ms var(--motion-standard);
 
@@ -1238,10 +1381,6 @@
         color: #5d4735;
       }
 
-      small {
-        font-size: var(--fs-xs);
-        color: var(--text-muted);
-      }
     }
 
     .family-metrics-grid {
@@ -1431,6 +1570,7 @@
   }
 
   .users-confirm-modal {
+    --modal-width: min(560px, calc(100vw - 24px));
     position: fixed;
     top: 50%;
     left: 50%;
@@ -1438,30 +1578,42 @@
     border-radius: 16px;
     background-color: transparent;
     z-index: 1000;
-    width: min(680px, calc(100vw - 24px));
+    width: var(--modal-width);
 
     .users-confirm-card {
-      h3 {
-        margin: 0;
+      h2 {
+        margin: 0 0 1rem;
         font-size: var(--fs-lg);
         color: #4a3426;
       }
     }
   }
 
-  .users-confirm-modal :global(.liquid-glass-wrapper) {
+  .users-confirm-modal :global(.surface-wrapper) {
     width: 100%;
   }
 
-  .users-confirm-modal :global(.liquid-glass-text-container) {
+  .users-confirm-modal :global(.surface-content) {
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;
-    padding: 0;
+    box-sizing: border-box;
+    padding: 30px 20px 20px;
+    width: var(--modal-width);
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .modal-shell--wide {
+    --modal-width: min(560px, calc(100vw - 24px));
+  }
+
+  .modal-shell--compact {
+    --modal-width: min(340px, calc(100vw - 24px));
   }
 
   .users-confirm-card {
-    padding: 12px;
+    padding: 0;
   }
 
   .users-summary-grid {
@@ -1526,11 +1678,52 @@
   }
 
   .users-confirm-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
     margin-top: 12px;
-    flex-wrap: wrap;
+
+    :global(.app-btn) {
+      width: 100%;
+      min-height: 42px;
+    }
+
+    @media (min-width: 640px) {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .family-settings-card {
+    padding: 0;
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .users-confirm-actions {
+      margin-top: 0.1rem;
+      gap: 8px;
+    }
+
+    .ok-note,
+    .error-note {
+      margin: 0;
+    }
+  }
+
+  .family-settings-modal {
+    min-width: 280px;
+    border-radius: 16px;
+  }
+
+  .family-settings-field {
+    margin: 0 0 1.5rem;
+  }
+
+  :global(.family-settings-modal .surface-content) {
+    width: var(--modal-width);
   }
 
   .ok-note {
@@ -1646,7 +1839,7 @@
     padding: 10px 12px;
   }
 
-  :global(.admin-header .liquid-glass-text-container) {
+  :global(.admin-header .surface-content) {
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;

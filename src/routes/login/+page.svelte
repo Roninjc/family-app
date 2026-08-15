@@ -1,7 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import { page } from '$app/stores'
-  import LiquidGlassWrapper from '../../components/liquidGlassWrapper.svelte'
+  import SurfaceWrapper from '../../components/surfaceWrapper.svelte'
 
   export let form
 
@@ -30,7 +30,7 @@
 
 <main>
   <div class="login-card reveal-fade-up">
-    <LiquidGlassWrapper>
+    <SurfaceWrapper>
       <div class="login-content">
         <h1>Familia Castaño</h1>
         <p class="subtitle">Inicia sesión con tu email para entrar al hub familiar.</p>
@@ -121,7 +121,7 @@
           <div class="form-error" role="alert">{form?.error ?? urlError}</div>
         {/if}
       </div>
-    </LiquidGlassWrapper>
+    </SurfaceWrapper>
   </div>
 </main>
 
@@ -269,7 +269,7 @@
     }
   }
 
-  :global(.login-card .liquid-glass-text-container) {
+  :global(.login-card .surface-content) {
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;
@@ -277,7 +277,7 @@
   }
 
   @media (min-width: 760px) {
-    :global(.login-card .liquid-glass-text-container) {
+    :global(.login-card .surface-content) {
       padding: 28px 24px 24px;
     }
   }
