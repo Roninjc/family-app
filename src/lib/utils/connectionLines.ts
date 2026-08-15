@@ -85,23 +85,26 @@ export const previousPartnerNoChildrenSpec = (
   previousPartnerIndex: number,
   amountOfPreviousPartners: number,
   memberStubOffset = 0,
-  extraGap = 18
+  extraGap = 18,
+  badgeOverlap = 4
 ): LineSpec => {
   const memberX = member.center.x + memberStubOffset
   const baseY = Math.max(member.bottom, previousPartner.bottom) + extraGap
   const steps = Math.max(amountOfPreviousPartners, 1)
   const step = 10
   const joinY = baseY + (steps - previousPartnerIndex - 1) * step
+  const memberJoinY = member.bottom - badgeOverlap
+  const previousPartnerJoinY = previousPartner.bottom - badgeOverlap
 
   return specFromSegments([
-    { from: { x: memberX, y: member.bottom }, to: { x: memberX, y: joinY } },
+    { from: { x: memberX, y: memberJoinY }, to: { x: memberX, y: joinY } },
     {
       from: { x: Math.min(memberX, previousPartner.center.x), y: joinY },
       to: { x: Math.max(memberX, previousPartner.center.x), y: joinY }
     },
     {
       from: { x: previousPartner.center.x, y: joinY },
-      to: { x: previousPartner.center.x, y: previousPartner.bottom }
+      to: { x: previousPartner.center.x, y: previousPartnerJoinY }
     }
   ])
 }
@@ -155,7 +158,8 @@ export const previousPartnerFamilySpecs = (
   previousPartnerIndex: number,
   amountOfPreviousPartners: number,
   // Horizontal offset of the exit on the badge (see memberExitOffsets)
-  memberStubOffset = 0
+  memberStubOffset = 0,
+  badgeOverlap = 4
 ): { memberToChildren: LineSpec; toPreviousPartner: LineSpec } => {
   const { coupleY, busY } = previousPartnerHeights(
     Math.max(member.bottom, previousPartner.bottom),
@@ -171,10 +175,12 @@ export const previousPartnerFamilySpecs = (
   // start at their exact center (drawn by their own node) and would overlap.
   const previousPartnerX =
     previousPartner.center.x + 10 * Math.sign(member.center.x - previousPartner.center.x)
+  const memberJoinY = member.bottom - badgeOverlap
+  const previousPartnerJoinY = previousPartner.bottom - badgeOverlap
 
   return {
     memberToChildren: specFromSegments([
-      { from: { x: memberX, y: member.bottom }, to: { x: memberX, y: coupleY } },
+      { from: { x: memberX, y: memberJoinY }, to: { x: memberX, y: coupleY } },
       { from: { x: memberX, y: coupleY }, to: { x: dropX, y: coupleY } },
       { from: { x: dropX, y: coupleY }, to: { x: dropX, y: busY } },
       { from: { x: Math.min(...busXs), y: busY }, to: { x: Math.max(...busXs), y: busY } },
@@ -187,7 +193,7 @@ export const previousPartnerFamilySpecs = (
       { from: { x: dropX, y: coupleY }, to: { x: previousPartnerX, y: coupleY } },
       {
         from: { x: previousPartnerX, y: coupleY },
-        to: { x: previousPartnerX, y: previousPartner.bottom }
+        to: { x: previousPartnerX, y: previousPartnerJoinY }
       }
     ])
   }

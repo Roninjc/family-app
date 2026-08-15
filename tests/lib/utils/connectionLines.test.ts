@@ -115,9 +115,10 @@ describe('previousPartnerFamilySpecs', () => {
     const local = (x: number) => x - memberToChildren.left
     const localY = (y: number) => y - memberToChildren.top
 
-    // Member stub (75 - 6 = 69) down to the join height (137.5)
+    // Member stub (75 - 6 = 69) starts 4px inside the badge and goes down
+    // to the join height (137.5)
     expect(memberToChildren.d).toContain(
-      `M${local(69)} ${localY(120)} L${local(69)} ${localY(137.5)}`
+      `M${local(69)} ${localY(116)} L${local(69)} ${localY(137.5)}`
     )
     // Horizontal to the intersection (midpoint, -20) and drop to the bus
     expect(memberToChildren.d).toContain(
@@ -151,7 +152,7 @@ describe('previousPartnerFamilySpecs', () => {
     // exits towards other children.
     expect(toPreviousPartner.d).toBe(
       `M${local(-20)} ${localY(137.5)} L${local(-105)} ${localY(137.5)} ` +
-        `M${local(-105)} ${localY(137.5)} L${local(-105)} ${localY(120)}`
+        `M${local(-105)} ${localY(137.5)} L${local(-105)} ${localY(116)}`
     )
   })
 })
@@ -187,9 +188,9 @@ describe('previousPartnerNoChildrenSpec', () => {
     const localY = (y: number) => y - spec.top
     const joinY = 138 // max(120, 120) + 18
 
-    expect(spec.d).toContain(`M${local(75)} ${localY(120)} L${local(75)} ${localY(joinY)}`)
+    expect(spec.d).toContain(`M${local(75)} ${localY(116)} L${local(75)} ${localY(joinY)}`)
     expect(spec.d).toContain(`M${local(-115)} ${localY(joinY)} L${local(75)} ${localY(joinY)}`)
-    expect(spec.d).toContain(`M${local(-115)} ${localY(joinY)} L${local(-115)} ${localY(120)}`)
+    expect(spec.d).toContain(`M${local(-115)} ${localY(joinY)} L${local(-115)} ${localY(116)}`)
   })
 
   it('can shift the member exit so it does not overlap other downward lines', () => {
@@ -198,7 +199,7 @@ describe('previousPartnerNoChildrenSpec', () => {
     const localY = (y: number) => y - spec.top
     const joinY = 138
 
-    expect(spec.d).toContain(`M${local(63)} ${localY(120)} L${local(63)} ${localY(joinY)}`)
+    expect(spec.d).toContain(`M${local(63)} ${localY(116)} L${local(63)} ${localY(joinY)}`)
   })
 
   it('stacks multiple previous partners so dashed joins do not overlap perfectly', () => {

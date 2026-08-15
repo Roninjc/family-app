@@ -240,7 +240,7 @@
     }
 
     &.previous-couple-family-lines {
-      stroke: var(--tree-line-soft);
+      stroke: var(--tree-line-main);
     }
 
     &.no-children-previous-couple-svg,
