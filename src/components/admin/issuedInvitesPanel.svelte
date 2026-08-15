@@ -1,38 +1,26 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import ChipToggleGroup from '../ui/chipToggleGroup.svelte'
+  import type { AdminInviteFilter, AdminInviteSummary } from './types'
 
-  type Invite = {
-    id: string
-    type: string
-    role_on_signup: string
-    email: string | null
-    member_id: string | null
-    created_at: string | null
-    expires_at: string | null
-    uses_count: number
-    max_uses: number | null
-    revoked_at: string | null
-  }
-
-  export let invites: Invite[] = []
-  export let filteredInvites: Invite[] = []
+  export let invites: AdminInviteSummary[] = []
+  export let filteredInvites: AdminInviteSummary[] = []
   export let activeFamilyId = ''
 
-  export let inviteFilter: string = 'all'
+  export let inviteFilter: AdminInviteFilter = 'all'
   export let inviteFilterOptions: Array<{ value: string; label: string }> = []
-  export let onInviteFilterChange: (event: CustomEvent<string>) => void = () => {}
+  export let onFilterChange: (event: CustomEvent<string>) => void = () => {}
 
   export let roleLabels: Record<string, string> = {}
   export let inviteTypeLabels: Record<string, string> = {}
   export let memberNameById: Map<string, string> = new Map()
 
   export let formatDate: (value: string | null) => string = () => 'Sin caducidad'
-  export let inviteStatusLabel: (invite: Invite) => string = () => 'Activa'
+  export let inviteStatusLabel: (invite: AdminInviteSummary) => string = () => 'Activa'
   export let inviteStatusTone: (status: string) => string = () => 'muted'
 
-  export let revokeSuccessMessage = ''
-  export let inviteErrorMessage = ''
+  export let successMessage = ''
+  export let errorMessage = ''
 </script>
 
 {#if invites.length > 0}
@@ -41,7 +29,7 @@
       ariaLabel="Filtrar invitaciones"
       options={inviteFilterOptions}
       value={inviteFilter}
-      on:change={onInviteFilterChange}
+      on:change={onFilterChange}
     />
   </div>
 
@@ -93,11 +81,11 @@
     {/each}
   </ul>
 
-  {#if revokeSuccessMessage}
-    <p class="ok-note" role="status">{revokeSuccessMessage}</p>
+  {#if successMessage}
+    <p class="ok-note" role="status">{successMessage}</p>
   {/if}
-  {#if inviteErrorMessage}
-    <p class="error-note" role="alert">{inviteErrorMessage}</p>
+  {#if errorMessage}
+    <p class="error-note" role="alert">{errorMessage}</p>
   {/if}
 {:else}
   <p class="empty-note app-card-soft">Todavía no has creado invitaciones en esta familia.</p>

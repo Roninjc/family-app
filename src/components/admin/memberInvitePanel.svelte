@@ -1,23 +1,18 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
-
-  type Member = {
-    id: string
-    name: string
-    family_name: string
-  }
+  import type { AdminMemberOption, AdminRole } from './types'
 
   export let activeFamilyId = ''
-  export let activeFamilyRole = 'viewer'
-  export let members: Member[] = []
+  export let activeFamilyRole: AdminRole | string = 'viewer'
+  export let members: AdminMemberOption[] = []
 
   export let memberEmail = ''
   export let memberId = ''
   export let memberRole = 'viewer'
   export let memberExpiry = 'none'
 
-  export let invitedMember = ''
-  export let inviteError = ''
+  export let successMessage = ''
+  export let errorMessage = ''
 </script>
 
 <form method="POST" action="?/inviteMember" use:enhance>
@@ -53,12 +48,12 @@
   </div>
 </form>
 
-{#if invitedMember}
+{#if successMessage}
   <p class="ok-note" role="status">
-    Invitación vinculada lista para {invitedMember}.
+    {successMessage}
   </p>
 {/if}
-{#if inviteError}<p class="error-note" role="alert">{inviteError}</p>{/if}
+{#if errorMessage}<p class="error-note" role="alert">{errorMessage}</p>{/if}
 
 <style lang="scss">
   .invite-row {

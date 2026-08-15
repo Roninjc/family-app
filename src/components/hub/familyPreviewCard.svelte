@@ -1,11 +1,7 @@
 <script lang="ts">
-  export let family: {
-    id: string
-    name: string
-    membersCount: number
-    linksCount: number
-    previewMembers: string[]
-  }
+  import type { HubFamilySummary } from './types'
+
+  export let family: Pick<HubFamilySummary, 'id' | 'name' | 'membersCount' | 'linksCount' | 'previewMembers'>
 </script>
 
 <div class="preview-card" aria-label={`Previsualización de ${family.name}`}>

@@ -1,22 +1,8 @@
 <script lang="ts">
   import GearIcon from '../icons/gearIcon.svelte'
+  import type { AdminFamilySummary } from './types'
 
-  type FamilyMetrics = {
-    membersCount: number
-    usersCount: number
-    unlinkedMembersCount: number
-    activeInvitesCount: number
-    managersCount: number
-  }
-
-  type Family = {
-    id: string
-    name: string
-    role: string
-    metrics: FamilyMetrics
-  }
-
-  export let families: Family[] = []
+  export let families: AdminFamilySummary[] = []
   export let focusedFamilyId = ''
   export let activeFamilyId = ''
 
@@ -25,7 +11,7 @@
   export let trackFamilyCard: (node: HTMLElement, familyId: string) => { destroy: () => void }
   export let onDetectCenteredFamily: () => void = () => {}
   export let onSwitchFamily: (familyId: string) => void = () => {}
-  export let onOpenFamilySettings: (family: Family) => void = () => {}
+  export let onOpenFamilySettings: (family: AdminFamilySummary) => void = () => {}
   export let onGoToFamilyAt: (index: number) => void = () => {}
 </script>
 

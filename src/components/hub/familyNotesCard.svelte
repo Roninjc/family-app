@@ -1,46 +1,31 @@
 <script lang="ts">
   import ChipToggleGroup from '../ui/chipToggleGroup.svelte'
+  import type { HubFamilySummary, HubNote, HubNoteType, HubNotesFilter } from './types'
 
-  type NoteType = 'news' | 'note'
+  export let family: Pick<HubFamilySummary, 'id' | 'name' | 'canManageNotes'>
 
-  type Note = {
-    id: string
-    title: string
-    body: string
-    noteType: NoteType
-  }
+  export let notes: HubNote[] = []
+  export let filter: HubNotesFilter = 'all'
+  export let filterOptions: Array<{ value: string; label: string }> = []
 
-  export let family: {
-    id: string
-    name: string
-    canManageNotes: boolean
-  }
+  export let status: {
+    created?: boolean
+    updated?: boolean
+    deleted?: boolean
+    errorMessage?: string
+  } = {}
 
-  export let notes: Note[] = []
-  export let noteFilter: 'all' | 'news' | 'note' = 'all'
-  export let noteFilterOptions: Array<{ value: string; label: string }> = []
+  export let creatingFamilyId: string | null = null
+  export let editingId: string | null = null
 
-  export let form:
-    | {
-        noteCreated?: boolean
-        noteUpdated?: boolean
-        noteDeleted?: boolean
-        noteError?: string
-        familyId?: string
-      }
-    | undefined = undefined
+  export let titleDraft = ''
+  export let bodyDraft = ''
+  export let typeDraft: HubNoteType = 'note'
 
-  export let creatingForFamilyId: string | null = null
-  export let editingNoteId: string | null = null
-
-  export let draftTitle = ''
-  export let draftBody = ''
-  export let draftType: NoteType = 'note'
-
-  export let onToggleCreate: (familyId: string) => void = () => {}
+  export let onCreateToggle: (familyId: string) => void = () => {}
   export let onFilterChange: (event: CustomEvent<string>) => void = () => {}
-  export let onOpenEditor: (note: Note) => void = () => {}
-  export let onCloseEditor: () => void = () => {}
+  export let onEditStart: (note: HubNote) => void = () => {}
+  export let onEditCancel: () => void = () => {}
 </script>
 
 <div class="notes-card">
@@ -50,13 +35,13 @@
       <button
         type="button"
         class="note-create-toggle"
-        aria-label={creatingForFamilyId === family.id ? 'Cerrar editor de nota' : 'Crear nueva nota'}
-        title={creatingForFamilyId === family.id ? 'Cerrar editor' : 'Nueva nota'}
+        aria-label={creatingFamilyId === family.id ? 'Cerrar editor de nota' : 'Crear nueva nota'}
+        title={creatingFamilyId === family.id ? 'Cerrar editor' : 'Nueva nota'}
         on:click={() => {
-          onToggleCreate(family.id)
+          onCreateToggle(family.id)
         }}
       >
-        {creatingForFamilyId === family.id ? '×' : '+'}
+        {creatingFamilyId === family.id ? '×' : '+'}
       </button>
     {/if}
   </div>
@@ -64,13 +49,13 @@
   <div class="notes-filter-row">
     <ChipToggleGroup
       ariaLabel={`Filtros de notas en ${family.name}`}
-      options={noteFilterOptions}
-      value={noteFilter}
+      options={filterOptions}
+      value={filter}
       on:change={onFilterChange}
     />
   </div>
 
-  {#if family.canManageNotes && creatingForFamilyId === family.id}
+  {#if family.canManageNotes && creatingFamilyId === family.id}
     <form method="POST" action="?/createNote" class="note-form">
       <input type="hidden" name="familyId" value={family.id} />
       <label>
@@ -92,17 +77,17 @@
     </form>
   {/if}
 
-  {#if form?.noteError && (!form.familyId || form.familyId === family.id)}
-    <p class="note-error" role="alert">{form.noteError}</p>
+  {#if status.errorMessage}
+    <p class="note-error" role="alert">{status.errorMessage}</p>
   {/if}
 
-  {#if form?.noteCreated && form.familyId === family.id}
+  {#if status.created}
     <p class="note-ok" role="status">Nota creada.</p>
   {/if}
-  {#if form?.noteUpdated && form.familyId === family.id}
+  {#if status.updated}
     <p class="note-ok" role="status">Nota actualizada.</p>
   {/if}
-  {#if form?.noteDeleted && form.familyId === family.id}
+  {#if status.deleted}
     <p class="note-ok" role="status">Nota eliminada.</p>
   {/if}
 
@@ -116,24 +101,24 @@
           </span>
         </div>
 
-        {#if editingNoteId === note.id}
+        {#if editingId === note.id}
           <form method="POST" action="?/updateNote" class="note-form note-form-inline">
             <input type="hidden" name="familyId" value={family.id} />
             <input type="hidden" name="noteId" value={note.id} />
             <label>
               Título
-              <input class="modern-input" name="title" bind:value={draftTitle} maxlength="120" required />
+              <input class="modern-input" name="title" bind:value={titleDraft} maxlength="120" required />
             </label>
             <label>
               Tipo
-              <select class="modern-select" name="noteType" bind:value={draftType}>
+              <select class="modern-select" name="noteType" bind:value={typeDraft}>
                 <option value="note">Nota</option>
                 <option value="news">Noticia</option>
               </select>
             </label>
             <label>
               Contenido
-              <textarea class="modern-textarea" name="body" rows="3" bind:value={draftBody} required></textarea>
+              <textarea class="modern-textarea" name="body" rows="3" bind:value={bodyDraft} required></textarea>
             </label>
             <div class="note-actions">
               <button class="app-btn app-btn--primary" type="submit">Guardar</button>
@@ -141,7 +126,7 @@
                 class="app-btn app-btn--ghost"
                 type="button"
                 on:click={() => {
-                  onCloseEditor()
+                  onEditCancel()
                 }}
               >
                 Cancelar
@@ -156,7 +141,7 @@
                 type="button"
                 class="app-btn app-btn--ghost note-action-btn"
                 on:click={() => {
-                  onOpenEditor(note)
+                  onEditStart(note)
                 }}
               >
                 Editar
@@ -176,7 +161,7 @@
   </ul>
 
   {#if notes.length === 0}
-    <p class="notes-empty">No hay elementos para este filtro.</p>
+    <p class="notes-empty">No hay resultados para este filtro.</p>
   {/if}
 </div>
 

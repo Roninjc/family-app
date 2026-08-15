@@ -8,14 +8,14 @@
   export let generalExpiry = 'none'
   export let generalMaxUses = ''
 
-  export let invitedGeneral = false
-  export let inviteSuccess = ''
+  export let created = false
+  export let successMessage = ''
   export let inviteLink = ''
-  export let inviteError = ''
+  export let errorMessage = ''
 
   export let copyStatus = ''
   export let copyStatusTone: 'ok' | 'error' = 'ok'
-  export let onCopyInviteLink: (link: string) => void = () => {}
+  export let onCopyLink: (link: string) => void = () => {}
 </script>
 
 <form method="POST" action="?/inviteGeneral" use:enhance>
@@ -45,8 +45,8 @@
   </div>
 </form>
 
-{#if invitedGeneral}<p class="ok-note" role="status">Invitación general lista.</p>{/if}
-{#if inviteSuccess}<p class="ok-note" role="status">{inviteSuccess}</p>{/if}
+{#if created}<p class="ok-note" role="status">Invitación general lista.</p>{/if}
+{#if successMessage}<p class="ok-note" role="status">{successMessage}</p>{/if}
 {#if inviteLink}
   <div class="invite-link-card app-card-soft" role="status" aria-live="polite">
     <p class="ok-note invite-link">
@@ -57,7 +57,7 @@
         type="button"
         class="app-btn app-btn--secondary small"
         on:click={() => {
-          onCopyInviteLink(inviteLink)
+          onCopyLink(inviteLink)
         }}
       >
         Copiar enlace
@@ -71,7 +71,7 @@
     {/if}
   </div>
 {/if}
-{#if inviteError}<p class="error-note" role="alert">{inviteError}</p>{/if}
+{#if errorMessage}<p class="error-note" role="alert">{errorMessage}</p>{/if}
 
 <style lang="scss">
   .invite-row {

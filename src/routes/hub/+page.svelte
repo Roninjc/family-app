@@ -2,84 +2,65 @@
   import { onMount } from 'svelte'
   import FamilyNotesCard from '../../components/hub/familyNotesCard.svelte'
   import FamilyPreviewCard from '../../components/hub/familyPreviewCard.svelte'
+  import type {
+    HubActionFormState,
+    HubFamilySummary,
+    HubNote,
+    HubNoteType,
+    HubNotesFilter,
+    HubNotesStatusState
+  } from '../../components/hub/types'
   import PageHeader from '../../components/ui/pageHeader.svelte'
   import type { Role } from '$lib/types/auth'
+  import type { PageData } from './$types'
 
-  export let form:
-    | {
-        noteCreated?: boolean
-        noteUpdated?: boolean
-        noteDeleted?: boolean
-        noteError?: string
-        familyId?: string
-      }
-    | undefined = undefined
+  type HubPageData = Pick<
+    PageData,
+    | 'displayName'
+    | 'role'
+    | 'families'
+    | 'activeFamilyId'
+    | 'activeFamilyName'
+    | 'pendingInvitations'
+    | 'showPendingInvitations'
+  >
 
-  export let data: {
-    displayName: string
-    role: Role
-    families: Array<{
-      id: string
-      name: string
-      membersCount: number
-      linksCount: number
-      previewMembers: string[]
-        canManageNotes: boolean
-        notes: Array<{ id: string; title: string; body: string; noteType: 'news' | 'note' }>
-      treeHref: string
-    }>
-    activeFamilyId: string | null
-    activeFamilyName: string | null
-    pendingInvitations: number
-    showPendingInvitations: boolean
-  }
+  export let form: HubActionFormState | null | undefined = undefined
+
+  export let data: HubPageData
 
   let carousel: HTMLDivElement | null = null
   const cards = new Map<string, HTMLElement>()
   let selectedFamilyId = data.activeFamilyId ?? data.families[0]?.id ?? null
   let syncedServerActiveFamilyId = data.activeFamilyId
-  let selectedFamily:
-    | {
-        id: string
-        name: string
-        membersCount: number
-        linksCount: number
-        previewMembers: string[]
-        canManageNotes: boolean
-        notes: Array<{ id: string; title: string; body: string; noteType: 'news' | 'note' }>
-        treeHref: string
-      }
-    | undefined
+  let selectedFamily: HubFamilySummary | undefined
 
-  let editingNoteId: string | null = null
-  let draftTitle = ''
-  let draftBody = ''
-  let draftType: 'news' | 'note' = 'note'
-  let creatingForFamilyId: string | null = null
-  let notesFilterByFamily: Record<string, 'all' | 'news' | 'note'> = {}
-  let filteredNotesByFamily: Record<
-    string,
-    Array<{ id: string; title: string; body: string; noteType: 'news' | 'note' }>
-  > = {}
+  let editingId: string | null = null
+  let titleDraft = ''
+  let bodyDraft = ''
+  let typeDraft: HubNoteType = 'note'
+  let creatingFamilyId: string | null = null
+  let notesFilterByFamily: Record<string, HubNotesFilter> = {}
+  let filteredNotesByFamily: Record<string, HubNote[]> = {}
   let isNavigating = false
 
-  const openEditor = (note: { id: string; title: string; body: string; noteType: 'news' | 'note' }) => {
-    editingNoteId = note.id
-    draftTitle = note.title
-    draftBody = note.body
-    draftType = note.noteType
+  const startEdit = (note: HubNote) => {
+    editingId = note.id
+    titleDraft = note.title
+    bodyDraft = note.body
+    typeDraft = note.noteType
   }
 
-  const closeEditor = () => {
-    editingNoteId = null
-    draftTitle = ''
-    draftBody = ''
-    draftType = 'note'
+  const cancelEdit = () => {
+    editingId = null
+    titleDraft = ''
+    bodyDraft = ''
+    typeDraft = 'note'
   }
 
-  const toggleCreate = (familyId: string) => {
-    creatingForFamilyId = creatingForFamilyId === familyId ? null : familyId
-    closeEditor()
+  const toggleCreateComposer = (familyId: string) => {
+    creatingFamilyId = creatingFamilyId === familyId ? null : familyId
+    cancelEdit()
   }
 
   const roleLabels: Record<Role, string> = {
@@ -113,7 +94,7 @@
     )
   }
 
-  const setNotesFilter = (familyId: string, filter: 'all' | 'news' | 'note') => {
+  const setNotesFilter = (familyId: string, filter: HubNotesFilter) => {
     if ((notesFilterByFamily[familyId] ?? 'all') === filter) return
 
     notesFilterByFamily = {
@@ -126,6 +107,18 @@
     const value = event.detail
     if (value === 'all' || value === 'news' || value === 'note') {
       setNotesFilter(familyId, value)
+    }
+  }
+
+  const notesStatusForFamily = (familyId: string): HubNotesStatusState => {
+    if (!form) return {}
+    if (form.familyId && form.familyId !== familyId) return {}
+
+    return {
+      created: form.noteCreated,
+      updated: form.noteUpdated,
+      deleted: form.noteDeleted,
+      errorMessage: form.noteError
     }
   }
 
@@ -317,18 +310,18 @@
                 <FamilyNotesCard
                   {family}
                   notes={filteredNotesByFamily[family.id] ?? []}
-                  noteFilter={notesFilterByFamily[family.id] ?? 'all'}
-                  noteFilterOptions={notesFilterOptions}
-                  {form}
-                  {creatingForFamilyId}
-                  {editingNoteId}
-                  bind:draftTitle
-                  bind:draftBody
-                  bind:draftType
-                  onToggleCreate={toggleCreate}
+                  filter={notesFilterByFamily[family.id] ?? 'all'}
+                  filterOptions={notesFilterOptions}
+                  status={notesStatusForFamily(family.id)}
+                  {creatingFamilyId}
+                  {editingId}
+                  bind:titleDraft
+                  bind:bodyDraft
+                  bind:typeDraft
+                  onCreateToggle={toggleCreateComposer}
                   onFilterChange={(event) => onNotesFilterChange(family.id, event)}
-                  onOpenEditor={openEditor}
-                  onCloseEditor={closeEditor}
+                  onEditStart={startEdit}
+                  onEditCancel={cancelEdit}
                 />
               </div>
               <div class="loading-sheen" aria-hidden="true"></div>

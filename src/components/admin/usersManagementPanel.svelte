@@ -1,45 +1,29 @@
 <script lang="ts">
-  type Profile = {
-    id: string
-    email: string
-    display_name: string | null
-    role: string
-  }
+  import type { AdminMemberOption, AdminUserDraft, AdminUserProfile } from './types'
 
-  type Draft = {
-    role: string
-    memberId: string
-  }
-
-  type Member = {
-    id: string
-    name: string
-    family_name: string
-  }
-
-  export let profiles: Profile[] = []
-  export let userDraftsById: Record<string, Draft> = {}
-  export let availableMembersByProfileId: Record<string, Member[]> = {}
-  export let usersChangesCount = 0
-  export let usersSaved: number | undefined = undefined
-  export let usersError = ''
+  export let profiles: AdminUserProfile[] = []
+  export let userDraftsById: Record<string, AdminUserDraft> = {}
+  export let availableMembersByProfileId: Record<string, AdminMemberOption[]> = {}
+  export let changesCount = 0
+  export let successCount: number | undefined = undefined
+  export let errorMessage = ''
 
   export let canEditRole: (profileRole: string) => boolean = () => false
   export let canEditLink: (profileId: string) => boolean = () => false
   export let canShowAdminRole: (profileRole: string, draftRole: string) => boolean = () => false
-  export let onRoleDraftChange: (profileId: string, event: Event) => void = () => {}
-  export let onMemberDraftChange: (profileId: string, event: Event) => void = () => {}
-  export let onOpenUsersConfirmDialog: () => void = () => {}
+  export let onRoleChange: (profileId: string, event: Event) => void = () => {}
+  export let onMemberChange: (profileId: string, event: Event) => void = () => {}
+  export let onOpenConfirm: () => void = () => {}
 </script>
 
 <div class="bulk-save-row">
   <button
     type="button"
     class="app-btn app-btn--primary"
-    on:click={onOpenUsersConfirmDialog}
-    disabled={usersChangesCount === 0}
+    on:click={onOpenConfirm}
+    disabled={changesCount === 0}
   >
-    Guardar cambios ({usersChangesCount})
+    Guardar cambios ({changesCount})
   </button>
 </div>
 
@@ -53,7 +37,7 @@
           <select
             value={userDraftsById[profile.id]?.role ?? profile.role}
             disabled={!canEditRole(profile.role)}
-            on:change={(event) => onRoleDraftChange(profile.id, event)}
+            on:change={(event) => onRoleChange(profile.id, event)}
           >
             {#if canShowAdminRole(profile.role, userDraftsById[profile.id]?.role ?? profile.role)}
               <option value="admin">Administrador</option>
@@ -68,8 +52,8 @@
           <select
             value={userDraftsById[profile.id]?.memberId ?? ''}
             disabled={!canEditLink(profile.id)}
-            on:input={(event) => onMemberDraftChange(profile.id, event)}
-            on:change={(event) => onMemberDraftChange(profile.id, event)}
+            on:input={(event) => onMemberChange(profile.id, event)}
+            on:change={(event) => onMemberChange(profile.id, event)}
           >
             <option value="">Sin vínculo</option>
             {#each availableMembersByProfileId[profile.id] ?? [] as member (member.id)}
@@ -88,19 +72,19 @@
   <button
     type="button"
     class="app-btn app-btn--primary"
-    on:click={onOpenUsersConfirmDialog}
-    disabled={usersChangesCount === 0}
+    on:click={onOpenConfirm}
+    disabled={changesCount === 0}
   >
-    Guardar cambios ({usersChangesCount})
+    Guardar cambios ({changesCount})
   </button>
 </div>
 
-{#if usersSaved !== undefined}
+{#if successCount !== undefined}
   <p class="ok-note" role="status">
-    Cambios guardados: {usersSaved}
+    Cambios guardados: {successCount}
   </p>
 {/if}
-{#if usersError}<p class="error-note" role="alert">{usersError}</p>{/if}
+{#if errorMessage}<p class="error-note" role="alert">{errorMessage}</p>{/if}
 
 <style lang="scss">
   .users-list {

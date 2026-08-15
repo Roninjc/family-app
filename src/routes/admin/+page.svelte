@@ -3,6 +3,15 @@
   import { page } from '$app/stores'
   import type { SubmitFunction } from '@sveltejs/kit'
   import { onDestroy, onMount } from 'svelte'
+  import type {
+    AdminFamilySummary,
+    AdminInviteFilter,
+    AdminInviteSummary,
+    AdminMemberOption,
+    AdminUserDraft,
+    AdminUserProfile
+  } from '../../components/admin/types'
+  import type { ActionData, PageData } from './$types'
   import CollapsibleAdminSection from '../../components/admin/collapsibleAdminSection.svelte'
   import FamilyScopeCarousel from '../../components/admin/familyScopeCarousel.svelte'
   import FamilySettingsModal from '../../components/admin/familySettingsModal.svelte'
@@ -13,8 +22,8 @@
   import UsersConfirmModal from '../../components/admin/usersConfirmModal.svelte'
   import PageHeader from '../../components/ui/pageHeader.svelte'
 
-  export let data
-  export let form
+  export let data: PageData
+  export let form: ActionData | null | undefined
 
   let generalRole = 'viewer'
   let generalExpiry = 'none'
@@ -36,12 +45,7 @@
     member_linked: 'Vinculada a miembro'
   }
 
-  const inviteStatusLabel = (invite: {
-    revoked_at: string | null
-    expires_at: string | null
-    uses_count: number
-    max_uses: number | null
-  }) => {
+  const inviteStatusLabel = (invite: AdminInviteSummary) => {
     if (invite.revoked_at) return 'Revocada'
     if (invite.expires_at && Date.parse(invite.expires_at) <= Date.now()) return 'Caducada'
     if (invite.max_uses !== null && invite.uses_count >= invite.max_uses) return 'Límite alcanzado'
@@ -54,7 +58,7 @@
     return 'muted'
   }
 
-  let inviteFilter: 'all' | 'active' | 'expired' | 'revoked' | 'limit' = 'all'
+  let inviteFilter: AdminInviteFilter = 'all'
   const inviteFilterOptions = [
     { value: 'all', label: 'Todas' },
     { value: 'active', label: 'Activas' },
@@ -64,7 +68,16 @@
   ]
 
   function onInviteFilterChange(event: CustomEvent<string>) {
-    inviteFilter = event.detail as typeof inviteFilter
+    const nextFilter = event.detail
+    if (
+      nextFilter === 'all' ||
+      nextFilter === 'active' ||
+      nextFilter === 'expired' ||
+      nextFilter === 'revoked' ||
+      nextFilter === 'limit'
+    ) {
+      inviteFilter = nextFilter
+    }
   }
   let familyCarousel: HTMLDivElement | null = null
   const familyCards = new Map<string, HTMLElement>()
@@ -85,15 +98,7 @@
   let familySettingsFamilyId = ''
   let familyNameDraft = ''
 
-  const inviteMatchesFilter = (
-    invite: {
-      revoked_at: string | null
-      expires_at: string | null
-      uses_count: number
-      max_uses: number | null
-    },
-    filter: 'all' | 'active' | 'expired' | 'revoked' | 'limit'
-  ) => {
+  const inviteMatchesFilter = (invite: AdminInviteSummary, filter: AdminInviteFilter) => {
     const status = inviteStatusLabel(invite)
 
     if (filter === 'all') return true
@@ -196,11 +201,6 @@
   $: filteredInvites = data.invites.filter((invite) => inviteMatchesFilter(invite, inviteFilter))
   $: currentUserId = data.currentUserId ?? data.manager?.id ?? ''
 
-  type UserDraft = {
-    role: string
-    memberId: string
-  }
-
   type UserDraftChange = {
     profileId: string
     displayName: string
@@ -212,7 +212,7 @@
     linkChanged: boolean
   }
 
-  let userDraftsById: Record<string, UserDraft> = {}
+  let userDraftsById: Record<string, AdminUserDraft> = {}
   let userDraftsSeed = ''
   let usersChanges: UserDraftChange[] = []
   let usersChangesJson = '[]'
@@ -221,7 +221,7 @@
   let linkChanges: UserDraftChange[] = []
   let availableMembersByProfileId: Record<
     string,
-    Array<{ id: string; name: string; family_name: string }>
+    AdminMemberOption[]
   > = {}
 
   const normalizeMemberId = (value: string | null | undefined) => value?.trim() ?? ''
@@ -243,7 +243,7 @@
     )
   }
 
-  const profileDisplayName = (profile: { display_name: string | null; email: string }) =>
+  const profileDisplayName = (profile: AdminUserProfile) =>
     profile.display_name?.trim() || profile.email
 
   const updateUserDraftRole = (profileId: string, value: string) => {
@@ -391,7 +391,7 @@
     // TODO: Revisar actualización en vivo de opciones de vínculo entre filas.
     // En ciertos flujos el borrador no refleja inmediatamente la disponibilidad
     // al cambiar de usuario; retomar este ajuste en una iteración posterior.
-    const nextByProfileId: Record<string, Array<{ id: string; name: string; family_name: string }>> = {}
+    const nextByProfileId: Record<string, AdminMemberOption[]> = {}
     for (const profile of data.profiles) {
       nextByProfileId[profile.id] = buildAvailableMembersForProfile(profile.id)
     }
@@ -418,7 +418,7 @@
     switchFamily(familyId)
   }
 
-  const openFamilySettingsModal = (family: { id: string; name: string; role: string }) => {
+  const openFamilySettingsModal = (family: AdminFamilySummary) => {
     if (family.role === 'viewer') return
     familySettingsFamilyId = family.id
     familyNameDraft = family.name
@@ -558,13 +558,13 @@
         bind:generalRole
         bind:generalExpiry
         bind:generalMaxUses
-        invitedGeneral={Boolean(form?.invitedGeneral)}
-        inviteSuccess={form?.inviteSuccess ?? ''}
+        created={Boolean(form?.invitedGeneral)}
+        successMessage={form?.inviteSuccess ?? ''}
         inviteLink={form?.inviteLink ?? ''}
-        inviteError={form?.inviteError ?? ''}
+        errorMessage={form?.inviteError ?? ''}
         {copyStatus}
         {copyStatusTone}
-        onCopyInviteLink={copyInviteLink}
+        onCopyLink={copyInviteLink}
       />
     </CollapsibleAdminSection>
 
@@ -585,8 +585,8 @@
         bind:memberId
         bind:memberRole
         bind:memberExpiry
-        invitedMember={form?.invitedMember ?? ''}
-        inviteError={form?.inviteError ?? ''}
+        successMessage={form?.invitedMember ? `Invitación vinculada lista para ${form.invitedMember}.` : ''}
+        errorMessage={form?.inviteError ?? ''}
       />
     </CollapsibleAdminSection>
 
@@ -605,15 +605,15 @@
         {activeFamilyId}
         {inviteFilter}
         {inviteFilterOptions}
-        {onInviteFilterChange}
         {roleLabels}
         {inviteTypeLabels}
         {memberNameById}
         {formatDate}
         {inviteStatusLabel}
         {inviteStatusTone}
-        revokeSuccessMessage={form?.revokeSuccess ?? ''}
-        inviteErrorMessage={form?.inviteError ?? ''}
+        onFilterChange={onInviteFilterChange}
+        successMessage={form?.revokeSuccess ?? ''}
+        errorMessage={form?.inviteError ?? ''}
       />
     </CollapsibleAdminSection>
   {/if}
@@ -631,15 +631,15 @@
       profiles={data.profiles}
       {userDraftsById}
       {availableMembersByProfileId}
-      usersChangesCount={usersChanges.length}
-      usersSaved={form?.usersSaved}
-      usersError={form?.usersError ?? ''}
+      changesCount={usersChanges.length}
+      successCount={form?.usersSaved}
+      errorMessage={form?.usersError ?? ''}
       {canEditRole}
       {canEditLink}
       {canShowAdminRole}
-      {onRoleDraftChange}
-      {onMemberDraftChange}
-      onOpenUsersConfirmDialog={openUsersConfirmDialog}
+      onRoleChange={onRoleDraftChange}
+      onMemberChange={onMemberDraftChange}
+      onOpenConfirm={openUsersConfirmDialog}
     />
   </CollapsibleAdminSection>
 
