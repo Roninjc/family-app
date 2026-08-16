@@ -20,10 +20,11 @@
   import MemberInvitePanel from '../../components/admin/memberInvitePanel.svelte'
   import UsersManagementPanel from '../../components/admin/usersManagementPanel.svelte'
   import UsersConfirmModal from '../../components/admin/usersConfirmModal.svelte'
-  import PageHeader from '../../components/ui/pageHeader.svelte'
 
   export let data: PageData
   export let form: ActionData | null | undefined
+  export let params: Record<string, string> = {}
+  $: routeParamsCount = Object.keys(params).length
 
   let generalRole = 'viewer'
   let generalExpiry = 'none'
@@ -84,16 +85,6 @@
   let focusedFamilyId = ''
   let pendingFamilyId: string | null = null
   let switchFamilyTimer: ReturnType<typeof setTimeout> | null = null
-  const FAMILY_NAME_FADE_MS = 220
-  let displayedFamilyName = ''
-  let displayedFamilyRoleLabel = ''
-  let pendingFamilyName: string | null = null
-  let pendingFamilyRoleLabel: string | null = null
-  let previousActiveFamilyName = ''
-  let previousActiveFamilyRole = ''
-  let familyNameSwitchTimer: ReturnType<typeof setTimeout> | null = null
-  let isFamilyNameVisible = true
-  let familyNameReady = false
   let showFamilySettingsModal = false
   let familySettingsFamilyId = ''
   let familyNameDraft = ''
@@ -143,7 +134,6 @@
   onDestroy(() => {
     if (clearCopyStatusTimer) clearTimeout(clearCopyStatusTimer)
     if (switchFamilyTimer) clearTimeout(switchFamilyTimer)
-    if (familyNameSwitchTimer) clearTimeout(familyNameSwitchTimer)
   })
 
   const formatDate = (value: string | null) => {
@@ -167,33 +157,7 @@
   }
   $: activeFamilyId = data.activeFamily?.id ?? ''
   $: activeFamily = data.families.find((family) => family.id === activeFamilyId) ?? null
-  $: activeFamilyName = activeFamily?.name ?? ''
   $: activeFamilyRole = activeFamily?.role ?? 'viewer'
-  $: activeFamilyRoleLabel = roleLabels[activeFamilyRole] ?? roleLabels.viewer
-  $: if (activeFamilyName !== previousActiveFamilyName || activeFamilyRole !== previousActiveFamilyRole) {
-    previousActiveFamilyName = activeFamilyName
-    previousActiveFamilyRole = activeFamilyRole
-
-    if (!familyNameReady) {
-      displayedFamilyName = activeFamilyName
-      displayedFamilyRoleLabel = activeFamilyRoleLabel
-      isFamilyNameVisible = true
-      familyNameReady = true
-    } else {
-      pendingFamilyName = activeFamilyName
-      pendingFamilyRoleLabel = activeFamilyRoleLabel
-      isFamilyNameVisible = false
-
-      if (familyNameSwitchTimer) clearTimeout(familyNameSwitchTimer)
-      familyNameSwitchTimer = setTimeout(() => {
-        displayedFamilyName = pendingFamilyName ?? ''
-        displayedFamilyRoleLabel = pendingFamilyRoleLabel ?? roleLabels.viewer
-        pendingFamilyName = null
-        pendingFamilyRoleLabel = null
-        isFamilyNameVisible = true
-      }, FAMILY_NAME_FADE_MS)
-    }
-  }
   $: focusedFamilyId = activeFamilyId
   $: if (pendingFamilyId && pendingFamilyId === activeFamilyId) {
     pendingFamilyId = null
@@ -219,10 +183,7 @@
   let showUsersConfirmModal = false
   let roleChanges: UserDraftChange[] = []
   let linkChanges: UserDraftChange[] = []
-  let availableMembersByProfileId: Record<
-    string,
-    AdminMemberOption[]
-  > = {}
+  let availableMembersByProfileId: Record<string, AdminMemberOption[]> = {}
 
   const normalizeMemberId = (value: string | null | undefined) => value?.trim() ?? ''
 
@@ -282,7 +243,8 @@
     updateUserDraftMember(profileId, select.value)
   }
 
-  const linkedMemberByProfileId = (profileId: string) => normalizeMemberId(userDraftsById[profileId]?.memberId)
+  const linkedMemberByProfileId = (profileId: string) =>
+    normalizeMemberId(userDraftsById[profileId]?.memberId)
 
   const buildAvailableMembersForProfile = (profileId: string) => {
     const selectedMemberId = linkedMemberByProfileId(profileId)
@@ -503,33 +465,10 @@
 </script>
 
 <svelte:head>
-  <title>Administración — Familia Castaño</title>
+  <title>Administración — Orikara</title>
 </svelte:head>
 
-<PageHeader className="admin-header reveal-fade-up" ariaLabel="Cabecera de administración">
-  <div class="admin-header-content">
-      <div class="page-heading">
-        <h1>Administración</h1>
-        <div class="heading-family-context">
-          <p
-            class="heading-family-name"
-            class:is-hidden={!isFamilyNameVisible}
-          >
-            {displayedFamilyName}
-          </p>
-          <p
-            class="heading-family-role"
-            class:is-hidden={!isFamilyNameVisible}
-          >
-            {displayedFamilyRoleLabel}
-          </p>
-        </div>
-      </div>
-  </div>
-</PageHeader>
-
-<main class="admin-page page-shell">
-
+<main class="admin-page page-shell" data-route-params-count={routeParamsCount}>
   <FamilyScopeCarousel
     families={data.families}
     {focusedFamilyId}
@@ -585,7 +524,9 @@
         bind:memberId
         bind:memberRole
         bind:memberExpiry
-        successMessage={form?.invitedMember ? `Invitación vinculada lista para ${form.invitedMember}.` : ''}
+        successMessage={form?.invitedMember
+          ? `Invitación vinculada lista para ${form.invitedMember}.`
+          : ''}
         errorMessage={form?.inviteError ?? ''}
       />
     </CollapsibleAdminSection>
@@ -643,31 +584,30 @@
     />
   </CollapsibleAdminSection>
 
-    <UsersConfirmModal
-      open={showUsersConfirmModal}
-      onClose={closeUsersConfirmDialog}
-      {usersChanges}
-      {roleLabels}
-      roleChangesCount={roleChanges.length}
-      linkChangesCount={linkChanges.length}
-      {activeFamilyId}
-      {usersChangesJson}
-      {usersSaveEnhance}
-      {memberDisplayName}
-    />
+  <UsersConfirmModal
+    open={showUsersConfirmModal}
+    onClose={closeUsersConfirmDialog}
+    {usersChanges}
+    {roleLabels}
+    roleChangesCount={roleChanges.length}
+    linkChangesCount={linkChanges.length}
+    {activeFamilyId}
+    {usersChangesJson}
+    {usersSaveEnhance}
+    {memberDisplayName}
+  />
 
-    <FamilySettingsModal
-      open={showFamilySettingsModal}
-      onClose={closeFamilySettingsModal}
-      {familySettingsFamilyId}
-      bind:familyNameDraft
-      successMessage={
-        form?.familySettingsSuccess && form?.familySettingsFamilyId === familySettingsFamilyId
-          ? form.familySettingsSuccess
-          : ''
-      }
-      errorMessage={form?.familySettingsError ?? ''}
-    />
+  <FamilySettingsModal
+    open={showFamilySettingsModal}
+    onClose={closeFamilySettingsModal}
+    {familySettingsFamilyId}
+    bind:familyNameDraft
+    successMessage={form?.familySettingsSuccess &&
+    form?.familySettingsFamilyId === familySettingsFamilyId
+      ? form.familySettingsSuccess
+      : ''}
+    errorMessage={form?.familySettingsError ?? ''}
+  />
 </main>
 
 <style lang="scss">
@@ -679,63 +619,5 @@
     min-height: 100vh;
     padding-top: 0;
     padding-bottom: max(114px, env(safe-area-inset-bottom));
-  }
-
-  .admin-header-content {
-    display: flex;
-    flex-direction: column;
-    font-family: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
-  }
-
-  .admin-header-content h1 {
-    font-family: inherit;
-  }
-
-  .page-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 0.55rem;
-    flex-wrap: wrap;
-  }
-
-  .heading-family-context {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 2px;
-  }
-
-  .heading-family-name {
-    margin: 0;
-    font-size: var(--fs-sm);
-    color: var(--text-muted);
-    font-weight: 700;
-    opacity: 1;
-    transition: opacity 600ms var(--motion-standard);
-
-    &.is-hidden {
-      opacity: 0;
-    }
-  }
-
-  .heading-family-role {
-    margin: 0;
-    font-size: var(--fs-xs);
-    color: var(--text-muted);
-    font-weight: 600;
-    opacity: 1;
-    transition: opacity 600ms var(--motion-standard);
-
-    &.is-hidden {
-      opacity: 0;
-    }
-  }
-
-  @media (min-width: 760px) {
-    .admin-header-content {
-      padding: 18px 20px 16px;
-    }
   }
 </style>

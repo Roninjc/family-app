@@ -1,11 +1,24 @@
 <script lang="ts">
+  import { base } from '$app/paths'
   import { invalidate } from '$app/navigation'
-  import { page } from '$app/stores'
+  import { navigating, page } from '$app/stores'
+  import { fade } from 'svelte/transition'
   import { onMount } from 'svelte'
+  import { canEdit } from '$lib/types/auth'
+  import { showAddMemberModal } from '../stores/modals'
   import BottomNav from '../components/bottomNav.svelte'
+  import PageHeader from '../components/ui/pageHeader.svelte'
 
   export let data
+  export let params: Record<string, string> = {}
+  $: routeParamsCount = Object.keys(params).length
   let showTopFade = false
+  let displayedPathname = ''
+  let displayedHeaderKey = ''
+  let headerContentVisible = true
+  let headerSwapTimer: ReturnType<typeof setTimeout> | null = null
+
+  const HEADER_SWAP_MS = 100
 
   const roleLabel = (role: string | null) => {
     if (role === 'admin') return 'administrador'
@@ -22,14 +35,48 @@
   }
 
   $: ({ supabase, user } = data)
+  $: pathname = $page.url.pathname
+  $: isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/auth')
+  $: showPersistentHeader = Boolean(user || data.profile) && !isAuthRoute
+  $: canManageTree = canEdit($page.data.profile ?? data.profile)
+  $: availableFamilies = $page.data.availableFamilies ?? data.availableFamilies ?? []
+  $: activeFamilyId = $page.data.activeFamilyId ?? data.activeFamilyId ?? null
+  $: activeFamily =
+    availableFamilies.find((family: { id: string }) => family.id === activeFamilyId) ?? null
+  $: activeFamilyName =
+    ($page.data.activeFamilyName as string | undefined) ?? activeFamily?.name ?? null
+  $: displayName =
+    ($page.data.displayName as string | undefined) ?? data.profile?.display_name ?? 'Familiar'
+  $: showPendingInvites = Boolean($page.data.showPendingInvitations)
+  $: pendingInvites = Number($page.data.pendingInvitations ?? 0)
   $: signupNoticeCode = $page.url.searchParams.get('signup_notice')
   $: signupFamily = $page.url.searchParams.get('signup_family')
   $: signupRole = roleLabel($page.url.searchParams.get('signup_role'))
+  $: isNavigating = Boolean($navigating)
+  $: routeHeaderKey =
+    pathname === '/admin' ? `${pathname}:${activeFamilyId ?? 'sin-familia'}` : pathname
+  $: if (!displayedHeaderKey && routeHeaderKey) {
+    displayedHeaderKey = routeHeaderKey
+    displayedPathname = pathname
+  }
+  $: if (displayedHeaderKey && routeHeaderKey !== displayedHeaderKey) {
+    if (headerSwapTimer) clearTimeout(headerSwapTimer)
+    headerContentVisible = false
+    headerSwapTimer = setTimeout(() => {
+      displayedHeaderKey = routeHeaderKey
+      displayedPathname = pathname
+      headerContentVisible = true
+      headerSwapTimer = null
+    }, HEADER_SWAP_MS)
+  }
   $: signupNoticeMessage =
     signupNoticeCode === 'invitation_accepted'
       ? `Tu cuenta está lista. Ya has entrado${inviteContextText(signupFamily, signupRole)}.`
       : signupNoticeCode === 'member_link_already_claimed'
-        ? `Tu cuenta se creó correctamente${inviteContextText(signupFamily, signupRole)}, pero ese miembro ya está vinculado a otra cuenta.`
+        ? `Tu cuenta se creó correctamente${inviteContextText(
+            signupFamily,
+            signupRole
+          )}, pero ese miembro ya está vinculado a otra cuenta.`
         : null
 
   function handleViewportScroll() {
@@ -39,6 +86,14 @@
   onMount(() => {
     handleViewportScroll()
     window.addEventListener('scroll', handleViewportScroll, { passive: true })
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register(`${base}/service-worker.js`, { type: 'module' })
+        .catch(() => {
+          // The app works without SW; ignore registration failures.
+        })
+    }
 
     const {
       data: { subscription }
@@ -51,6 +106,7 @@
     return () => {
       window.removeEventListener('scroll', handleViewportScroll)
       subscription.unsubscribe()
+      if (headerSwapTimer) clearTimeout(headerSwapTimer)
     }
   })
 </script>
@@ -59,6 +115,60 @@
   <div class="signup-notice" role="status">
     {signupNoticeMessage}
   </div>
+{/if}
+
+<div
+  class="route-progress"
+  class:active={isNavigating}
+  data-route-params-count={routeParamsCount}
+  aria-hidden="true"
+></div>
+
+{#if showPersistentHeader}
+  <PageHeader className="route-header-shell" ariaLabel="Cabecera principal">
+    <div class="route-header-inner">
+      {#if headerContentVisible}
+        <div class="route-header-content" in:fade={{ duration: 125 }} out:fade={{ duration: 95 }}>
+          {#if displayedPathname === '/'}
+            <div class="route-header-copy">
+              <p class="route-header-crumb">Árbol</p>
+              <h1>{activeFamilyName ?? 'Sin familia'}</h1>
+            </div>
+            {#if canManageTree}
+              <button
+                type="button"
+                class="route-header-action app-btn app-btn--ghost"
+                on:click={() => showAddMemberModal.set(true)}
+              >
+                <span aria-hidden="true">+</span>
+                <span>Añadir</span>
+              </button>
+            {/if}
+          {:else if displayedPathname === '/hub'}
+            <div class="route-header-copy">
+              <p class="route-header-crumb">Hub</p>
+              <h1>Hola, {displayName}</h1>
+            </div>
+            {#if showPendingInvites}
+              <a class="route-header-action app-btn app-btn--ghost" href="/admin">
+                Invitaciones{pendingInvites > 0 ? ` ${pendingInvites}` : ''}
+              </a>
+            {/if}
+          {:else if displayedPathname === '/admin'}
+            <div class="route-header-copy">
+              <p class="route-header-crumb">Administración</p>
+              <h1>{activeFamilyName ?? 'Sin familia'}</h1>
+            </div>
+          {:else if displayedPathname === '/profile'}
+            <div class="route-header-copy">
+              <p class="route-header-crumb">Perfil</p>
+              <h1>{displayName}</h1>
+            </div>
+          {/if}
+        </div>
+      {/if}
+    </div>
+  </PageHeader>
 {/if}
 
 <slot />
@@ -70,11 +180,9 @@
 
 <style lang="scss">
   :global(:root) {
-    --app-bg:
-      radial-gradient(circle at 10% 14%, rgba(235, 223, 204, 0.34), transparent 34%),
+    --app-bg: radial-gradient(circle at 10% 14%, rgba(235, 223, 204, 0.34), transparent 34%),
       radial-gradient(circle at 86% 10%, rgba(226, 212, 194, 0.34), transparent 30%),
-      radial-gradient(circle at 22% 78%, rgba(208, 216, 194, 0.24), transparent 36%),
-      #f1ece4;
+      radial-gradient(circle at 22% 78%, rgba(208, 216, 194, 0.24), transparent 36%), #f1ece4;
     --app-bg-deep: #f1ece4;
     --surface-soft: rgba(255, 255, 255, 0.34);
     --surface-strong: rgba(255, 255, 255, 0.56);
@@ -82,21 +190,15 @@
     --glass-surface-strong: rgba(255, 254, 251, 0.78);
     --glass-border: rgba(236, 226, 212, 0.9);
     --glass-border-soft: rgba(219, 205, 188, 0.62);
-    --glass-shadow:
-      0 16px 34px rgba(79, 66, 53, 0.13),
-      inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    --glass-shadow: 0 16px 34px rgba(79, 66, 53, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.75);
     --neu-surface: #efe8de;
     --neu-surface-soft: #f4efe7;
     --neu-light: rgba(255, 255, 255, 0.8);
     --neu-dark: rgba(154, 132, 109, 0.3);
-    --neu-shadow-out:
-      8px 8px 16px var(--neu-dark),
-      -8px -8px 16px var(--neu-light);
-    --neu-shadow-out-soft:
-      5px 5px 10px rgba(154, 132, 109, 0.24),
+    --neu-shadow-out: 8px 8px 16px var(--neu-dark), -8px -8px 16px var(--neu-light);
+    --neu-shadow-out-soft: 5px 5px 10px rgba(154, 132, 109, 0.24),
       -5px -5px 10px rgba(255, 255, 255, 0.76);
-    --neu-shadow-inset:
-      inset 5px 5px 10px rgba(154, 132, 109, 0.24),
+    --neu-shadow-inset: inset 5px 5px 10px rgba(154, 132, 109, 0.24),
       inset -5px -5px 10px rgba(255, 255, 255, 0.76);
     --text-main: #2e2823;
     --text-muted: #544b43;
@@ -128,15 +230,14 @@
     --fs-xl: clamp(1.35rem, 1.18rem + 0.8vw, 1.8rem);
     --lh-tight: 1.2;
     --lh-copy: 1.5;
-    --nav-dock-shadow:
-      0 14px 24px rgba(88, 71, 56, 0.15),
-      inset 0 1px 0 rgba(255, 255, 255, 0.52);
-    --tree-node-surface:
-      linear-gradient(165deg, rgba(255, 253, 250, 0.94), rgba(242, 234, 223, 0.72));
+    --nav-dock-shadow: 0 14px 24px rgba(88, 71, 56, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.52);
+    --tree-node-surface: linear-gradient(
+      165deg,
+      rgba(255, 253, 250, 0.94),
+      rgba(242, 234, 223, 0.72)
+    );
     --tree-node-border: rgba(187, 167, 147, 0.5);
-    --tree-node-shadow:
-      0 14px 22px rgba(88, 69, 52, 0.14),
-      inset 0 1px 0 rgba(255, 255, 255, 0.84);
+    --tree-node-shadow: 0 14px 22px rgba(88, 69, 52, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.84);
     --tree-line-main: #85705f;
     --tree-line-soft: #a29182;
     --tree-band-a: rgba(250, 245, 238, 0.2);
@@ -303,7 +404,7 @@
     top: 0;
     z-index: 10;
     pointer-events: none;
-    padding: max(8px, env(safe-area-inset-top)) 10px 0;
+    padding: max(10px, env(safe-area-inset-top)) 16px 4px;
     margin-bottom: var(--page-header-content-gap, 30px);
   }
 
@@ -315,7 +416,7 @@
 
   :global(.app-page-header-content) {
     width: 100%;
-    padding: 16px 18px 15px;
+    padding: 12px 18px 11px;
     display: flex;
     flex-direction: column;
   }
@@ -452,7 +553,9 @@
   :global(.app-autocomplete-suggestions li) {
     padding: 10px 16px;
     cursor: pointer;
-    transition: background-color 0.2s var(--motion-standard), color 0.2s var(--motion-standard);
+    transition:
+      background-color 0.2s var(--motion-standard),
+      color 0.2s var(--motion-standard);
   }
 
   :global(.app-autocomplete-suggestions li:hover),
@@ -590,7 +693,9 @@
 
   :global(.app-bottom-nav a:hover) {
     transform: translateY(-1px);
-    box-shadow: 6px 6px 12px rgba(154, 132, 109, 0.28), -6px -6px 12px rgba(255, 255, 255, 0.8);
+    box-shadow:
+      6px 6px 12px rgba(154, 132, 109, 0.28),
+      -6px -6px 12px rgba(255, 255, 255, 0.8);
   }
 
   :global(.app-bottom-nav a[aria-current='page']) {
@@ -900,5 +1005,113 @@
     font-size: var(--fs-sm);
     line-height: 1.35;
     text-align: center;
+  }
+
+  :global(.route-header-shell) {
+    margin-bottom: 20px;
+  }
+
+  .route-header-inner {
+    min-height: 74px;
+  }
+
+  .route-header-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    min-height: 74px;
+  }
+
+  :global(.route-header-shell h1) {
+    font-weight: 800;
+    letter-spacing: 0.01em;
+  }
+
+  .route-header-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .route-header-crumb {
+    margin: 0;
+    font-size: var(--fs-2xs);
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .route-header-action {
+    min-height: 38px;
+    padding: 0.48rem 0.78rem;
+    border-radius: 11px;
+    font-size: var(--fs-xs);
+    gap: 0.38rem;
+    flex-shrink: 0;
+    align-self: center;
+    color: #6f4e33;
+    border: none;
+    background: #f1e7da;
+    box-shadow:
+      5px 5px 12px rgba(149, 121, 95, 0.14),
+      -5px -5px 12px rgba(255, 255, 255, 0.72);
+  }
+
+  .route-header-action:hover:not(:disabled):not([aria-disabled='true']) {
+    background: #f6ede2;
+    transform: translateY(-1px);
+    box-shadow:
+      7px 7px 14px rgba(149, 121, 95, 0.17),
+      -6px -6px 14px rgba(255, 255, 255, 0.78);
+  }
+
+  @media (max-width: 760px) {
+    .route-header-content {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+    }
+
+    .route-header-action {
+      min-height: 36px;
+      padding: 0.4rem 0.68rem;
+    }
+  }
+
+  .route-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    z-index: 2100;
+    pointer-events: none;
+    opacity: 0;
+    transform: scaleX(0.08);
+    transform-origin: left center;
+    transition:
+      opacity 0.12s var(--motion-standard),
+      transform 0.28s var(--motion-standard);
+    background: linear-gradient(90deg, rgba(114, 129, 95, 0.85), rgba(155, 113, 88, 0.92));
+    box-shadow: 0 0 10px rgba(114, 129, 95, 0.28);
+  }
+
+  .route-progress.active {
+    opacity: 1;
+    transform: scaleX(0.88);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .route-progress,
+    .route-progress.active {
+      opacity: 0;
+      transform: none;
+      transition: none;
+    }
+
+    .route-header-inner {
+      transition: none !important;
+    }
   }
 </style>

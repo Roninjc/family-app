@@ -4,6 +4,8 @@
   import SurfaceWrapper from '../../components/surfaceWrapper.svelte'
 
   export let form
+  export let params: Record<string, string> = {}
+  $: routeParamsCount = Object.keys(params).length
 
   let email = form?.email ?? ''
   let password = ''
@@ -25,14 +27,14 @@
 </script>
 
 <svelte:head>
-  <title>Entrar — Familia Castaño</title>
+  <title>Entrar — Orikara</title>
 </svelte:head>
 
-<main>
+<main data-route-params-count={routeParamsCount}>
   <div class="login-card reveal-fade-up">
     <SurfaceWrapper>
       <div class="login-content">
-        <h1>Familia Castaño</h1>
+        <h1>Orikara</h1>
         <p class="subtitle">Inicia sesión con tu email para entrar al hub familiar.</p>
 
         {#if form?.sent}

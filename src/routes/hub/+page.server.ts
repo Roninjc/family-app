@@ -6,7 +6,11 @@ import {
   loadUserFamilies,
   resolveAndPersistActiveFamily
 } from '$lib/server/activeFamily'
-import { buildFamilyGroups, resolveActiveFamilyId, toRowsFromFamilyData } from '$lib/server/familyGroups'
+import {
+  buildFamilyGroups,
+  resolveActiveFamilyId,
+  toRowsFromFamilyData
+} from '$lib/server/familyGroups'
 import { isMockFamilyMode } from '$lib/server/mockMode'
 import type { Role } from '$lib/types/auth'
 import type { Actions, PageServerLoad } from './$types'
@@ -84,6 +88,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, user }, cookies
     const families = groups.map((group) => ({
       id: group.id,
       name: group.name,
+      role: 'editor' as Role,
       membersCount: group.membersCount,
       linksCount: group.linksCount,
       previewMembers: group.previewMembers,
@@ -177,6 +182,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, user }, cookies
   const families = userFamilies.map((family) => ({
     id: family.id,
     name: family.name,
+    role: family.role,
     membersCount: countByFamily.get(family.id) ?? 0,
     linksCount: 0,
     previewMembers: previewByFamily.get(family.id) ?? [],
@@ -229,8 +235,10 @@ export const actions: Actions = {
     const noteTypeRaw = String(form.get('noteType') ?? 'note').trim()
     const noteType = noteTypeRaw === 'news' ? 'news' : 'note'
 
-    if (!title) return fail(400, { noteError: 'El título es obligatorio.', familyId: requestedFamilyId })
-    if (!body) return fail(400, { noteError: 'El contenido es obligatorio.', familyId: requestedFamilyId })
+    if (!title)
+      return fail(400, { noteError: 'El título es obligatorio.', familyId: requestedFamilyId })
+    if (!body)
+      return fail(400, { noteError: 'El contenido es obligatorio.', familyId: requestedFamilyId })
 
     const { activeFamily, activeFamilyId } = await resolveFamilyForAction({
       supabase,
@@ -240,7 +248,10 @@ export const actions: Actions = {
     })
 
     if (!activeFamilyId || !activeFamily) {
-      return fail(400, { noteError: 'No hay una familia activa válida.', familyId: requestedFamilyId })
+      return fail(400, {
+        noteError: 'No hay una familia activa válida.',
+        familyId: requestedFamilyId
+      })
     }
 
     const { error } = await supabase.from('family_notes').insert({
@@ -278,9 +289,12 @@ export const actions: Actions = {
     const noteTypeRaw = String(form.get('noteType') ?? 'note').trim()
     const noteType = noteTypeRaw === 'news' ? 'news' : 'note'
 
-    if (!noteId) return fail(400, { noteError: 'Falta la nota a editar.', familyId: requestedFamilyId })
-    if (!title) return fail(400, { noteError: 'El título es obligatorio.', familyId: requestedFamilyId })
-    if (!body) return fail(400, { noteError: 'El contenido es obligatorio.', familyId: requestedFamilyId })
+    if (!noteId)
+      return fail(400, { noteError: 'Falta la nota a editar.', familyId: requestedFamilyId })
+    if (!title)
+      return fail(400, { noteError: 'El título es obligatorio.', familyId: requestedFamilyId })
+    if (!body)
+      return fail(400, { noteError: 'El contenido es obligatorio.', familyId: requestedFamilyId })
 
     const { activeFamily, activeFamilyId } = await resolveFamilyForAction({
       supabase,
@@ -290,7 +304,10 @@ export const actions: Actions = {
     })
 
     if (!activeFamilyId || !activeFamily) {
-      return fail(400, { noteError: 'No hay una familia activa válida.', familyId: requestedFamilyId })
+      return fail(400, {
+        noteError: 'No hay una familia activa válida.',
+        familyId: requestedFamilyId
+      })
     }
 
     const { error } = await supabase
@@ -322,7 +339,8 @@ export const actions: Actions = {
     const requestedFamilyId = String(form.get('familyId') ?? '').trim() || null
     const noteId = String(form.get('noteId') ?? '').trim()
 
-    if (!noteId) return fail(400, { noteError: 'Falta la nota a eliminar.', familyId: requestedFamilyId })
+    if (!noteId)
+      return fail(400, { noteError: 'Falta la nota a eliminar.', familyId: requestedFamilyId })
 
     const { activeFamily, activeFamilyId } = await resolveFamilyForAction({
       supabase,
@@ -332,7 +350,10 @@ export const actions: Actions = {
     })
 
     if (!activeFamilyId || !activeFamily) {
-      return fail(400, { noteError: 'No hay una familia activa válida.', familyId: requestedFamilyId })
+      return fail(400, {
+        noteError: 'No hay una familia activa válida.',
+        familyId: requestedFamilyId
+      })
     }
 
     const { error } = await supabase

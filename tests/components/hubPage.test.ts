@@ -127,9 +127,10 @@ describe('hub page carousel', () => {
 
     await tick()
 
-    expect(document.querySelector('.family-panel.active .note-create-toggle')?.textContent).toContain(
-      'Nueva nota'
-    )
+    expect(document.querySelector('.family-panel.active .note-create-toggle')).toBeTruthy()
+    expect(
+      document.querySelector('.family-panel.active .note-create-toggle')?.getAttribute('title')
+    ).toContain('Nueva nota')
     expect(document.querySelector('.family-panel.active .note-action-btn')?.textContent).toContain(
       'Editar'
     )
@@ -199,8 +200,8 @@ describe('hub page carousel', () => {
     secondDot.click()
     await tick()
 
-    const statusMessages = [...document.querySelectorAll('.family-panel.active .note-ok')].map((node) =>
-      node.textContent?.trim()
+    const statusMessages = [...document.querySelectorAll('.family-panel.active .note-ok')].map(
+      (node) => node.textContent?.trim()
     )
 
     expect(statusMessages).toContain('Nota creada.')
@@ -235,23 +236,22 @@ describe('hub page carousel', () => {
 
     expect(document.querySelectorAll('.family-panel.active .notes-card li')).toHaveLength(2)
 
-    const allFilter = document.querySelector(
-      '.family-panel.active [data-note-filter="all"]'
-    ) as HTMLButtonElement
-    const newsFilter = document.querySelector(
-      '.family-panel.active [data-note-filter="news"]'
-    ) as HTMLButtonElement
-    const notesFilter = document.querySelector(
-      '.family-panel.active [data-note-filter="note"]'
-    ) as HTMLButtonElement
+    const filterButtons = [
+      ...document.querySelectorAll<HTMLButtonElement>(
+        '.family-panel.active .notes-filter-row button'
+      )
+    ]
+
+    const allFilter = filterButtons.find((button) => button.textContent?.trim() === 'Todas')
+    const newsFilter = filterButtons.find((button) => button.textContent?.trim() === 'Noticias')
+    const notesFilter = filterButtons.find((button) => button.textContent?.trim() === 'Notas')
 
     expect(allFilter).toBeTruthy()
     expect(newsFilter).toBeTruthy()
     expect(notesFilter).toBeTruthy()
 
-    expect(allFilter.getAttribute('aria-pressed')).toBe('true')
-    expect(newsFilter.getAttribute('aria-pressed')).toBe('false')
-    expect(notesFilter.getAttribute('aria-pressed')).toBe('false')
+    expect(allFilter?.getAttribute('aria-pressed')).toBe('true')
+    expect(newsFilter?.getAttribute('aria-pressed')).toBe('false')
+    expect(notesFilter?.getAttribute('aria-pressed')).toBe('false')
   })
-
 })

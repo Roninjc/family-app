@@ -1,6 +1,6 @@
-# Family App
+# Orikara
 
-Welcome to the **Family App** repository! This project is built with [SvelteKit](https://kit.svelte.dev/) and provides a modern foundation for developing family tree web applications.
+Welcome to the **Orikara** repository! This project is built with [SvelteKit](https://kit.svelte.dev/) and provides a modern foundation for developing family tree web applications.
 
 ## 🚀 Getting Started
 
@@ -57,4 +57,4 @@ To deploy your app, install the appropriate [adapter](https://kit.svelte.dev/doc
 
 ---
 
-Thank you for using Family App! If you have questions or suggestions, feel free to open an issue in this repository.
+Thank you for using Orikara! If you have questions or suggestions, feel free to open an issue in this repository.

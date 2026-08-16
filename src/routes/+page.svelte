@@ -1,20 +1,16 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { page } from '$app/stores'
-  import { canEdit } from '$lib/types/auth'
-  import { showAddMemberModal } from '../stores/modals'
   import { initTreeData, renderRoots, stack, treeVersion, visitedMembers } from '../stores/tree'
-  import Header from '../components/header.svelte'
   import TreeNode from '../components/treeNode.svelte'
   import AddFamilyMemberModal from '../components/addFamilyMemberModal.svelte'
   import EditMemberModal from '../components/editMemberModal.svelte'
 
   export let data
+  export let params: Record<string, string> = {}
+  $: routeParamsCount = Object.keys(params).length
 
   let roots: string[] = []
   let treeWrapper: HTMLElement
-
-  $: canManage = canEdit($page.data.profile)
 
   // Rebuild the graph whenever the page data changes (initial load or after
   // adding a member), then re-seed the render stores before the {#key} block
@@ -60,8 +56,7 @@
 
 <svelte:window on:resize={handleResize} />
 
-<Header canManage={canManage} onAddMember={() => showAddMemberModal.set(true)} />
-<main id="family-tree-wrapper" bind:this={treeWrapper}>
+<main id="family-tree-wrapper" data-route-params-count={routeParamsCount} bind:this={treeWrapper}>
   {#key $treeVersion}
     {#if roots.length > 0}
       {#each roots as rootMemberId (rootMemberId)}
@@ -136,5 +131,4 @@
       line-height: var(--lh-copy);
     }
   }
-
 </style>

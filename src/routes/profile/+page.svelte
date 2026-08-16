@@ -1,29 +1,18 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
-  import PageHeader from '../../components/ui/pageHeader.svelte'
 
-  export let data
   export let form
+  export let params: Record<string, string> = {}
+  $: routeParamsCount = Object.keys(params).length
 
   let password = ''
 </script>
 
 <svelte:head>
-  <title>Mi perfil — Familia Castaño</title>
+  <title>Mi perfil — Orikara</title>
 </svelte:head>
 
-<PageHeader className="profile-header reveal-fade-up" ariaLabel="Cabecera del perfil">
-  <div class="profile-header-content">
-      <h1>Mi perfil</h1>
-      {#if data.profile?.email}
-        <p class="profile-email app-page-header-note" aria-label="Email de la cuenta">
-          {data.profile.email}
-        </p>
-      {/if}
-  </div>
-</PageHeader>
-
-<main class="profile-page page-shell">
+<main class="profile-page page-shell" data-route-params-count={routeParamsCount}>
   <section class="profile-content reveal-fade-up reveal-delay-1">
     <h2>Contraseña</h2>
     <p class="hint">
@@ -62,10 +51,6 @@
     min-height: 100vh;
     padding-top: 0;
     padding-bottom: max(108px, env(safe-area-inset-bottom));
-  }
-
-  .profile-header-content {
-    font-family: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
   }
 
   .profile-content {
@@ -124,10 +109,6 @@
   }
 
   @media (min-width: 720px) {
-    .profile-header-content {
-      padding: 18px 20px 16px;
-    }
-
     .profile-content {
       border-radius: 16px;
     }

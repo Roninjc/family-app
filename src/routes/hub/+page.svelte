@@ -10,24 +10,29 @@
     HubNotesFilter,
     HubNotesStatusState
   } from '../../components/hub/types'
-  import PageHeader from '../../components/ui/pageHeader.svelte'
-  import type { Role } from '$lib/types/auth'
   import type { PageData } from './$types'
 
-  type HubPageData = Pick<
-    PageData,
-    | 'displayName'
-    | 'role'
-    | 'families'
-    | 'activeFamilyId'
-    | 'activeFamilyName'
-    | 'pendingInvitations'
-    | 'showPendingInvitations'
-  >
+  type HubPageData = Omit<
+    Pick<
+      PageData,
+      | 'displayName'
+      | 'role'
+      | 'families'
+      | 'activeFamilyId'
+      | 'activeFamilyName'
+      | 'pendingInvitations'
+      | 'showPendingInvitations'
+    >,
+    'families'
+  > & {
+    families: HubFamilySummary[]
+  }
 
   export let form: HubActionFormState | null | undefined = undefined
 
   export let data: HubPageData
+  export let params: Record<string, string> = {}
+  $: routeParamsCount = Object.keys(params).length
 
   let carousel: HTMLDivElement | null = null
   const cards = new Map<string, HTMLElement>()
@@ -63,24 +68,26 @@
     cancelEdit()
   }
 
-  const roleLabels: Record<Role, string> = {
-    admin: 'Administrador',
-    editor: 'Editor',
-    viewer: 'Solo lectura'
-  }
-
   const notesFilterOptions = [
     { value: 'all', label: 'Todas' },
     { value: 'news', label: 'Noticias' },
     { value: 'note', label: 'Notas' }
   ]
 
+  const roleLabelTitle = (role: HubFamilySummary['role']) => {
+    if (role === 'admin') return 'Administrador'
+    if (role === 'editor') return 'Editor'
+    if (role === 'viewer') return 'Solo lectura'
+    return null
+  }
+
   $: if (data.activeFamilyId !== syncedServerActiveFamilyId) {
     syncedServerActiveFamilyId = data.activeFamilyId
     selectedFamilyId = data.activeFamilyId ?? data.families[0]?.id ?? null
   }
 
-  $: selectedFamily = data.families.find((family) => family.id === selectedFamilyId) ?? data.families[0]
+  $: selectedFamily =
+    data.families.find((family) => family.id === selectedFamilyId) ?? data.families[0]
 
   $: {
     const filters = notesFilterByFamily
@@ -151,7 +158,9 @@
   }
 
   const persistActiveFamily = (familyId: string) => {
-    document.cookie = `active_family_id=${encodeURIComponent(familyId)}; path=/; max-age=15552000; samesite=lax`
+    document.cookie = `active_family_id=${encodeURIComponent(
+      familyId
+    )}; path=/; max-age=15552000; samesite=lax`
   }
 
   const selectFamily = (familyId: string, scroll = true) => {
@@ -252,30 +261,15 @@
 </script>
 
 <svelte:head>
-  <title>Hub familiar — Familia Castaño</title>
+  <title>Hub familiar — Orikara</title>
 </svelte:head>
 
-<PageHeader className="hub-header reveal-fade-up" ariaLabel="Cabecera del hub">
-  <div class="header-content">
-      <p class="crumb">Hub / {selectedFamily?.name ?? 'Sin familia'}</p>
-      <h1>Hola, {data.displayName}</h1>
-      <p class="welcome app-page-header-note">
-        Te damos la bienvenida. Estás en {selectedFamily?.name ?? 'tu espacio familiar'}.
-      </p>
-      <div class="chips-row">
-        <span class="role-chip app-chip app-chip--accent">{roleLabels[data.role]}</span>
-        {#if data.showPendingInvitations}
-          <a class="pending-chip app-chip app-chip--interactive" href="/admin">
-            Invitaciones pendientes {data.pendingInvitations > 0 ? `(${data.pendingInvitations})` : '(0)'}
-          </a>
-        {/if}
-      </div>
-      <div class="loading-sheen" aria-hidden="true"></div>
-  </div>
-</PageHeader>
-
-<main class="hub-page page-shell" class:is-loading={isNavigating} aria-busy={isNavigating}>
-
+<main
+  class="hub-page page-shell"
+  class:is-loading={isNavigating}
+  aria-busy={isNavigating}
+  data-route-params-count={routeParamsCount}
+>
   <section class="families-zone reveal-fade-up reveal-delay-1" aria-label="Familias del usuario">
     <div class="zone-title-row">
       <h2>Familias</h2>
@@ -302,6 +296,9 @@
             <div class="family-content">
               <div class="panel-header">
                 <h3>{family.name}</h3>
+                {#if roleLabelTitle(family.role)}
+                  <span class="family-role-pill">{roleLabelTitle(family.role)}</span>
+                {/if}
               </div>
 
               <div class="family-center">
@@ -365,44 +362,6 @@
     min-height: 100vh;
     padding-top: 0;
     padding-bottom: max(114px, env(safe-area-inset-bottom));
-  }
-
-  .header-content {
-    position: relative;
-    overflow: hidden;
-    gap: 8px;
-  }
-
-  .crumb {
-    margin: 0;
-    font-size: var(--fs-2xs);
-    color: var(--text-muted);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  h1 {
-    margin: 0;
-    font-size: var(--fs-xl);
-    line-height: var(--lh-tight);
-  }
-
-  .welcome {
-    margin: 0;
-    font-size: var(--fs-sm);
-    color: var(--text-muted);
-  }
-
-  .chips-row {
-    margin-top: 3px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .pending-chip {
-    color: #5c4634;
   }
 
   .families-zone {
@@ -483,9 +442,11 @@
 
   .panel-header {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    text-align: left;
+    flex-wrap: wrap;
   }
 
   h3 {
@@ -493,6 +454,21 @@
     font-size: clamp(1.2rem, 1.1rem + 0.45vw, 1.45rem);
     line-height: 1.18;
     letter-spacing: 0.01em;
+  }
+
+  .family-role-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-pill);
+    padding: 0.22rem 0.62rem;
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    color: color-mix(in srgb, var(--brand) 90%, #2f281f 10%);
+    background: color-mix(in srgb, var(--brand-soft) 82%, rgba(255, 255, 255, 0.55));
+    box-shadow:
+      inset 1px 1px 2px rgba(255, 255, 255, 0.7),
+      inset -1px -1px 2px rgba(149, 121, 95, 0.12);
   }
 
   .family-panel.active :global(.preview-card),
@@ -618,7 +594,7 @@
 
     @container (max-width: 520px) {
       .panel-header {
-        justify-content: center;
+        justify-content: flex-start;
       }
     }
   }

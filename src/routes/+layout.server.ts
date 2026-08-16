@@ -20,13 +20,17 @@ const mockProfile: Profile = {
 export const load: LayoutServerLoad = async ({ locals: { user, supabase }, cookies, url }) => {
   let profile: Profile | null = null
   let activeFamilyId = cookies.get(ACTIVE_FAMILY_COOKIE) ?? null
-  let availableFamilies: Array<{ id: string; name: string; role: 'admin' | 'editor' | 'viewer' }> = []
+  let availableFamilies: Array<{ id: string; name: string; role: 'admin' | 'editor' | 'viewer' }> =
+    []
 
   if (user) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-    profile = data
+    const [profileRes, families] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', user.id).single(),
+      loadUserFamilies(supabase, user.id)
+    ])
 
-    availableFamilies = await loadUserFamilies(supabase, user.id)
+    profile = profileRes.data
+    availableFamilies = families
     activeFamilyId = resolveAndPersistActiveFamily({
       families: availableFamilies,
       requestedFamilyId: url.searchParams.get('family'),

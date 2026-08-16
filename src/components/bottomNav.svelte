@@ -13,6 +13,8 @@
       <a
         aria-current={$page.url.pathname === '/' ? 'page' : undefined}
         href={treeHref}
+        data-sveltekit-preload-data="tap"
+        data-sveltekit-preload-code="eager"
         aria-label="Ir al árbol"
       >
         Árbol
@@ -20,6 +22,8 @@
       <a
         aria-current={$page.url.pathname === '/hub' ? 'page' : undefined}
         href="/hub"
+        data-sveltekit-preload-data="tap"
+        data-sveltekit-preload-code="eager"
         aria-label="Ir al hub"
       >
         Hub
@@ -27,6 +31,8 @@
       <a
         aria-current={$page.url.pathname === '/profile' ? 'page' : undefined}
         href="/profile"
+        data-sveltekit-preload-data="tap"
+        data-sveltekit-preload-code="eager"
         aria-label="Ir al perfil"
       >
         Perfil
@@ -35,6 +41,8 @@
         <a
           aria-current={$page.url.pathname === '/admin' ? 'page' : undefined}
           href="/admin"
+          data-sveltekit-preload-data="tap"
+          data-sveltekit-preload-code="eager"
           aria-label="Ir a administración"
         >
           Admin

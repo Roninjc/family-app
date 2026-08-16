@@ -7,7 +7,7 @@
   <div class="header-content app-page-header-shell glass-panel reveal-fade-up">
     <div class="title-wrap">
       <p class="section-indicator">Árbol familiar</p>
-      <h1>Familia Castaño</h1>
+      <h1>Orikara</h1>
     </div>
     {#if canManage}
       <button

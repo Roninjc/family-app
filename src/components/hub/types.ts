@@ -12,6 +12,7 @@ export type HubNote = {
 export type HubFamilySummary = {
   id: string
   name: string
+  role?: 'admin' | 'editor' | 'viewer'
   membersCount: number
   linksCount: number
   previewMembers: string[]

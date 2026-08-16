@@ -2,6 +2,8 @@
   "circleci.persistedProjectSelection": [],
   "chat.tools.terminal.autoApprove": {
     "yarn run check": true,
-    "npx -y modern-web-guidance@latest": true
+    "npx -y modern-web-guidance@latest": true,
+    "yarn prettier": true,
+    "yarn eslint": true
   }
 }

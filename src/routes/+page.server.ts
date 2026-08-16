@@ -92,14 +92,15 @@ export const load: PageServerLoad = async ({ locals: { supabase, user }, url, co
     const { data, error: scopedRelationshipsError } = await supabase
       .from('relationships')
       .select('member_a, member_b, type')
-      .in('member_a', memberIds)
-      .in('member_b', memberIds)
 
     if (scopedRelationshipsError) {
       error(500, `No se pudieron cargar las relaciones: ${scopedRelationshipsError.message}`)
     }
 
-    selectedRelationships = data ?? []
+    selectedRelationships = (data ?? []).filter(
+      (relationship) =>
+        selectedIds.has(relationship.member_a) && selectedIds.has(relationship.member_b)
+    )
   }
 
   return {
@@ -148,7 +149,13 @@ export const actions: Actions = {
     ]
 
     const { data, error: rpcError } = await supabase.rpc('add_member_with_relations', {
-      payload: { name, family_name: familyName, birth_date: birthDate, family_id: familyId, relations }
+      payload: {
+        name,
+        family_name: familyName,
+        birth_date: birthDate,
+        family_id: familyId,
+        relations
+      }
     })
 
     if (rpcError) {
