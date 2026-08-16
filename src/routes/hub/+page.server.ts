@@ -154,8 +154,10 @@ export const load: PageServerLoad = async ({ locals: { supabase, user }, cookies
 
   const countByFamily = new Map<string, number>()
   const previewByFamily = new Map<string, string[]>()
+  const memberNameById = new Map<string, string>()
 
   for (const member of membersRes.data ?? []) {
+    memberNameById.set(member.id, member.name)
     countByFamily.set(member.family_id, (countByFamily.get(member.family_id) ?? 0) + 1)
     const preview = previewByFamily.get(member.family_id) ?? []
     if (preview.length < 5) preview.push(member.name)
@@ -207,8 +209,13 @@ export const load: PageServerLoad = async ({ locals: { supabase, user }, cookies
     }).length
   }
 
+  const activeMembership = userFamilies.find((family) => family.id === activeFamilyId)
+  const linkedMemberId = activeMembership?.memberId ?? userFamilies.find((family) => family.memberId)?.memberId
+  const linkedMemberName = linkedMemberId ? memberNameById.get(linkedMemberId)?.trim() : ''
+
   return {
-    displayName: profileRes.data?.display_name?.trim() || user.email?.split('@')[0] || 'Familiar',
+    displayName:
+      profileRes.data?.display_name?.trim() || linkedMemberName || user.email?.split('@')[0] || 'Familiar',
     role,
     families,
     activeFamilyId,

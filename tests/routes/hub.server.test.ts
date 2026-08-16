@@ -180,6 +180,71 @@ describe('hub load', () => {
     expect(data.activeFamilyId).toBe('f1')
     expect(data.families).toHaveLength(2)
   })
+
+  it('uses linked member name when profile display_name is empty', async () => {
+    const memberships = [
+      {
+        family_id: 'f1',
+        role: 'viewer',
+        member_id: 'm1',
+        families: { id: 'f1', name: 'Familia Castaño' }
+      }
+    ]
+
+    const members = [{ id: 'm1', name: 'María Castaño', family_id: 'f1' }]
+
+    const supabase = {
+      from: (table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: () => ({
+              eq: () => ({ single: async () => ({ data: { display_name: '   ', role: 'viewer' } }) })
+            })
+          }
+        }
+
+        if (table === 'family_memberships') {
+          return {
+            select: () => ({
+              eq: async () => ({ data: memberships, error: null })
+            })
+          }
+        }
+
+        if (table === 'members') {
+          return {
+            select: () => ({
+              in: async () => ({ data: members, error: null })
+            })
+          }
+        }
+
+        if (table === 'family_notes') {
+          return {
+            select: () => ({
+              in: () => ({
+                order: async () => ({ data: [], error: null })
+              })
+            })
+          }
+        }
+
+        throw new Error(`Unexpected table: ${table}`)
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await (load as any)({
+      locals: { supabase, user: { id: 'u1', email: 'maria@example.com' } },
+      cookies: {
+        get: () => null,
+        set: () => {}
+      },
+      url: new URL('http://localhost/hub')
+    })
+
+    expect(data.displayName).toBe('María Castaño')
+  })
 })
 
 describe('hub notes actions', () => {

@@ -8,12 +8,13 @@ export interface FamilySummary {
   id: string
   name: string
   role: 'admin' | 'editor' | 'viewer'
+  memberId: string | null
 }
 
 export const loadUserFamilies = async (supabase: SupabaseClient, userId: string) => {
   const { data, error } = await supabase
     .from('family_memberships')
-    .select('family_id, role, families!inner(id, name)')
+    .select('family_id, role, member_id, families!inner(id, name)')
     .eq('profile_id', userId)
 
   if (error) {
@@ -28,7 +29,8 @@ export const loadUserFamilies = async (supabase: SupabaseClient, userId: string)
       return {
         id: family.id,
         name: family.name,
-        role: row.role
+        role: row.role,
+        memberId: row.member_id ?? null
       }
     })
     .filter((entry): entry is FamilySummary => Boolean(entry))

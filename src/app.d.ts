@@ -15,8 +15,14 @@ declare global {
     interface PageData {
       user: User | null
       profile: Profile | null
+      displayName?: string
       activeFamilyId?: string | null
-      availableFamilies?: Array<{ id: string; name: string; role: 'admin' | 'editor' | 'viewer' }>
+      availableFamilies?: Array<{
+        id: string
+        name: string
+        role: 'admin' | 'editor' | 'viewer'
+        memberId?: string | null
+      }>
     }
     // interface PageState {}
     // interface Platform {}
