@@ -1,21 +1,15 @@
 import { fail, redirect } from '@sveltejs/kit'
 import type { Actions } from './$types'
 
-const NOT_INVITED_MESSAGE =
-  'Este email no tiene una invitación activa. Pide a un administrador que te invite.'
+const GENERIC_AUTH_ERROR = 'No pudimos completar el acceso. Revisa tus datos e inténtalo otra vez.'
 
 const friendlyAuthError = (error: { message: string; status?: number }) => {
-  // The invite-gate trigger rejection surfaces as a 500 whose body supabase-js
-  // does not always parse into a message, so match on status too.
-  if (
-    error.status === 500 ||
-    /not invited|database error/i.test(error.message) ||
-    error.message === '{}'
-  ) {
-    return NOT_INVITED_MESSAGE
-  }
+  if (error.message === '{}') return GENERIC_AUTH_ERROR
   if (error.message.includes('Invalid login credentials')) {
     return 'Email o contraseña incorrectos.'
+  }
+  if (error.message.includes('User already registered')) {
+    return 'Ya existe una cuenta con este email. Inicia sesión.'
   }
   if (/rate limit/i.test(error.message)) {
     return 'Demasiados intentos. Espera un momento y prueba de nuevo.'
@@ -24,26 +18,38 @@ const friendlyAuthError = (error: { message: string; status?: number }) => {
 }
 
 export const actions: Actions = {
-  magic: async ({ request, url, locals: { supabase } }) => {
+  register: async ({ request, locals: { supabase } }) => {
     const form = await request.formData()
     const email = String(form.get('email') ?? '')
       .trim()
       .toLowerCase()
+    const password = String(form.get('password') ?? '')
     const inviteToken = String(form.get('inviteToken') ?? '').trim()
 
-    if (!email) return fail(400, { error: 'Escribe tu email.', email })
+    if (!email || !password) {
+      return fail(400, { error: 'Escribe tu email y contraseña.', email })
+    }
+    if (password.length < 8) {
+      return fail(400, { error: 'La contraseña debe tener al menos 8 caracteres.', email })
+    }
 
-    const { error } = await supabase.auth.signInWithOtp({
+    const { data, error } = await supabase.auth.signUp({
       email,
-      options: {
-        emailRedirectTo: `${url.origin}/auth/confirm`,
-        data: inviteToken ? { invite_token: inviteToken } : undefined
-      }
+      password,
+      options: { data: inviteToken ? { invite_token: inviteToken } : undefined }
     })
 
     if (error) return fail(error.status ?? 400, { error: friendlyAuthError(error), email })
 
-    return { sent: true, email }
+    if (data.session) {
+      redirect(303, '/hub')
+    }
+
+    return {
+      registered: true,
+      email,
+      message: 'Tu cuenta se creó correctamente. Revisa tu email si necesitas confirmar la cuenta.'
+    }
   },
 
   password: async ({ request, locals: { supabase } }) => {
@@ -69,8 +75,7 @@ export const actions: Actions = {
 
     if (inviteToken) {
       return fail(400, {
-        error:
-          'Esta invitación requiere acceso con enlace mágico. Usa el formulario de email de arriba.'
+        error: 'Esta invitación debe completarse creando cuenta con email y contraseña.'
       })
     }
 
@@ -81,7 +86,7 @@ export const actions: Actions = {
 
     if (error) {
       return fail(error.status ?? 400, {
-        error: 'No se pudo iniciar sesión con Google. Prueba con el enlace mágico.'
+        error: 'No se pudo iniciar sesión con Google. Prueba con email y contraseña.'
       })
     }
 

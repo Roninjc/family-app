@@ -9,7 +9,7 @@
 
   let email = form?.email ?? ''
   let password = ''
-  let showPasswordForm = false
+  let mode: 'login' | 'register' = 'login'
   let submitting = false
 
   const resolveUrlError = (value: string | null) => {
@@ -24,6 +24,9 @@
 
   $: urlError = resolveUrlError($page.url.searchParams.get('error'))
   $: inviteToken = $page.url.searchParams.get('invite') ?? ''
+  $: if (inviteToken) mode = 'register'
+  $: passwordAutocomplete = mode === 'login' ? 'current-password' : 'new-password'
+  $: formAction = mode === 'login' ? '?/password' : '?/register'
 </script>
 
 <svelte:head>
@@ -35,92 +38,89 @@
     <SurfaceWrapper>
       <div class="login-content">
         <h1>Orikara</h1>
-        <p class="subtitle">Inicia sesión con tu email para entrar al hub familiar.</p>
+        <p class="subtitle">
+          {#if inviteToken}
+            Completa tu invitación creando tu cuenta para entrar en la app.
+          {:else if mode === 'register'}
+            Crea tu cuenta personal para entrar a Orikara.
+          {:else}
+            Inicia sesión con tu email para entrar a Orikara.
+          {/if}
+        </p>
 
-        {#if form?.sent}
-          <p class="sent-message app-card-soft">
-            Te enviamos un enlace a <b>{form.email}</b>. Ábrelo desde este dispositivo para entrar.
-          </p>
-        {:else}
-          <form
-            method="POST"
-            action={showPasswordForm ? '?/password' : '?/magic'}
-            use:enhance={() => {
-              submitting = true
-              return async ({ update }) => {
-                submitting = false
-                await update()
-              }
-            }}
-          >
-            {#if inviteToken}
-              <input type="hidden" name="inviteToken" value={inviteToken} />
-            {/if}
+        {#if form?.registered && form?.message}
+          <p class="status-message app-card-soft">{form.message}</p>
+        {/if}
 
-            <div class="input-wrapper floating-input-wrapper">
-              <input
-                id="loginEmail"
-                class="modern-input"
-                type="email"
-                name="email"
-                bind:value={email}
-                required
-                autocomplete="email"
-              />
-              <label for="loginEmail" class:label-active={email.length > 0}>Email</label>
-            </div>
+        <form
+          method="POST"
+          action={formAction}
+          use:enhance={() => {
+            submitting = true
+            return async ({ update }) => {
+              submitting = false
+              await update()
+            }
+          }}
+        >
+          {#if inviteToken}
+            <input type="hidden" name="inviteToken" value={inviteToken} />
+          {/if}
 
-            {#if showPasswordForm}
-              <div class="input-wrapper floating-input-wrapper">
-                <input
-                  id="loginPassword"
-                  class="modern-input"
-                  type="password"
-                  name="password"
-                  bind:value={password}
-                  required
-                  autocomplete="current-password"
-                />
-                <label for="loginPassword" class:label-active={password.length > 0}
-                  >Contraseña</label
-                >
-              </div>
-            {/if}
+          <div class="input-wrapper floating-input-wrapper">
+            <input
+              id="loginEmail"
+              class="modern-input"
+              type="email"
+              name="email"
+              bind:value={email}
+              required
+              autocomplete="username"
+              inputmode="email"
+            />
+            <label for="loginEmail" class:label-active={email.length > 0}>Email</label>
+          </div>
 
-            <button class="app-btn app-btn--primary" type="submit" disabled={submitting}>
-              {#if showPasswordForm}
-                Entrar
-              {:else}
-                Enviarme un enlace de acceso
-              {/if}
-            </button>
-          </form>
+          <div class="input-wrapper floating-input-wrapper">
+            <input
+              id="loginPassword"
+              class="modern-input"
+              type="password"
+              name="password"
+              bind:value={password}
+              required
+              minlength="8"
+              autocomplete={passwordAutocomplete}
+            />
+            <label for="loginPassword" class:label-active={password.length > 0}>Contraseña</label>
+          </div>
 
+          <button class="app-btn app-btn--primary" type="submit" disabled={submitting}>
+            {mode === 'login' ? 'Entrar' : 'Crear cuenta'}
+          </button>
+        </form>
+
+        {#if !inviteToken}
           <button
             type="button"
             class="toggle-method app-btn app-btn--secondary"
-            on:click={() => (showPasswordForm = !showPasswordForm)}
+            on:click={() => {
+              mode = mode === 'login' ? 'register' : 'login'
+              password = ''
+            }}
           >
-            {#if showPasswordForm}
-              Prefiero recibir un enlace por email
-            {:else}
-              Prefiero usar mi contraseña
-            {/if}
+            {mode === 'login' ? 'No tengo cuenta todavía' : 'Ya tengo cuenta'}
           </button>
 
           <div class="divider"><span>o</span></div>
 
-          {#if inviteToken}
-            <p class="invite-hint">
-              Esta invitación se valida con un enlace mágico enviado al email invitado.
-            </p>
-          {:else}
-            <form method="POST" action="?/google" use:enhance>
-              <button type="submit" class="app-btn app-btn--secondary google-button">
-                Continuar con Google
-              </button>
-            </form>
-          {/if}
+          <form method="POST" action="?/google" use:enhance>
+            <button type="submit" class="app-btn app-btn--secondary google-button">
+              Continuar con Google
+            </button>
+          </form>
+        {:else}
+          <p class="invite-hint">Las invitaciones generales se completan con email y contraseña.</p>
         {/if}
 
         {#if form?.error || urlError}
@@ -167,7 +167,7 @@
       font-size: var(--fs-sm);
     }
 
-    .sent-message {
+    .status-message {
       margin: 0;
       color: var(--text-main);
       line-height: var(--lh-copy);
