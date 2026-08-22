@@ -7,6 +7,24 @@ const ASSETS = [...build, ...files]
 
 const isStaticAsset = (path: string) => /\.(?:js|css|png|jpg|jpeg|svg|gif|webp|woff2?)$/i.test(path)
 
+const offlineHtml =
+  '<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sin conexion</title><body><main style="font-family:sans-serif;padding:1.2rem;line-height:1.45"><h1>Sin conexion</h1><p>No hay red disponible. Cuando vuelva la conexion, recarga para sincronizar datos.</p></main></body></html>'
+
+const navigationFallback = async (request: Request) => {
+  const cachedPage = await caches.match(request)
+  if (cachedPage) return cachedPage
+
+  const cachedHome = await caches.match('/hub')
+  if (cachedHome) return cachedHome
+
+  return new Response(offlineHtml, {
+    status: 503,
+    headers: {
+      'content-type': 'text/html; charset=utf-8'
+    }
+  })
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
@@ -42,30 +60,22 @@ self.addEventListener('fetch', (event) => {
       (async () => {
         try {
           const preloaded = await event.preloadResponse
-          if (preloaded) return preloaded
+          if (preloaded) {
+            if (!preloaded.ok) return navigationFallback(event.request)
+            return preloaded
+          }
 
           const network = await fetch(event.request)
+          if (!network.ok) return navigationFallback(event.request)
+
           if (network.ok && !network.headers.get('cache-control')?.includes('no-store')) {
             const cache = await caches.open(CACHE)
             await cache.put(event.request, network.clone())
           }
+
           return network
         } catch {
-          const cachedPage = await caches.match(event.request)
-          if (cachedPage) return cachedPage
-
-          const cachedHome = await caches.match('/hub')
-          if (cachedHome) return cachedHome
-
-          return new Response(
-            '<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sin conexion</title><body><main style="font-family:sans-serif;padding:1.2rem;line-height:1.45"><h1>Sin conexion</h1><p>No hay red disponible. Cuando vuelva la conexion, recarga para sincronizar datos.</p></main></body></html>',
-            {
-              status: 503,
-              headers: {
-                'content-type': 'text/html; charset=utf-8'
-              }
-            }
-          )
+          return navigationFallback(event.request)
         }
       })()
     )
