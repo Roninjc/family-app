@@ -112,7 +112,7 @@ describe('hub load', () => {
     expect(data.families).toHaveLength(2)
     expect(data.activeFamilyId).toBe('f2')
     expect(data.activeFamilyName).toContain('Luna')
-    expect(data.families[0].treeHref).toContain('/?family=f1')
+    expect(data.families[0].treeHref).toContain('/family/f1')
     expect(
       data.families.find((family: { id: string }) => family.id === 'f2')?.notes.map(
         (note: { title: string }) => note.title

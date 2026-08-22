@@ -1,0 +1,1 @@
+export { ssr } from '../../+page'

@@ -2,17 +2,26 @@
   import { page } from '$app/stores'
   import { canEdit } from '$lib/types/auth'
 
+  const treeRoutePattern = /^\/family\/[^/]+$/
+  const familyHubRoutePattern = /^\/family\/[^/]+\/hub$/
+  const familyAdminRoutePattern = /^\/family\/[^/]+\/admin$/
+
   $: canManage = canEdit($page.data.profile)
   $: pathname = $page.url.pathname
   $: activeFamilyId = $page.data.activeFamilyId ?? null
-  $: treeHref = activeFamilyId ? `/?family=${encodeURIComponent(activeFamilyId)}` : '/hub?state=no_family'
-  $: adminHref = activeFamilyId
-    ? `/admin?family=${encodeURIComponent(activeFamilyId)}`
-    : '/hub?state=no_family'
-  $: familyHubHref = activeFamilyId
-    ? `/hub?family=${encodeURIComponent(activeFamilyId)}`
-    : '/hub?state=no_family'
-  $: isFamilyLevel = pathname === '/' || pathname === '/admin'
+  $: familyBasePath = activeFamilyId ? `/family/${encodeURIComponent(activeFamilyId)}` : null
+  $: treeHref = familyBasePath ?? '/hub?state=no_family'
+  $: adminHref = familyBasePath ? `${familyBasePath}/admin` : '/hub?state=no_family'
+  $: familyHubHref = familyBasePath ? `${familyBasePath}/hub` : '/hub?state=no_family'
+  $: isFamilyLevel =
+    pathname === '/' ||
+    pathname === '/admin' ||
+    treeRoutePattern.test(pathname) ||
+    familyHubRoutePattern.test(pathname) ||
+    familyAdminRoutePattern.test(pathname)
+  $: isFamilyTreePath = pathname === '/' || treeRoutePattern.test(pathname)
+  $: isFamilyHubPath = familyHubRoutePattern.test(pathname)
+  $: isFamilyAdminPath = pathname === '/admin' || familyAdminRoutePattern.test(pathname)
 </script>
 
 <footer class="app-footer-nav" aria-label="Navegación principal fija">
@@ -20,7 +29,7 @@
     <nav class="app-bottom-nav app-nav-dock" aria-label="Navegación principal">
       {#if isFamilyLevel}
         <a
-          aria-current={pathname === '/' ? 'page' : undefined}
+          aria-current={isFamilyTreePath ? 'page' : undefined}
           href={treeHref}
           data-sveltekit-preload-data="tap"
           data-sveltekit-preload-code="eager"
@@ -29,7 +38,7 @@
           Árbol
         </a>
         <a
-          aria-current={pathname === '/hub' ? 'page' : undefined}
+          aria-current={isFamilyHubPath ? 'page' : undefined}
           href={familyHubHref}
           data-sveltekit-preload-data="tap"
           data-sveltekit-preload-code="eager"
@@ -48,7 +57,7 @@
         </a>
         {#if canManage}
           <a
-            aria-current={pathname === '/admin' ? 'page' : undefined}
+            aria-current={isFamilyAdminPath ? 'page' : undefined}
             href={adminHref}
             data-sveltekit-preload-data="tap"
             data-sveltekit-preload-code="eager"
@@ -80,7 +89,7 @@
         </a>
         {#if activeFamilyId}
           <a
-            aria-current={pathname === '/' ? 'page' : undefined}
+            aria-current={isFamilyTreePath ? 'page' : undefined}
             href={treeHref}
             data-sveltekit-preload-data="tap"
             data-sveltekit-preload-code="eager"
@@ -93,7 +102,7 @@
         {/if}
         {#if canManage && activeFamilyId}
           <a
-            aria-current={pathname === '/admin' ? 'page' : undefined}
+            aria-current={isFamilyAdminPath ? 'page' : undefined}
             href={adminHref}
             data-sveltekit-preload-data="tap"
             data-sveltekit-preload-code="eager"

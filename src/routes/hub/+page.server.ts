@@ -96,7 +96,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, user }, cookies
       previewMembers: group.previewMembers,
       canManageNotes: true,
       notes: notesForFamily(group.name, group.membersCount),
-      treeHref: `/?family=${encodeURIComponent(group.id)}`
+      treeHref: `/family/${encodeURIComponent(group.id)}`
     }))
 
     const activeFamilyId = resolveActiveFamilyId(
@@ -195,7 +195,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, user }, cookies
     notes:
       notesByFamily.get(family.id)?.map(({ createdAt: _createdAt, ...note }) => note) ??
       notesForFamily(family.name, countByFamily.get(family.id) ?? 0),
-    treeHref: `/?family=${encodeURIComponent(family.id)}`
+    treeHref: `/family/${encodeURIComponent(family.id)}`
   }))
 
   let pendingInvitations = 0

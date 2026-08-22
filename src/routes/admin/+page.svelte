@@ -364,9 +364,14 @@
     if (!familyId || familyId === activeFamilyId) return
 
     pendingFamilyId = familyId
+    const currentPath = $page.url.pathname
+    const inFamilyScopedAdmin = /^\/family\/[^/]+\/admin$/.test(currentPath)
+    const nextHref = inFamilyScopedAdmin
+      ? `/family/${encodeURIComponent(familyId)}/admin`
+      : `?family=${encodeURIComponent(familyId)}`
 
     try {
-      await goto(`?family=${encodeURIComponent(familyId)}`, {
+      await goto(nextHref, {
         keepFocus: true,
         noScroll: true
       })

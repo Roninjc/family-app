@@ -34,6 +34,13 @@
     return parts.length > 0 ? ` ${parts.join(' ')}` : ''
   }
 
+  const isFamilyTreePath = (value: string) => value === '/' || /^\/family\/[^/]+$/.test(value)
+  const isFamilyHubPath = (value: string) => /^\/family\/[^/]+\/hub$/.test(value)
+  const isFamilyAdminPath = (value: string) =>
+    value === '/admin' || /^\/family\/[^/]+\/admin$/.test(value)
+  const isPersonalHubPath = (value: string) => value === '/hub'
+  const isProfilePath = (value: string) => value === '/profile'
+
   $: ({ supabase, user } = data)
   $: pathname = $page.url.pathname
   $: isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/auth')
@@ -53,8 +60,9 @@
   $: signupFamily = $page.url.searchParams.get('signup_family')
   $: signupRole = roleLabel($page.url.searchParams.get('signup_role'))
   $: isNavigating = Boolean($navigating)
-  $: routeHeaderKey =
-    pathname === '/admin' ? `${pathname}:${activeFamilyId ?? 'sin-familia'}` : pathname
+  $: routeHeaderKey = isFamilyAdminPath(pathname)
+    ? `${pathname}:${activeFamilyId ?? 'sin-familia'}`
+    : pathname
   $: if (!displayedHeaderKey && routeHeaderKey) {
     displayedHeaderKey = routeHeaderKey
     displayedPathname = pathname
@@ -129,7 +137,7 @@
     <div class="route-header-inner">
       {#if headerContentVisible}
         <div class="route-header-content" in:fade={{ duration: 125 }} out:fade={{ duration: 95 }}>
-          {#if displayedPathname === '/'}
+          {#if isFamilyTreePath(displayedPathname)}
             <div class="route-header-copy">
               <p class="route-header-crumb">Árbol</p>
               <h1>{activeFamilyName ?? 'Sin familia'}</h1>
@@ -144,7 +152,7 @@
                 <span>Añadir</span>
               </button>
             {/if}
-          {:else if displayedPathname === '/hub'}
+          {:else if isPersonalHubPath(displayedPathname)}
             <div class="route-header-copy">
               <p class="route-header-crumb">Hub</p>
               <h1>Hola, {displayName}</h1>
@@ -154,12 +162,17 @@
                 Invitaciones{pendingInvites > 0 ? ` ${pendingInvites}` : ''}
               </a>
             {/if}
-          {:else if displayedPathname === '/admin'}
+          {:else if isFamilyHubPath(displayedPathname)}
+            <div class="route-header-copy">
+              <p class="route-header-crumb">Hub familiar</p>
+              <h1>{activeFamilyName ?? 'Sin familia'}</h1>
+            </div>
+          {:else if isFamilyAdminPath(displayedPathname)}
             <div class="route-header-copy">
               <p class="route-header-crumb">Administración</p>
               <h1>{activeFamilyName ?? 'Sin familia'}</h1>
             </div>
-          {:else if displayedPathname === '/profile'}
+          {:else if isProfilePath(displayedPathname)}
             <div class="route-header-copy">
               <p class="route-header-crumb">Perfil</p>
               <h1>{displayName}</h1>

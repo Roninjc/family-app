@@ -15,7 +15,7 @@ const baseData = {
       previewMembers: ['Ana', 'Beto'],
       canManageNotes: true,
       notes: [{ id: 'n1', title: 'Nota 1', body: 'Texto 1', noteType: 'note' as const }],
-      treeHref: '/?family=f1'
+      treeHref: '/family/f1'
     },
     {
       id: 'f2',
@@ -25,7 +25,7 @@ const baseData = {
       previewMembers: ['Cris'],
       canManageNotes: true,
       notes: [{ id: 'n2', title: 'Nota 2', body: 'Texto 2', noteType: 'news' as const }],
-      treeHref: '/?family=f2'
+      treeHref: '/family/f2'
     }
   ],
   activeFamilyId: 'f1',
