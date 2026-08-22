@@ -65,12 +65,10 @@ self.addEventListener('fetch', (event: FetchEvent) => {
         try {
           const preloaded = await event.preloadResponse
           if (preloaded) {
-            if (!preloaded.ok) return navigationFallback(event.request)
             return preloaded
           }
 
           const network = await fetch(event.request)
-          if (!network.ok) return navigationFallback(event.request)
 
           if (network.ok && !network.headers.get('cache-control')?.includes('no-store')) {
             const cache = await caches.open(CACHE)
