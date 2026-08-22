@@ -109,7 +109,7 @@
               password = ''
             }}
           >
-            {mode === 'login' ? 'No tengo cuenta todavía' : 'Ya tengo cuenta'}
+            {mode === 'login' ? 'Registrarse' : 'Ya tengo cuenta'}
           </button>
 
           <div class="divider"><span>o</span></div>
@@ -156,7 +156,7 @@
       margin: 0;
       font-size: var(--fs-xl);
       line-height: var(--lh-tight);
-      text-align: left;
+      text-align: center;
       letter-spacing: 0.01em;
     }
 
@@ -165,6 +165,7 @@
       color: var(--text-muted);
       line-height: var(--lh-copy);
       font-size: var(--fs-sm);
+      text-align: center;
     }
 
     .status-message {
@@ -213,7 +214,6 @@
       padding: 8px 10px;
       min-height: 36px;
       text-align: left;
-      justify-content: flex-start;
     }
 
     .divider {
