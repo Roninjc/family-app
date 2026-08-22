@@ -82,6 +82,8 @@ const resolveFamilyForAction = async (options: {
 }
 
 export const load: PageServerLoad = async ({ locals: { supabase, user }, cookies, url }) => {
+  const noFamilyRouteState = url.searchParams.get('state') === 'no_family'
+
   if (isMockFamilyMode()) {
     const rows = toRowsFromFamilyData(mockFamilyData)
     const groups = buildFamilyGroups(rows.members, rows.relationships)
@@ -118,7 +120,8 @@ export const load: PageServerLoad = async ({ locals: { supabase, user }, cookies
       activeFamilyId,
       activeFamilyName: families.find((family) => family.id === activeFamilyId)?.name ?? null,
       pendingInvitations: 0,
-      showPendingInvitations: true
+      showPendingInvitations: true,
+      noFamilyRouteState
     }
   }
 
@@ -221,7 +224,8 @@ export const load: PageServerLoad = async ({ locals: { supabase, user }, cookies
     activeFamilyId,
     activeFamilyName: families.find((family) => family.id === activeFamilyId)?.name ?? null,
     pendingInvitations,
-    showPendingInvitations: isManagerRole(role)
+    showPendingInvitations: isManagerRole(role),
+    noFamilyRouteState
   }
 }
 

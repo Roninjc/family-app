@@ -26,6 +26,7 @@
     'families'
   > & {
     families: HubFamilySummary[]
+    noFamilyRouteState?: boolean
   }
 
   export let form: HubActionFormState | null | undefined = undefined
@@ -88,6 +89,7 @@
 
   $: selectedFamily =
     data.families.find((family) => family.id === selectedFamilyId) ?? data.families[0]
+  $: hasFamilies = data.families.length > 0
 
   $: {
     const filters = notesFilterByFamily
@@ -270,7 +272,26 @@
   aria-busy={isNavigating}
   data-route-params-count={routeParamsCount}
 >
-  <section class="families-zone reveal-fade-up reveal-delay-1" aria-label="Familias del usuario">
+  {#if !hasFamilies}
+    <section class="personal-empty reveal-fade-up reveal-delay-1" aria-label="Estado sin familias">
+      <div class="personal-empty-card app-card-soft">
+        <h2>Aun no perteneces a ninguna familia</h2>
+        <p>
+          Tu cuenta personal ya esta lista. Para ver arboles, hub familiar y administracion, primero
+          necesitas unirte a una familia o crear una en el siguiente paso.
+        </p>
+        {#if data.noFamilyRouteState}
+          <p class="personal-empty-note" role="status">
+            Intentaste abrir una vista familiar, pero todavia no tienes una familia activa.
+          </p>
+        {/if}
+        <div class="personal-empty-actions">
+          <a class="app-btn app-btn--primary" href="/profile">Gestionar cuenta</a>
+        </div>
+      </div>
+    </section>
+  {:else}
+    <section class="families-zone reveal-fade-up reveal-delay-1" aria-label="Familias del usuario">
     <div class="zone-title-row">
       <h2>Familias</h2>
       {#if data.families.length > 1}
@@ -350,7 +371,8 @@
         {/each}
       </div>
     {/if}
-  </section>
+    </section>
+  {/if}
 </main>
 
 <style lang="scss">
@@ -372,6 +394,48 @@
     padding: 0;
     background: transparent;
     box-shadow: none;
+  }
+
+  .personal-empty {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .personal-empty-card {
+    border-radius: 18px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+  }
+
+  .personal-empty-card h2 {
+    margin: 0;
+    font-size: var(--fs-lg);
+    line-height: var(--lh-tight);
+  }
+
+  .personal-empty-card p {
+    margin: 0;
+    color: var(--text-muted);
+    line-height: var(--lh-copy);
+    font-size: var(--fs-sm);
+  }
+
+  .personal-empty-note {
+    border: 1px solid rgba(201, 176, 141, 0.48);
+    background: color-mix(in srgb, var(--brand-soft) 82%, rgba(255, 255, 255, 0.9));
+    padding: 10px 12px;
+    border-radius: 12px;
+    color: var(--text-main);
+  }
+
+  .personal-empty-actions {
+    display: flex;
+    justify-content: flex-start;
+    margin-top: 4px;
   }
 
   .zone-title-row {

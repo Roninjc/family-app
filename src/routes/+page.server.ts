@@ -74,7 +74,9 @@ export const load: PageServerLoad = async ({ locals: { supabase, user }, url, co
     cookies
   })
 
-  if (!selectedFamilyId) return { familyData: { members: [] }, activeFamilyId: null }
+  if (!selectedFamilyId) {
+    redirect(303, '/hub?state=no_family')
+  }
 
   const { data: membersData, error: membersError } = await supabase
     .from('members')
