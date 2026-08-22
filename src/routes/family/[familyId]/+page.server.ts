@@ -16,15 +16,13 @@ export const load: PageServerLoad = async (event) => {
   })
 }
 
-const scopedActions = createTreeActions()
-
 const scopedActionsForEvent = (event: Parameters<Actions['addMember']>[0]) =>
   createTreeActions({ forcedFamilyId: event.params.familyId })
 
 export const actions: Actions = {
   addMember: (event) => scopedActionsForEvent(event).addMember(event),
-  updateMember: scopedActions.updateMember,
-  deleteMember: scopedActions.deleteMember,
-  addRelation: scopedActions.addRelation,
-  removeRelation: scopedActions.removeRelation
+  updateMember: (event) => scopedActionsForEvent(event).updateMember(event),
+  deleteMember: (event) => scopedActionsForEvent(event).deleteMember(event),
+  addRelation: (event) => scopedActionsForEvent(event).addRelation(event),
+  removeRelation: (event) => scopedActionsForEvent(event).removeRelation(event)
 }
