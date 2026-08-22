@@ -14,21 +14,16 @@ export const load: PageServerLoad = async (event) => {
   })
 }
 
+const scopedActionsForEvent = (event: Parameters<Actions['updateFamilySettings']>[0]) =>
+  createAdminActions({ forcedFamilyId: event.params.familyId })
+
 export const actions: Actions = {
-  updateFamilySettings: (event) =>
-    createAdminActions({ forcedFamilyId: event.params.familyId }).updateFamilySettings(event),
-  inviteGeneral: (event) =>
-    createAdminActions({ forcedFamilyId: event.params.familyId }).inviteGeneral(event),
-  inviteMember: (event) =>
-    createAdminActions({ forcedFamilyId: event.params.familyId }).inviteMember(event),
-  revokeInvite: (event) =>
-    createAdminActions({ forcedFamilyId: event.params.familyId }).revokeInvite(event),
-  regenerateInviteLink: (event) =>
-    createAdminActions({ forcedFamilyId: event.params.familyId }).regenerateInviteLink(event),
-  saveUsers: (event) =>
-    createAdminActions({ forcedFamilyId: event.params.familyId }).saveUsers(event),
-  setMemberLink: (event) =>
-    createAdminActions({ forcedFamilyId: event.params.familyId }).setMemberLink(event),
-  setRole: (event) =>
-    createAdminActions({ forcedFamilyId: event.params.familyId }).setRole(event)
+  updateFamilySettings: (event) => scopedActionsForEvent(event).updateFamilySettings(event),
+  inviteGeneral: (event) => scopedActionsForEvent(event).inviteGeneral(event),
+  inviteMember: (event) => scopedActionsForEvent(event).inviteMember(event),
+  revokeInvite: (event) => scopedActionsForEvent(event).revokeInvite(event),
+  regenerateInviteLink: (event) => scopedActionsForEvent(event).regenerateInviteLink(event),
+  saveUsers: (event) => scopedActionsForEvent(event).saveUsers(event),
+  setMemberLink: (event) => scopedActionsForEvent(event).setMemberLink(event),
+  setRole: (event) => scopedActionsForEvent(event).setRole(event)
 }

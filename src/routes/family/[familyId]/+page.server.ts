@@ -3,7 +3,7 @@ import { ACTIVE_FAMILY_COOKIE } from '$lib/server/activeFamily'
 import type { Actions, PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async (event) => {
-  // Keep family scope in cookie so delegated loaders/actions can resolve it
+  // Keep family scope in cookie so shared loaders/actions can resolve it
   // without relying on URL query params.
   event.cookies.set(ACTIVE_FAMILY_COOKIE, event.params.familyId, {
     path: '/',
@@ -18,9 +18,11 @@ export const load: PageServerLoad = async (event) => {
 
 const scopedActions = createTreeActions()
 
+const scopedActionsForEvent = (event: Parameters<Actions['addMember']>[0]) =>
+  createTreeActions({ forcedFamilyId: event.params.familyId })
+
 export const actions: Actions = {
-  addMember: (event) =>
-    createTreeActions({ forcedFamilyId: event.params.familyId }).addMember(event),
+  addMember: (event) => scopedActionsForEvent(event).addMember(event),
   updateMember: scopedActions.updateMember,
   deleteMember: scopedActions.deleteMember,
   addRelation: scopedActions.addRelation,

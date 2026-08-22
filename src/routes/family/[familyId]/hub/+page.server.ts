@@ -15,11 +15,11 @@ export const load: PageServerLoad = async (event) => {
   })
 }
 
+const scopedActionsForEvent = (event: Parameters<Actions['createNote']>[0]) =>
+  createHubActions({ forcedFamilyId: event.params.familyId })
+
 export const actions: Actions = {
-  createNote: (event) =>
-    createHubActions({ forcedFamilyId: event.params.familyId }).createNote(event),
-  updateNote: (event) =>
-    createHubActions({ forcedFamilyId: event.params.familyId }).updateNote(event),
-  deleteNote: (event) =>
-    createHubActions({ forcedFamilyId: event.params.familyId }).deleteNote(event)
+  createNote: (event) => scopedActionsForEvent(event).createNote(event),
+  updateNote: (event) => scopedActionsForEvent(event).updateNote(event),
+  deleteNote: (event) => scopedActionsForEvent(event).deleteNote(event)
 }
