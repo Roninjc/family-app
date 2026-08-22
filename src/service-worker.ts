@@ -1,6 +1,10 @@
 /// <reference types="@sveltejs/kit" />
+/// <reference lib="webworker" />
 
 import { build, files, version } from '$service-worker'
+
+export {}
+declare const self: ServiceWorkerGlobalScope
 
 const CACHE = `family-app-${version}`
 const ASSETS = [...build, ...files]
@@ -25,7 +29,7 @@ const navigationFallback = async (request: Request) => {
   })
 }
 
-self.addEventListener('install', (event) => {
+self.addEventListener('install', (event: ExtendableEvent) => {
   event.waitUntil(
     caches
       .open(CACHE)
@@ -34,13 +38,13 @@ self.addEventListener('install', (event) => {
   )
 })
 
-self.addEventListener('activate', (event) => {
+    self.addEventListener('activate', (event: ExtendableEvent) => {
   event.waitUntil(
     (async () => {
       const cacheKeys = await caches.keys()
       await Promise.all(cacheKeys.filter((key) => key !== CACHE).map((key) => caches.delete(key)))
 
-      if ('navigationPreload' in self.registration) {
+      if (self.registration.navigationPreload) {
         await self.registration.navigationPreload.enable()
       }
 
@@ -49,7 +53,7 @@ self.addEventListener('activate', (event) => {
   )
 })
 
-self.addEventListener('fetch', (event) => {
+self.addEventListener('fetch', (event: FetchEvent) => {
   if (event.request.method !== 'GET') return
 
   const url = new URL(event.request.url)
