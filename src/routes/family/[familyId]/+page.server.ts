@@ -1,20 +1,28 @@
-import { actions as baseActions, load as baseLoad } from '../../+page.server'
+import { createTreeActions, loadTreePage } from '$lib/server/treePage'
+import { ACTIVE_FAMILY_COOKIE } from '$lib/server/activeFamily'
 import type { Actions, PageServerLoad } from './$types'
 
-const withFamilySearchParam = (url: URL, familyId: string) => {
-  const next = new URL(url)
-  next.searchParams.set('family', familyId)
-  return next
-}
-
-const delegatedLoad = baseLoad as unknown as (event: Parameters<PageServerLoad>[0]) => ReturnType<PageServerLoad>
-
 export const load: PageServerLoad = async (event) => {
-  // Reuse the existing tree loader while scoping it to the family in the route path.
-  return delegatedLoad({
-    ...event,
-    url: withFamilySearchParam(event.url, event.params.familyId)
+  // Keep family scope in cookie so delegated loaders/actions can resolve it
+  // without relying on URL query params.
+  event.cookies.set(ACTIVE_FAMILY_COOKIE, event.params.familyId, {
+    path: '/',
+    maxAge: 60 * 60 * 24 * 180,
+    sameSite: 'lax'
+  })
+
+  return loadTreePage(event, {
+    requestedFamilyId: event.params.familyId
   })
 }
 
-export const actions: Actions = baseActions as unknown as Actions
+const scopedActions = createTreeActions()
+
+export const actions: Actions = {
+  addMember: (event) =>
+    createTreeActions({ forcedFamilyId: event.params.familyId }).addMember(event),
+  updateMember: scopedActions.updateMember,
+  deleteMember: scopedActions.deleteMember,
+  addRelation: scopedActions.addRelation,
+  removeRelation: scopedActions.removeRelation
+}

@@ -1,18 +1,18 @@
 import { actions as baseActions, load as baseLoad } from '../../../admin/+page.server'
+import { ACTIVE_FAMILY_COOKIE } from '$lib/server/activeFamily'
 import type { Actions, PageServerLoad } from './$types'
-
-const withFamilySearchParam = (url: URL, familyId: string) => {
-  const next = new URL(url)
-  next.searchParams.set('family', familyId)
-  return next
-}
 
 const delegatedLoad = baseLoad as unknown as (event: Parameters<PageServerLoad>[0]) => ReturnType<PageServerLoad>
 
 export const load: PageServerLoad = async (event) => {
+  event.cookies.set(ACTIVE_FAMILY_COOKIE, event.params.familyId, {
+    path: '/',
+    maxAge: 60 * 60 * 24 * 180,
+    sameSite: 'lax'
+  })
+
   return delegatedLoad({
-    ...event,
-    url: withFamilySearchParam(event.url, event.params.familyId)
+    ...event
   })
 }
 
