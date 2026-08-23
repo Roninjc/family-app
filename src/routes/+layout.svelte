@@ -541,6 +541,16 @@
     box-sizing: border-box;
   }
 
+  :global(a),
+  :global(button),
+  :global(summary),
+  :global(input),
+  :global(textarea),
+  :global(select),
+  :global(label) {
+    -webkit-tap-highlight-color: transparent;
+  }
+
   :global(:focus-visible) {
     outline: 2px solid var(--brand);
     outline-offset: 2px;
@@ -1366,7 +1376,6 @@
     position: absolute;
     top: calc(100% + 32px);
     left: 0;
-    transform: translateY(-6px) scale(0.96);
     min-width: 190px;
     max-width: min(280px, calc(100vw - 24px));
     border-radius: 14px;
@@ -1378,16 +1387,12 @@
     gap: 8px;
     z-index: 24;
     opacity: 0;
-    transform: translateX(-50%) translateY(-6px) scale(0.96);
     pointer-events: none;
-    transition:
-      opacity 0.22s var(--motion-standard),
-      transform 0.22s var(--motion-standard);
+    transition: opacity 0.22s var(--motion-standard);
   }
 
   .header-menu[open] .header-dropdown {
     opacity: 1;
-    transform: translateY(0) scale(1);
     pointer-events: auto;
   }
 
