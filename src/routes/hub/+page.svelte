@@ -45,7 +45,6 @@
   let titleDraft = ''
   let bodyDraft = ''
   let typeDraft: HubNoteType = 'note'
-  let creatingFamilyId: string | null = null
   let notesFilterByFamily: Record<string, HubNotesFilter> = {}
   let filteredNotesByFamily: Record<string, HubNote[]> = {}
   let isNavigating = false
@@ -62,11 +61,6 @@
     titleDraft = ''
     bodyDraft = ''
     typeDraft = 'note'
-  }
-
-  const toggleCreateComposer = (familyId: string) => {
-    creatingFamilyId = creatingFamilyId === familyId ? null : familyId
-    cancelEdit()
   }
 
   const notesFilterOptions = [
@@ -323,7 +317,15 @@
               </div>
 
               <div class="family-center">
-                <FamilyPreviewCard {family} />
+                <a
+                  class="family-preview-entry"
+                  href={family.treeHref}
+                  data-sveltekit-preload-data="tap"
+                  data-sveltekit-preload-code="eager"
+                  aria-label={`Entrar al nivel familiar de ${family.name}`}
+                >
+                  <FamilyPreviewCard {family} />
+                </a>
 
                 <FamilyNotesCard
                   {family}
@@ -331,12 +333,10 @@
                   filter={notesFilterByFamily[family.id] ?? 'all'}
                   filterOptions={notesFilterOptions}
                   status={notesStatusForFamily(family.id)}
-                  {creatingFamilyId}
                   {editingId}
                   bind:titleDraft
                   bind:bodyDraft
                   bind:typeDraft
-                  onCreateToggle={toggleCreateComposer}
                   onFilterChange={(event) => onNotesFilterChange(family.id, event)}
                   onEditStart={startEdit}
                   onEditCancel={cancelEdit}
@@ -504,6 +504,33 @@
     min-height: 0;
   }
 
+  .family-preview-entry {
+    display: block;
+    border-radius: 14px;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .family-preview-entry :global(.preview-card) {
+    transition:
+      box-shadow 0.24s var(--motion-standard),
+      background-color 0.24s var(--motion-standard),
+      filter 0.24s var(--motion-standard);
+  }
+
+  .family-preview-entry:hover :global(.preview-card),
+  .family-preview-entry:focus-visible :global(.preview-card) {
+    box-shadow: var(--neu-shadow-hover-strong);
+    background: color-mix(in srgb, var(--neu-surface-soft) 82%, #ffffff 18%);
+    filter: saturate(1.04);
+  }
+
+  .family-preview-entry:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--brand) 86%, #fff 14%);
+    outline-offset: 3px;
+    border-radius: 14px;
+  }
+
   .panel-header {
     display: flex;
     justify-content: space-between;
@@ -540,6 +567,13 @@
     box-shadow:
       5px 5px 10px rgba(154, 132, 109, 0.18),
       -5px -5px 10px rgba(255, 255, 255, 0.74);
+  }
+
+  .family-panel.active .family-preview-entry:hover :global(.preview-card),
+  .family-panel.active .family-preview-entry:focus-visible :global(.preview-card) {
+    box-shadow: var(--neu-shadow-hover-strong);
+    background: color-mix(in srgb, var(--neu-surface-soft) 82%, #ffffff 18%);
+    filter: saturate(1.04);
   }
 
   .edge-glow {

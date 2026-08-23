@@ -1,24 +1,30 @@
 <script lang="ts">
   import { base } from '$app/paths'
-  import { invalidate } from '$app/navigation'
+  import { goto, invalidate } from '$app/navigation'
   import { navigating, page } from '$app/stores'
-  import { fade } from 'svelte/transition'
   import { onMount } from 'svelte'
+  import { fade } from 'svelte/transition'
   import { canEdit } from '$lib/types/auth'
   import { showAddMemberModal } from '../stores/modals'
   import BottomNav from '../components/bottomNav.svelte'
-  import PageHeader from '../components/ui/pageHeader.svelte'
+  import ModalShell from '../components/ui/modalShell.svelte'
 
   export let data
   export let params: Record<string, string> = {}
   $: routeParamsCount = Object.keys(params).length
   let showTopFade = false
-  let displayedPathname = ''
-  let displayedHeaderKey = ''
-  let headerContentVisible = true
-  let headerSwapTimer: ReturnType<typeof setTimeout> | null = null
+  let profileMenu: HTMLDetailsElement | null = null
+  let quickActionMenu: HTMLDetailsElement | null = null
+  let showComposeModal = false
+  let composeType: 'note' | 'news' = 'note'
+  let composeTitle = ''
+  let composeBody = ''
+  let displayedHeaderCrumb = ''
+  let displayedHeaderTitle = ''
+  let headerTextVisible = true
+  let headerTextSwapTimer: ReturnType<typeof setTimeout> | null = null
 
-  const HEADER_SWAP_MS = 100
+  const HEADER_TEXT_FADE_OUT_MS = 120
 
   const roleLabel = (role: string | null) => {
     if (role === 'admin') return 'administrador'
@@ -38,7 +44,6 @@
   const isFamilyHubPath = (value: string) => /^\/family\/[^/]+\/hub$/.test(value)
   const isFamilyAdminPath = (value: string) =>
     value === '/admin' || /^\/family\/[^/]+\/admin$/.test(value)
-  const isPersonalHubPath = (value: string) => value === '/hub'
   const isProfilePath = (value: string) => value === '/profile'
 
   $: ({ supabase, user } = data)
@@ -54,29 +59,39 @@
     ($page.data.activeFamilyName as string | undefined) ?? activeFamily?.name ?? null
   $: displayName =
     ($page.data.displayName as string | undefined) ?? data.profile?.display_name ?? 'Familiar'
-  $: showPendingInvites = Boolean($page.data.showPendingInvitations)
-  $: pendingInvites = Number($page.data.pendingInvitations ?? 0)
+  $: showPendingInvites = Boolean(
+    ($page.data.showPendingInvitations as boolean | undefined) ?? data.showPendingInvitations
+  )
+  $: pendingInvites = Number(
+    ($page.data.pendingInvitations as number | undefined) ?? data.pendingInvitations ?? 0
+  )
   $: signupNoticeCode = $page.url.searchParams.get('signup_notice')
   $: signupFamily = $page.url.searchParams.get('signup_family')
   $: signupRole = roleLabel($page.url.searchParams.get('signup_role'))
   $: isNavigating = Boolean($navigating)
-  $: routeHeaderKey = isFamilyAdminPath(pathname)
-    ? `${pathname}:${activeFamilyId ?? 'sin-familia'}`
-    : pathname
-  $: if (!displayedHeaderKey && routeHeaderKey) {
-    displayedHeaderKey = routeHeaderKey
-    displayedPathname = pathname
-  }
-  $: if (displayedHeaderKey && routeHeaderKey !== displayedHeaderKey) {
-    if (headerSwapTimer) clearTimeout(headerSwapTimer)
-    headerContentVisible = false
-    headerSwapTimer = setTimeout(() => {
-      displayedHeaderKey = routeHeaderKey
-      displayedPathname = pathname
-      headerContentVisible = true
-      headerSwapTimer = null
-    }, HEADER_SWAP_MS)
-  }
+  $: isFamilyLevel =
+    isFamilyTreePath(pathname) || isFamilyHubPath(pathname) || isFamilyAdminPath(pathname)
+  $: familyBasePath = activeFamilyId ? `/family/${encodeURIComponent(activeFamilyId)}` : null
+  $: familyTreeHref = familyBasePath ?? '/hub?state=no_family'
+  $: familyHubHref = familyBasePath ? `${familyBasePath}/hub` : '/hub?state=no_family'
+  $: familyAdminHref = familyBasePath ? `${familyBasePath}/admin` : '/hub?state=no_family'
+  $: headerCrumb = isFamilyTreePath(pathname)
+    ? 'Árbol'
+    : isFamilyHubPath(pathname)
+      ? 'Hub familiar'
+      : isFamilyAdminPath(pathname)
+        ? 'Administración'
+        : isProfilePath(pathname)
+          ? 'Cuenta'
+          : 'Nivel personal'
+  $: headerTitle = isFamilyLevel
+    ? activeFamilyName ?? 'Sin familia'
+    : isProfilePath(pathname)
+      ? displayName
+      : `Hola, ${displayName}`
+  $: composeAction = `${familyHubHref}?/createNote`
+  $: composeModalTitle = composeType === 'news' ? 'Nueva noticia' : 'Nueva nota'
+  $: headerTextKey = `${headerCrumb}::${headerTitle}`
   $: signupNoticeMessage =
     signupNoticeCode === 'invitation_accepted'
       ? `Tu cuenta está lista. Ya has entrado${inviteContextText(signupFamily, signupRole)}.`
@@ -86,6 +101,65 @@
             signupRole
           )}, pero ese miembro ya está vinculado a otra cuenta.`
         : null
+
+  $: if (!displayedHeaderCrumb && !displayedHeaderTitle && headerTitle) {
+    displayedHeaderCrumb = headerCrumb
+    displayedHeaderTitle = headerTitle
+  }
+
+  $: {
+    const nextTextKey = `${headerCrumb}::${headerTitle}`
+    const shownTextKey = `${displayedHeaderCrumb}::${displayedHeaderTitle}`
+
+    if (headerTitle && nextTextKey !== shownTextKey) {
+      if (headerTextSwapTimer) clearTimeout(headerTextSwapTimer)
+      headerTextVisible = false
+      headerTextSwapTimer = setTimeout(() => {
+        displayedHeaderCrumb = headerCrumb
+        displayedHeaderTitle = headerTitle
+        headerTextVisible = true
+        headerTextSwapTimer = null
+      }, HEADER_TEXT_FADE_OUT_MS)
+    }
+  }
+
+  function closeDetails(menu: HTMLDetailsElement | null) {
+    if (menu) menu.open = false
+  }
+
+  function handleMenuToggle(activeMenu: HTMLDetailsElement | null, otherMenu: HTMLDetailsElement | null) {
+    if (activeMenu?.open) closeDetails(otherMenu)
+  }
+
+  async function openMemberComposer() {
+    closeDetails(quickActionMenu)
+
+    if (!activeFamilyId) return
+
+    if (isFamilyTreePath(pathname)) {
+      showAddMemberModal.set(true)
+      return
+    }
+
+    await goto(`${familyTreeHref}?quickadd=member`)
+  }
+
+  function openNoteComposer(noteType: 'note' | 'news') {
+    closeDetails(quickActionMenu)
+
+    if (!activeFamilyId) return
+
+    composeType = noteType
+    composeTitle = ''
+    composeBody = ''
+    showComposeModal = true
+  }
+
+  function closeComposeModal() {
+    showComposeModal = false
+    composeTitle = ''
+    composeBody = ''
+  }
 
   function handleViewportScroll() {
     showTopFade = window.scrollY > 12
@@ -111,10 +185,34 @@
       }
     })
 
+    const handleDocumentPointerDown = (event: PointerEvent) => {
+      const target = event.target
+      if (!(target instanceof Node)) return
+
+      if (profileMenu?.open && !profileMenu.contains(target)) {
+        closeDetails(profileMenu)
+      }
+
+      if (quickActionMenu?.open && !quickActionMenu.contains(target)) {
+        closeDetails(quickActionMenu)
+      }
+    }
+
+    const handleEscapeClose = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      closeDetails(profileMenu)
+      closeDetails(quickActionMenu)
+    }
+
+    document.addEventListener('pointerdown', handleDocumentPointerDown)
+    document.addEventListener('keydown', handleEscapeClose)
+
     return () => {
       window.removeEventListener('scroll', handleViewportScroll)
       subscription.unsubscribe()
-      if (headerSwapTimer) clearTimeout(headerSwapTimer)
+      document.removeEventListener('pointerdown', handleDocumentPointerDown)
+      document.removeEventListener('keydown', handleEscapeClose)
+      if (headerTextSwapTimer) clearTimeout(headerTextSwapTimer)
     }
   })
 </script>
@@ -133,58 +231,185 @@
 ></div>
 
 {#if showPersistentHeader}
-  <PageHeader className="route-header-shell" ariaLabel="Cabecera principal">
-    <div class="route-header-inner">
-      {#if headerContentVisible}
-        <div class="route-header-content" in:fade={{ duration: 125 }} out:fade={{ duration: 95 }}>
-          {#if isFamilyTreePath(displayedPathname)}
-            <div class="route-header-copy">
-              <p class="route-header-crumb">Árbol</p>
-              <h1>{activeFamilyName ?? 'Sin familia'}</h1>
-            </div>
-            {#if canManageTree}
-              <button
-                type="button"
-                class="route-header-action app-btn app-btn--ghost"
-                on:click={() => showAddMemberModal.set(true)}
+  <header class="app-route-header" aria-label="Cabecera principal">
+    <div class="app-route-header-shell">
+      <div class="app-route-header-layout">
+        {#if isFamilyLevel}
+          <a
+            class="header-side-circle"
+            href="/hub"
+            aria-label="Volver al nivel personal"
+            data-sveltekit-preload-data="tap"
+            data-sveltekit-preload-code="eager"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="m15.4 4.6 1.4 1.4L10.21 12l6.59 6-1.4 1.4L7.2 12l8.2-7.4z" />
+            </svg>
+          </a>
+        {:else}
+          <details
+            class="header-side-circle header-menu header-menu--profile"
+            bind:this={profileMenu}
+            on:toggle={() => handleMenuToggle(profileMenu, quickActionMenu)}
+          >
+            <summary aria-label="Abrir menú de perfil">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4 9.25h13a1.25 1.25 0 0 0 0-2.5H4a1.25 1.25 0 0 0 0 2.5z" />
+                <path d="M4 17.25h9a1.25 1.25 0 0 0 0-2.5H4a1.25 1.25 0 0 0 0 2.5z" />
+              </svg>
+            </summary>
+            <div class="header-dropdown" role="menu">
+              <a
+                href="/profile"
+                role="menuitem"
+                data-sveltekit-preload-data="tap"
+                data-sveltekit-preload-code="eager"
+                on:click={() => closeDetails(profileMenu)}
               >
-                <span aria-hidden="true">+</span>
-                <span>Añadir</span>
-              </button>
-            {/if}
-          {:else if isPersonalHubPath(displayedPathname)}
-            <div class="route-header-copy">
-              <p class="route-header-crumb">Hub</p>
-              <h1>Hola, {displayName}</h1>
-            </div>
-            {#if showPendingInvites}
-              <a class="route-header-action app-btn app-btn--ghost" href="/admin">
-                Invitaciones{pendingInvites > 0 ? ` ${pendingInvites}` : ''}
+                Mi cuenta
               </a>
-            {/if}
-          {:else if isFamilyHubPath(displayedPathname)}
-            <div class="route-header-copy">
-              <p class="route-header-crumb">Hub familiar</p>
-              <h1>{activeFamilyName ?? 'Sin familia'}</h1>
+              <a
+                href="/admin"
+                role="menuitem"
+                data-sveltekit-preload-data="tap"
+                data-sveltekit-preload-code="eager"
+                on:click={() => closeDetails(profileMenu)}
+              >
+                Crear familia
+              </a>
+              <form method="POST" action="/profile?/logout">
+                <button
+                  type="submit"
+                  role="menuitem"
+                  class="header-dropdown-danger"
+                  on:click={() => closeDetails(profileMenu)}
+                >
+                  Cerrar sesión
+                </button>
+              </form>
             </div>
-          {:else if isFamilyAdminPath(displayedPathname)}
-            <div class="route-header-copy">
-              <p class="route-header-crumb">Administración</p>
-              <h1>{activeFamilyName ?? 'Sin familia'}</h1>
-            </div>
-          {:else if isProfilePath(displayedPathname)}
-            <div class="route-header-copy">
-              <p class="route-header-crumb">Perfil</p>
-              <h1>{displayName}</h1>
+          </details>
+        {/if}
+
+        <div class="header-main-pill">
+          {#if headerTextVisible}
+            <div class="header-main-copy">
+              <p
+                class="header-crumb"
+                in:fade={{ duration: 80 }}
+                out:fade={{ duration: 70 }}
+              >
+                {displayedHeaderCrumb}
+              </p>
+              <h1
+                in:fade={{ duration: 120, delay: 30 }}
+                out:fade={{ duration: 90, delay: 20 }}
+              >
+                {displayedHeaderTitle}
+              </h1>
             </div>
           {/if}
         </div>
-      {/if}
+
+        {#if isFamilyLevel}
+          {#if canManageTree && activeFamilyId}
+            <details
+              class="header-side-circle header-menu header-menu--quick"
+              bind:this={quickActionMenu}
+              on:toggle={() => handleMenuToggle(quickActionMenu, profileMenu)}
+            >
+              <summary aria-label="Abrir acciones rápidas">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z" />
+                </svg>
+              </summary>
+              <div class="header-dropdown" role="menu">
+                <button type="button" role="menuitem" on:click={openMemberComposer}>
+                  Nuevo miembro
+                </button>
+                <button type="button" role="menuitem" on:click={() => openNoteComposer('news')}>
+                  Nueva noticia
+                </button>
+                <button type="button" role="menuitem" on:click={() => openNoteComposer('note')}>
+                  Nueva nota
+                </button>
+              </div>
+            </details>
+          {:else}
+            <span class="header-side-circle header-side-circle--ghost" aria-hidden="true"></span>
+          {/if}
+        {:else}
+          <a
+            class="header-side-circle header-notification-btn"
+            href="/admin"
+            aria-label="Ir a invitaciones"
+            data-sveltekit-preload-data="tap"
+            data-sveltekit-preload-code="eager"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path
+                d="M12 3a6 6 0 0 1 6 6v3.63l1.7 2.98A1 1 0 0 1 18.84 17H5.16a1 1 0 0 1-.86-1.39L6 12.63V9a6 6 0 0 1 6-6zm0 18a3 3 0 0 1-2.83-2h5.66A3 3 0 0 1 12 21z"
+              />
+            </svg>
+            {#if showPendingInvites && pendingInvites > 0}
+              <span class="header-badge">{pendingInvites}</span>
+            {/if}
+          </a>
+        {/if}
+      </div>
     </div>
-  </PageHeader>
+  </header>
 {/if}
 
 <slot />
+
+{#if showPersistentHeader && activeFamilyId}
+  <ModalShell
+    open={showComposeModal}
+    ariaLabel="Cerrar formulario rápido"
+    ariaLabelledby="header-compose-title"
+    onClose={closeComposeModal}
+    size="wide"
+  >
+    <section class="header-compose-modal">
+      <h2 id="header-compose-title">{composeModalTitle}</h2>
+      <p>
+        Se guardará en <strong>{activeFamilyName ?? 'la familia activa'}</strong>.
+      </p>
+
+      <form method="POST" action={composeAction} class="header-compose-form">
+        <input type="hidden" name="familyId" value={activeFamilyId} />
+        <input type="hidden" name="noteType" value={composeType} />
+
+        <label>
+          Título
+          <input class="modern-input" name="title" bind:value={composeTitle} maxlength="120" required />
+        </label>
+
+        <label>
+          Contenido
+          <textarea
+            class="modern-textarea"
+            name="body"
+            bind:value={composeBody}
+            rows="4"
+            required
+          ></textarea>
+        </label>
+
+        <div class="header-compose-actions">
+          <button type="button" class="app-btn app-btn--ghost" on:click={closeComposeModal}>
+            Cancelar
+          </button>
+          <button type="submit" class="app-btn app-btn--primary" on:click={closeComposeModal}>
+            Guardar
+          </button>
+        </div>
+      </form>
+    </section>
+  </ModalShell>
+{/if}
+
 <div class="viewport-fade viewport-fade-top" class:active={showTopFade} aria-hidden="true"></div>
 <div class="viewport-fade viewport-fade-bottom" aria-hidden="true"></div>
 {#if user || data.profile}
@@ -211,6 +436,10 @@
     --neu-shadow-out: 8px 8px 16px var(--neu-dark), -8px -8px 16px var(--neu-light);
     --neu-shadow-out-soft: 5px 5px 10px rgba(154, 132, 109, 0.24),
       -5px -5px 10px rgba(255, 255, 255, 0.76);
+    --neu-shadow-hover-strong: 10px 10px 18px rgba(154, 132, 109, 0.26),
+      -10px -10px 18px rgba(255, 255, 255, 0.86);
+    --neu-shadow-hover-soft: 8px 8px 16px rgba(149, 121, 95, 0.22),
+      -8px -8px 16px rgba(255, 255, 255, 0.82);
     --neu-shadow-inset: inset 5px 5px 10px rgba(154, 132, 109, 0.24),
       inset -5px -5px 10px rgba(255, 255, 255, 0.76);
     --text-main: #2e2823;
@@ -318,6 +547,10 @@
     outline-offset: 2px;
   }
 
+  :global(button:hover:not(:disabled):not([aria-disabled='true'])) {
+    transform: none !important;
+  }
+
   :global(button:disabled),
   :global(button[aria-disabled='true']) {
     cursor: not-allowed;
@@ -373,8 +606,8 @@
   }
 
   :global(.app-btn:hover:not(:disabled):not([aria-disabled='true'])) {
-    transform: translateY(-1px);
-    box-shadow: var(--neu-shadow-out-soft);
+    transform: none;
+    box-shadow: var(--neu-shadow-hover-strong);
   }
 
   :global(.app-btn:active:not(:disabled):not([aria-disabled='true'])) {
@@ -505,8 +738,9 @@
   }
 
   :global(.app-chip--interactive:hover) {
-    transform: translateY(-1px);
+    transform: none;
     background: #f7efe6;
+    box-shadow: var(--neu-shadow-hover-soft);
   }
 
   :global(.app-chip--interactive.active),
@@ -638,10 +872,8 @@
   :global(.app-settings-trigger:hover:not(:disabled):not([aria-disabled='true'])) {
     background: #f3ece2;
     color: #111111;
-    transform: translateY(-1px);
-    box-shadow:
-      6px 6px 12px rgba(149, 121, 95, 0.15),
-      -5px -5px 12px rgba(255, 255, 255, 0.72);
+    transform: none;
+    box-shadow: var(--neu-shadow-hover-strong);
   }
 
   :global(.app-settings-trigger.active),
@@ -654,86 +886,35 @@
   }
 
   :global(.app-bottom-nav) {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    align-items: stretch;
-    gap: 8px;
-  }
-
-  :global(.app-bottom-nav a) {
-    --nav-accent-rgb: 127, 102, 82;
-    min-width: 0;
-    white-space: nowrap;
-    position: relative;
-    overflow: hidden;
-    min-height: 44px;
-    padding: 0 12px;
-    border-radius: 11px;
-    text-decoration: none;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
-    font-size: var(--fs-xs);
-    font-weight: 700;
-    letter-spacing: 0.01em;
-    color: #332c26;
-    background: var(--neu-surface);
-    border: none;
+  }
+
+  :global(.app-bottom-nav .app-bottom-nav-link) {
+    position: relative;
+    text-decoration: none;
+    color: #5b4635;
+    background: var(--neu-surface-soft);
     box-shadow: var(--neu-shadow-out-soft);
     transition:
       transform 0.2s var(--motion-standard),
+      box-shadow 0.2s var(--motion-standard),
       background-color 0.2s var(--motion-standard),
-      border-color 0.2s var(--motion-standard),
-      color 0.2s var(--motion-standard),
-      box-shadow 0.2s var(--motion-standard);
+      color 0.2s var(--motion-standard);
   }
 
-  :global(.app-bottom-nav a:nth-child(1)) {
-    --nav-accent-rgb: 114, 129, 95;
+  :global(.app-bottom-nav .app-bottom-nav-link:hover) {
+    transform: none;
+    box-shadow: var(--neu-shadow-hover-strong);
   }
 
-  :global(.app-bottom-nav a:nth-child(2)) {
-    --nav-accent-rgb: 155, 113, 88;
-  }
-
-  :global(.app-bottom-nav a:nth-child(3)) {
-    --nav-accent-rgb: 137, 114, 95;
-  }
-
-  :global(.app-bottom-nav a:nth-child(4)) {
-    --nav-accent-rgb: 128, 106, 84;
-  }
-
-  :global(.app-bottom-nav a:hover) {
-    transform: translateY(-1px);
+  :global(.app-bottom-nav .app-bottom-nav-link[aria-current='page']) {
+    color: #795f49;
+    background: #e6d8c8;
     box-shadow:
-      6px 6px 12px rgba(154, 132, 109, 0.28),
-      -6px -6px 12px rgba(255, 255, 255, 0.8);
-  }
-
-  :global(.app-bottom-nav a[aria-current='page']) {
-    background: rgba(var(--nav-accent-rgb), 0.12);
-    color: rgb(var(--nav-accent-rgb));
-    box-shadow: var(--neu-shadow-inset);
-  }
-
-  :global(.app-bottom-nav a[aria-current='page']::after) {
-    content: '';
-    position: absolute;
-    left: 18%;
-    right: 18%;
-    bottom: 6px;
-    height: 1.5px;
-    border-radius: 999px;
-    background: rgba(var(--nav-accent-rgb), 0.42);
-  }
-
-  :global(.app-nav-dock) {
-    padding: 8px;
-    border-radius: 15px;
-    border: none;
-    background: var(--neu-surface);
-    box-shadow: var(--neu-shadow-out);
+      inset 3px 3px 7px rgba(154, 132, 109, 0.22),
+      inset -3px -3px 7px rgba(255, 255, 255, 0.76);
   }
 
   :global(.page-shell) {
@@ -863,8 +1044,8 @@
   }
 
   :global(.hover-lift:hover) {
-    transform: translateY(-3px);
-    box-shadow: 0 14px 24px rgba(104, 60, 26, 0.16);
+    transform: none;
+    box-shadow: var(--neu-shadow-hover-strong);
   }
 
   @keyframes reveal-fade-up {
@@ -1020,75 +1201,304 @@
     text-align: center;
   }
 
-  :global(.route-header-shell) {
-    margin-bottom: 20px;
+  .app-route-header {
+    position: sticky;
+    top: 0;
+    z-index: 14;
+    padding: max(12px, env(safe-area-inset-top)) 26px 12px;
+    pointer-events: none;
   }
 
-  .route-header-inner {
-    min-height: 74px;
+  .app-route-header-shell {
+    width: min(1080px, 100%);
+    margin: 0 auto;
+    pointer-events: auto;
   }
 
-  .route-header-content {
+  .app-route-header-layout {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    gap: 12px;
-    min-height: 74px;
+    gap: 22px;
   }
 
-  :global(.route-header-shell h1) {
-    font-weight: 800;
-    letter-spacing: 0.01em;
-  }
-
-  .route-header-copy {
+  .header-main-pill {
+    min-height: 72px;
+    border-radius: 999px;
+    background: var(--neu-surface);
+    box-shadow: var(--neu-shadow-out);
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    min-width: 0;
+    justify-content: center;
+    gap: 4px;
+    text-align: center;
+    padding: 10px 34px;
   }
 
-  .route-header-crumb {
+  .header-main-copy {
+    min-height: 46px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .header-main-pill h1 {
+    margin: 0;
+    font-size: clamp(1.08rem, 1.03rem + 0.45vw, 1.34rem);
+    line-height: var(--lh-tight);
+    letter-spacing: 0.01em;
+    color: #4e392d;
+  }
+
+  .header-crumb {
     margin: 0;
     font-size: var(--fs-2xs);
     color: var(--text-muted);
-    letter-spacing: 0.06em;
     text-transform: uppercase;
+    letter-spacing: 0.07em;
   }
 
-  .route-header-action {
-    min-height: 38px;
-    padding: 0.48rem 0.78rem;
-    border-radius: 11px;
-    font-size: var(--fs-xs);
-    gap: 0.38rem;
-    flex-shrink: 0;
-    align-self: center;
-    color: #6f4e33;
+  .header-side-circle {
+    width: 52px;
+    height: 52px;
+    border-radius: 999px;
     border: none;
-    background: #f1e7da;
-    box-shadow:
-      5px 5px 12px rgba(149, 121, 95, 0.14),
-      -5px -5px 12px rgba(255, 255, 255, 0.72);
+    background: var(--neu-surface-soft);
+    box-shadow: var(--neu-shadow-out-soft);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #5f4a39;
+    text-decoration: none;
+    position: relative;
+    transition:
+      transform 0.2s var(--motion-standard),
+      box-shadow 0.2s var(--motion-standard),
+      background-color 0.2s var(--motion-standard),
+      color 0.2s var(--motion-standard);
   }
 
-  .route-header-action:hover:not(:disabled):not([aria-disabled='true']) {
-    background: #f6ede2;
-    transform: translateY(-1px);
+  .header-side-circle:hover {
+    transform: none;
+    box-shadow: var(--neu-shadow-hover-strong);
+  }
+
+  .header-side-circle svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+    display: block;
+    transition: transform 0.2s var(--motion-standard);
+  }
+
+  .header-menu[open] {
+    background: #e8dbc9;
+    color: #735741;
     box-shadow:
-      7px 7px 14px rgba(149, 121, 95, 0.17),
-      -6px -6px 14px rgba(255, 255, 255, 0.78);
+      inset 3px 3px 7px rgba(154, 132, 109, 0.2),
+      inset -3px -3px 7px rgba(255, 255, 255, 0.75);
+  }
+
+  .header-menu[open] summary svg {
+    transform: scale(0.96);
+  }
+
+  .header-menu--quick[open] summary svg {
+    transform: rotate(45deg) scale(0.96);
+  }
+
+  .header-side-circle--ghost {
+    visibility: hidden;
+  }
+
+  .header-badge {
+    position: absolute;
+    top: -3px;
+    right: -2px;
+    min-width: 19px;
+    height: 19px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    font-size: 0.67rem;
+    font-weight: 700;
+    color: #fff;
+    background: #c25f45;
+    box-shadow: 0 3px 7px rgba(122, 49, 30, 0.35);
+  }
+
+  .header-menu {
+    position: relative;
+  }
+
+  .header-menu summary {
+    list-style: none;
+    width: 100%;
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .header-menu summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .header-dropdown {
+    position: absolute;
+    top: calc(100% + 32px);
+    left: 0;
+    transform: translateY(-6px) scale(0.96);
+    min-width: 190px;
+    max-width: min(280px, calc(100vw - 24px));
+    border-radius: 14px;
+    background: var(--neu-surface);
+    box-shadow: var(--neu-shadow-out);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 24;
+    opacity: 0;
+    transform: translateX(-50%) translateY(-6px) scale(0.96);
+    pointer-events: none;
+    transition:
+      opacity 0.22s var(--motion-standard),
+      transform 0.22s var(--motion-standard);
+  }
+
+  .header-menu[open] .header-dropdown {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
+
+  .header-menu--quick .header-dropdown {
+    left: auto;
+    right: 0;
+  }
+
+  .header-dropdown a,
+  .header-dropdown button {
+    min-height: 42px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-main);
+    text-decoration: none;
+    text-align: left;
+    font: inherit;
+    font-size: var(--fs-sm);
+    padding: 0 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .header-dropdown a:hover,
+  .header-dropdown button:hover {
+    background: #e9dece;
+  }
+
+  .header-dropdown .header-dropdown-danger {
+    color: #8a3232;
+    background: rgba(189, 94, 94, 0.12);
+  }
+
+  .header-dropdown .header-dropdown-danger:hover {
+    background: rgba(189, 94, 94, 0.2);
+    color: #7a2222;
+  }
+
+  .header-dropdown form {
+    margin: 0;
+  }
+
+  .header-compose-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .header-compose-modal h2,
+  .header-compose-modal p {
+    margin: 0;
+  }
+
+  .header-compose-modal p {
+    color: var(--text-muted);
+    font-size: var(--fs-sm);
+  }
+
+  .header-compose-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .header-compose-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
+  }
+
+  .header-compose-form .modern-input,
+  .header-compose-form .modern-textarea {
+    width: 100%;
+    border: 1px solid rgba(168, 132, 101, 0.32);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.78);
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: var(--fs-sm);
+    padding: 0.5rem 0.62rem;
+  }
+
+  .header-compose-form .modern-textarea {
+    resize: vertical;
+  }
+
+  .header-compose-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
   }
 
   @media (max-width: 760px) {
-    .route-header-content {
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: center;
+    .app-route-header {
+      padding-inline: 18px;
     }
 
-    .route-header-action {
-      min-height: 36px;
-      padding: 0.4rem 0.68rem;
+    .app-route-header-layout {
+      gap: 15px;
+    }
+
+    .header-main-pill {
+      min-height: 66px;
+      padding-inline: 22px;
+    }
+
+    .header-side-circle {
+      width: 46px;
+      height: 46px;
+    }
+
+    .header-side-circle svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .header-dropdown {
+      min-width: 172px;
+      max-width: min(250px, calc(100vw - 22px));
+      top: calc(100% + 26px);
+      gap: 7px;
     }
   }
 
@@ -1121,10 +1531,6 @@
       opacity: 0;
       transform: none;
       transition: none;
-    }
-
-    .route-header-inner {
-      transition: none !important;
     }
   }
 </style>

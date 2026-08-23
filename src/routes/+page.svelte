@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+  import { page } from '$app/stores'
   import { initTreeData, renderRoots, stack, treeVersion, visitedMembers } from '../stores/tree'
+  import { showAddMemberModal } from '../stores/modals'
   import TreeNode from '../components/treeNode.svelte'
   import AddFamilyMemberModal from '../components/addFamilyMemberModal.svelte'
   import EditMemberModal from '../components/editMemberModal.svelte'
@@ -11,12 +13,22 @@
 
   let roots: string[] = []
   let treeWrapper: HTMLElement
+  let lastQuickAddOpenKey = ''
 
   // Rebuild the graph whenever the page data changes (initial load or after
   // adding a member), then re-seed the render stores before the {#key} block
   // re-mounts the tree.
   $: if (data.familyData) initTreeData(data.familyData)
   $: resetTreeRender($treeVersion)
+  $: {
+    const quickAdd = $page.url.searchParams.get('quickadd')
+    const locationKey = `${$page.url.pathname}?${$page.url.searchParams.toString()}`
+
+    if (quickAdd === 'member' && lastQuickAddOpenKey !== locationKey) {
+      lastQuickAddOpenKey = locationKey
+      showAddMemberModal.set(true)
+    }
+  }
 
   function resetTreeRender(version: number) {
     visitedMembers.set([])

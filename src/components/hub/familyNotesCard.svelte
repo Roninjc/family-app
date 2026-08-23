@@ -15,14 +15,12 @@
     errorMessage?: string
   } = {}
 
-  export let creatingFamilyId: string | null = null
   export let editingId: string | null = null
 
   export let titleDraft = ''
   export let bodyDraft = ''
   export let typeDraft: HubNoteType = 'note'
 
-  export let onCreateToggle: (familyId: string) => void = () => {}
   export let onFilterChange: (event: CustomEvent<string>) => void = () => {}
   export let onEditStart: (note: HubNote) => void = () => {}
   export let onEditCancel: () => void = () => {}
@@ -31,19 +29,6 @@
 <div class="notes-card">
   <div class="notes-header">
     <h4>Noticias y notas</h4>
-    {#if family.canManageNotes}
-      <button
-        type="button"
-        class="note-create-toggle"
-        aria-label={creatingFamilyId === family.id ? 'Cerrar editor de nota' : 'Crear nueva nota'}
-        title={creatingFamilyId === family.id ? 'Cerrar editor' : 'Nueva nota'}
-        on:click={() => {
-          onCreateToggle(family.id)
-        }}
-      >
-        {creatingFamilyId === family.id ? '×' : '+'}
-      </button>
-    {/if}
   </div>
 
   <div class="notes-filter-row">
@@ -54,28 +39,6 @@
       on:change={onFilterChange}
     />
   </div>
-
-  {#if family.canManageNotes && creatingFamilyId === family.id}
-    <form method="POST" action="?/createNote" class="note-form">
-      <input type="hidden" name="familyId" value={family.id} />
-      <label>
-        Título
-        <input class="modern-input" name="title" maxlength="120" required />
-      </label>
-      <label>
-        Tipo
-        <select class="modern-select" name="noteType">
-          <option value="note">Nota</option>
-          <option value="news">Noticia</option>
-        </select>
-      </label>
-      <label>
-        Contenido
-        <textarea class="modern-textarea" name="body" rows="3" required></textarea>
-      </label>
-      <button class="app-btn app-btn--primary" type="submit">Guardar nota</button>
-    </form>
-  {/if}
 
   {#if status.errorMessage}
     <p class="note-error" role="alert">{status.errorMessage}</p>
@@ -198,45 +161,6 @@
     margin-bottom: 8px;
   }
 
-  .note-create-toggle {
-    margin: -3px -2px 0 0;
-    width: 34px;
-    height: 34px;
-    border-radius: 999px;
-    border: none;
-    background: color-mix(in srgb, var(--neu-surface-soft) 86%, #ffffff 14%);
-    color: var(--brand);
-    font-size: 1.2rem;
-    font-weight: 700;
-    line-height: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow:
-      3px 3px 7px rgba(154, 132, 109, 0.16),
-      -3px -3px 7px rgba(255, 255, 255, 0.72);
-    transition:
-      transform 0.22s var(--motion-standard),
-      box-shadow 0.22s var(--motion-standard),
-      background-color 0.22s var(--motion-standard);
-  }
-
-  .note-create-toggle:hover {
-    transform: translateY(-1px);
-    box-shadow:
-      4px 4px 9px rgba(154, 132, 109, 0.2),
-      -4px -4px 9px rgba(255, 255, 255, 0.76);
-  }
-
-  .note-create-toggle:active {
-    transform: translateY(0);
-    box-shadow:
-      inset 3px 3px 6px rgba(154, 132, 109, 0.18),
-      inset -3px -3px 6px rgba(255, 255, 255, 0.72);
-  }
-
-  .note-create-toggle:focus-visible,
   .note-action-btn:focus-visible {
     outline: 2px solid color-mix(in srgb, var(--brand) 86%, #fff 14%);
     outline-offset: 3px;
