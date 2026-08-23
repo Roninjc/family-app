@@ -69,13 +69,6 @@
     { value: 'note', label: 'Notas' }
   ]
 
-  const roleLabelTitle = (role: HubFamilySummary['role']) => {
-    if (role === 'admin') return 'Administrador'
-    if (role === 'editor') return 'Editor'
-    if (role === 'viewer') return 'Solo lectura'
-    return null
-  }
-
   $: if (data.activeFamilyId !== syncedServerActiveFamilyId) {
     syncedServerActiveFamilyId = data.activeFamilyId
     selectedFamilyId = data.activeFamilyId ?? data.families[0]?.id ?? null
@@ -287,7 +280,7 @@
   {:else}
     <section class="families-zone reveal-fade-up reveal-delay-1" aria-label="Familias del usuario">
     <div class="zone-title-row">
-      <h2>Familias</h2>
+      <h2>Tus familias</h2>
       {#if data.families.length > 1}
         <p class="scroll-hint" role="status">Desliza para cambiar de familia activa</p>
       {/if}
@@ -311,9 +304,6 @@
             <div class="family-content">
               <div class="panel-header">
                 <h3>{family.name}</h3>
-                {#if roleLabelTitle(family.role)}
-                  <span class="family-role-pill">{roleLabelTitle(family.role)}</span>
-                {/if}
               </div>
 
               <div class="family-center">
@@ -536,33 +526,20 @@
 
   .panel-header {
     display: flex;
-    justify-content: space-between;
-    align-items: baseline;
+    justify-content: center;
+    align-items: center;
     gap: 10px;
-    text-align: left;
+    text-align: center;
     flex-wrap: wrap;
   }
 
   h3 {
     margin: 0;
-    font-size: clamp(1.2rem, 1.1rem + 0.45vw, 1.45rem);
+    font-size: clamp(1.28rem, 1.14rem + 0.62vw, 1.62rem);
+    font-weight: 800;
     line-height: 1.18;
-    letter-spacing: 0.01em;
-  }
-
-  .family-role-pill {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--radius-pill);
-    padding: 0.22rem 0.62rem;
-    font-size: var(--fs-2xs);
-    font-weight: 700;
-    color: color-mix(in srgb, var(--brand) 90%, #2f281f 10%);
-    background: color-mix(in srgb, var(--brand-soft) 82%, rgba(255, 255, 255, 0.55));
-    box-shadow:
-      inset 1px 1px 2px rgba(255, 255, 255, 0.7),
-      inset -1px -1px 2px rgba(149, 121, 95, 0.12);
+    letter-spacing: 0.015em;
+    color: #4e392d;
   }
 
   .family-panel.active :global(.preview-card),
@@ -695,7 +672,7 @@
 
     @container (max-width: 520px) {
       .panel-header {
-        justify-content: flex-start;
+        justify-content: center;
       }
     }
   }
