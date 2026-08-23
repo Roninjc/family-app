@@ -32,7 +32,9 @@
   size="wide"
 >
   <div class="users-confirm-card" in:fade={{ duration: 140 }}>
-    <h2 id="users-save-title">Confirmar cambios</h2>
+    <div class="modal-heading">
+      <h2 id="users-save-title">Confirmar cambios</h2>
+    </div>
 
     {#if usersChanges.length > 0}
       <div class="users-summary-grid app-stat-grid" role="status" aria-live="polite">
@@ -67,17 +69,17 @@
         {/each}
       </ul>
 
-      <form method="POST" action="?/saveUsers" use:enhance={usersSaveEnhance}>
+      <form method="POST" action="?/saveUsers" use:enhance={usersSaveEnhance} class="modal-form">
         <input type="hidden" name="familyId" value={activeFamilyId} />
         <input type="hidden" name="changesJson" value={usersChangesJson} />
-        <div class="users-confirm-actions">
+        <div class="users-confirm-actions modal-form-actions">
           <button type="button" class="app-btn app-btn--secondary" on:click={onClose}>Cancelar</button>
           <button type="submit" class="app-btn app-btn--primary">Confirmar y guardar</button>
         </div>
       </form>
     {:else}
       <p class="users-confirm-summary">No hay cambios para guardar.</p>
-      <div class="users-confirm-actions">
+      <div class="users-confirm-actions modal-form-actions">
         <button type="button" class="app-btn app-btn--secondary" on:click={onClose}>Cerrar</button>
       </div>
     {/if}
@@ -87,7 +89,7 @@
 <style lang="scss">
   .users-confirm-card {
     h2 {
-      margin: 0 0 1rem;
+      margin: 0;
       font-size: var(--fs-lg);
       color: #4a3426;
     }
@@ -129,18 +131,11 @@
   }
 
   .users-confirm-actions {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-    margin-top: 12px;
+    justify-content: flex-end;
 
     :global(.app-btn) {
-      width: 100%;
+      width: auto;
       min-height: 42px;
-    }
-
-    @media (min-width: 640px) {
-      grid-template-columns: 1fr 1fr;
     }
   }
 </style>

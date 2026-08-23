@@ -324,13 +324,13 @@
               </summary>
               <div class="header-dropdown" role="menu">
                 <button type="button" role="menuitem" on:click={openMemberComposer}>
-                  Nuevo miembro
+                  Miembro
                 </button>
                 <button type="button" role="menuitem" on:click={() => openNoteComposer('news')}>
-                  Nueva noticia
+                  Noticia
                 </button>
                 <button type="button" role="menuitem" on:click={() => openNoteComposer('note')}>
-                  Nueva nota
+                  Nota
                 </button>
               </div>
             </details>
@@ -371,35 +371,42 @@
     size="wide"
   >
     <section class="header-compose-modal">
-      <h2 id="header-compose-title">{composeModalTitle}</h2>
-      <p>
+      <div class="modal-heading">
+        <h2 id="header-compose-title">{composeModalTitle}</h2>
+        <p class="modal-subtitle">
         Se guardará en <strong>{activeFamilyName ?? 'la familia activa'}</strong>.
-      </p>
+        </p>
+      </div>
 
-      <form method="POST" action={composeAction} class="header-compose-form">
+      <form method="POST" action={composeAction} class="header-compose-form modal-form">
         <input type="hidden" name="familyId" value={activeFamilyId} />
         <input type="hidden" name="noteType" value={composeType} />
 
-        <label>
-          Título
-          <input class="modern-input" name="title" bind:value={composeTitle} maxlength="120" required />
-        </label>
+        <div class="input-wrapper floating-input-wrapper compose-field">
+          <input
+            id="composeTitle"
+            class="modern-input"
+            name="title"
+            bind:value={composeTitle}
+            maxlength="120"
+            required
+          />
+          <label for="composeTitle" class:label-active={composeTitle.length > 0}>Título</label>
+        </div>
 
-        <label>
-          Contenido
+        <div class="input-wrapper floating-input-wrapper compose-field">
           <textarea
+            id="composeBody"
             class="modern-textarea"
             name="body"
             bind:value={composeBody}
             rows="4"
             required
           ></textarea>
-        </label>
+          <label for="composeBody" class:label-active={composeBody.length > 0}>Contenido</label>
+        </div>
 
-        <div class="header-compose-actions">
-          <button type="button" class="app-btn app-btn--ghost" on:click={closeComposeModal}>
-            Cancelar
-          </button>
+        <div class="header-compose-actions modal-form-actions">
           <button type="submit" class="app-btn app-btn--primary" on:click={closeComposeModal}>
             Guardar
           </button>
@@ -576,13 +583,11 @@
   :global(button[aria-disabled='true']:active) {
     scale: 1;
     transform: none;
-    box-shadow: none;
   }
 
   :global(button:disabled:focus-visible),
   :global(button[aria-disabled='true']:focus-visible) {
     outline: none;
-    box-shadow: none;
   }
 
   :global(.glass-panel) {
@@ -657,6 +662,24 @@
   :global(.app-btn--ghost) {
     background: #f2ece4;
     color: var(--brand);
+  }
+
+  :global(.app-btn:disabled),
+  :global(.app-btn[aria-disabled='true']) {
+    opacity: 1;
+    color: #7f7366;
+    background: #e3dbcf;
+    box-shadow:
+      inset 2px 2px 5px rgba(154, 132, 109, 0.15),
+      inset -2px -2px 5px rgba(255, 255, 255, 0.72);
+  }
+
+  :global(.app-btn:disabled:hover),
+  :global(.app-btn[aria-disabled='true']:hover) {
+    background: #e3dbcf;
+    box-shadow:
+      inset 2px 2px 5px rgba(154, 132, 109, 0.15),
+      inset -2px -2px 5px rgba(255, 255, 255, 0.72);
   }
 
   :global(.app-page-header) {
@@ -1459,34 +1482,62 @@
     gap: 10px;
   }
 
-  .header-compose-form label {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    color: var(--text-muted);
-    font-size: var(--fs-xs);
+  .header-compose-form .compose-field {
+    margin: 0;
   }
 
   .header-compose-form .modern-input,
   .header-compose-form .modern-textarea {
     width: 100%;
-    border: 1px solid rgba(168, 132, 101, 0.32);
+    border: none;
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.78);
+    background: #f2ece4;
     color: var(--text-main);
     font-family: inherit;
     font-size: var(--fs-sm);
-    padding: 0.5rem 0.62rem;
+    padding: 0.56rem 0.7rem;
+    box-shadow: var(--neu-shadow-inset);
+    transition:
+      box-shadow 0.2s var(--motion-standard),
+      background-color 0.2s var(--motion-standard);
   }
 
   .header-compose-form .modern-textarea {
+    min-height: 112px;
+    padding-top: 1.1rem;
     resize: vertical;
+    line-height: var(--lh-copy);
+  }
+
+  .header-compose-form .modern-input:focus,
+  .header-compose-form .modern-textarea:focus {
+    outline: none;
+    background: #f7f2ea;
+    box-shadow:
+      var(--neu-shadow-inset),
+      0 0 0 2px rgba(156, 123, 95, 0.18);
+  }
+
+  .header-compose-form .floating-input-wrapper .modern-textarea + label {
+    top: 0.74rem;
+  }
+
+  .header-compose-form .floating-input-wrapper .modern-textarea:focus + label,
+  .header-compose-form .floating-input-wrapper .modern-textarea:valid + label,
+  .header-compose-form .floating-input-wrapper .modern-textarea + label.label-active {
+    top: -0.38rem;
+    left: 0.5rem;
+    color: #8a5f3f;
+    font-size: var(--fs-2xs);
+    letter-spacing: 0.01em;
+    background: #f4eee6;
+    padding: 0 0.3rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(149, 121, 95, 0.12);
   }
 
   .header-compose-actions {
-    display: flex;
     justify-content: flex-end;
-    gap: 8px;
   }
 
   @media (max-width: 760px) {

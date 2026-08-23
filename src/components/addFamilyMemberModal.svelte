@@ -24,6 +24,12 @@
   let submitting = false
   let step1Valid = false
   let step2Valid = false
+  let step1ValidationAttempted = false
+  let step1InvalidPulseToggle = false
+
+  $: isNameStep1Valid = name.trim().length > 0
+  $: isFamilyNameStep1Valid = familyName.trim().length > 0
+  $: isBirthDateStep1Valid = birthDate.trim().length > 0
 
   function validateStep1() {
     return name.trim() && familyName.trim() && birthDate
@@ -46,8 +52,12 @@
       if (validateStep1()) {
         formStep++
         error = ''
+        step1ValidationAttempted = false
       } else {
-        error = 'Completa todos los campos obligatorios.'
+        // Visual validation: highlight missing required fields in-place.
+        error = ''
+        step1ValidationAttempted = true
+        step1InvalidPulseToggle = !step1InvalidPulseToggle
       }
     } else if (formStep === 2) {
       if (validateStep2()) {
@@ -99,6 +109,8 @@
     formStep = 1
     showSummary = false
     error = ''
+    step1ValidationAttempted = false
+    step1InvalidPulseToggle = false
     name = ''
     familyName = ''
     birthDate = ''
@@ -222,21 +234,54 @@
     actualPartnerSearch = member.name + ' ' + member.familyName
     showActualPartnerSuggestions = false
   }
+
+  function clearFather() {
+    fatherId = ''
+    fatherSearch = ''
+    if (fatherInputEl) fatherInputEl.setCustomValidity('')
+  }
+
+  function clearMother() {
+    motherId = ''
+    motherSearch = ''
+    if (motherInputEl) motherInputEl.setCustomValidity('')
+  }
+
+  function clearActualPartner() {
+    actualPartnerId = ''
+    actualPartnerSearch = ''
+    if (actualPartnerInputEl) actualPartnerInputEl.setCustomValidity('')
+  }
+
   function addSibling(member: FamilyMember) {
     if (!siblingsIds.includes(member.id)) siblingsIds = [...siblingsIds, member.id]
     siblingsSearch = ''
     showSiblingsSuggestions = false
   }
+
+  function removeSibling(memberId: string) {
+    siblingsIds = siblingsIds.filter((id) => id !== memberId)
+  }
+
   function addChild(member: FamilyMember) {
     if (!childrenIds.includes(member.id)) childrenIds = [...childrenIds, member.id]
     childrenSearch = ''
     showChildrenSuggestions = false
   }
+
+  function removeChild(memberId: string) {
+    childrenIds = childrenIds.filter((id) => id !== memberId)
+  }
+
   function addPreviousPartner(member: FamilyMember) {
     if (!previousPartnersIds.includes(member.id))
       previousPartnersIds = [...previousPartnersIds, member.id]
     previousPartnersSearch = ''
     showPreviousPartnersSuggestions = false
+  }
+
+  function removePreviousPartner(memberId: string) {
+    previousPartnersIds = previousPartnersIds.filter((id) => id !== memberId)
   }
 
   function getMemberName(id: string) {
@@ -264,11 +309,29 @@
   onClose={closeModal}
   size="compact"
 >
+  <svelte:fragment slot="chrome-left">
+    {#if formStep === 2}
+      <button
+        type="button"
+        class="step-back-icon"
+        aria-label="Volver al paso anterior"
+        title="Volver"
+        on:click={() => formStep--}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="m15.4 4.6 1.4 1.4L10.21 12l6.59 6-1.4 1.4L7.2 12l8.2-7.4z" />
+        </svg>
+      </button>
+    {/if}
+  </svelte:fragment>
+
   <div class="add-member-modal">
-        <h2 id="add-member-title">Nuevo miembro familiar</h2>
-        <p class="step-caption">
-          Paso {formStep} de 2 · {formStep === 1 ? 'Datos básicos' : 'Conexiones familiares'}
-        </p>
+        <div class="modal-heading">
+          <h2 id="add-member-title">Nuevo miembro familiar</h2>
+          <p class="step-caption modal-subtitle">
+            Paso {formStep} de 2 · {formStep === 1 ? 'Datos básicos' : 'Conexiones familiares'}
+          </p>
+        </div>
         <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
         <form
           method="POST"
@@ -280,7 +343,16 @@
           {#if formStep === 1}
             <section>
               <h3>Datos personales</h3>
-              <div class="input-wrapper floating-input-wrapper">
+              <div
+                class="input-wrapper floating-input-wrapper"
+                class:field-invalid={step1ValidationAttempted && !isNameStep1Valid}
+                class:field-invalid-pulse-a={
+                  step1ValidationAttempted && !isNameStep1Valid && step1InvalidPulseToggle
+                }
+                class:field-invalid-pulse-b={
+                  step1ValidationAttempted && !isNameStep1Valid && !step1InvalidPulseToggle
+                }
+              >
                 <input
                   id="newMemberName"
                   class="modern-input"
@@ -291,7 +363,16 @@
                 />
                 <label for="newMemberName" class:label-active={name.length > 0}>Nombre</label>
               </div>
-              <div class="input-wrapper floating-input-wrapper">
+              <div
+                class="input-wrapper floating-input-wrapper"
+                class:field-invalid={step1ValidationAttempted && !isFamilyNameStep1Valid}
+                class:field-invalid-pulse-a={
+                  step1ValidationAttempted && !isFamilyNameStep1Valid && step1InvalidPulseToggle
+                }
+                class:field-invalid-pulse-b={
+                  step1ValidationAttempted && !isFamilyNameStep1Valid && !step1InvalidPulseToggle
+                }
+              >
                 <input
                   id="newMemberFamilyName"
                   class="modern-input"
@@ -304,7 +385,16 @@
                   >Apellidos</label
                 >
               </div>
-              <div class="input-wrapper floating-input-wrapper">
+              <div
+                class="input-wrapper floating-input-wrapper"
+                class:field-invalid={step1ValidationAttempted && !isBirthDateStep1Valid}
+                class:field-invalid-pulse-a={
+                  step1ValidationAttempted && !isBirthDateStep1Valid && step1InvalidPulseToggle
+                }
+                class:field-invalid-pulse-b={
+                  step1ValidationAttempted && !isBirthDateStep1Valid && !step1InvalidPulseToggle
+                }
+              >
                 <input
                   id="newMemberBirthDate"
                   class="modern-input"
@@ -319,7 +409,12 @@
                   class:label-active={birthDate && birthDate.length > 0}>Fecha de nacimiento</label
                 >
               </div>
-              <button type="button" on:click={nextStep} disabled={!step1Valid || submitting}>
+              <button
+                type="button"
+                class="app-btn app-btn--secondary"
+                on:click={nextStep}
+                disabled={submitting}
+              >
                 Siguiente
               </button>
             </section>
@@ -344,6 +439,21 @@
                   autocomplete="off"
                   bind:this={fatherInputEl}
                 />
+                {#if fatherId}
+                  <button
+                    type="button"
+                    class="relation-clear-btn"
+                    aria-label="Quitar padre seleccionado"
+                    title="Quitar padre"
+                    on:click={clearFather}
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path
+                        d="M6.22 6.22a.75.75 0 0 1 1.06 0L12 10.94l4.72-4.72a.75.75 0 1 1 1.06 1.06L13.06 12l4.72 4.72a.75.75 0 1 1-1.06 1.06L12 13.06l-4.72 4.72a.75.75 0 1 1-1.06-1.06L10.94 12 6.22 7.28a.75.75 0 0 1 0-1.06Z"
+                      />
+                    </svg>
+                  </button>
+                {/if}
                 <label for="fatherAutocomplete" class:label-active={fatherSearch.length > 0}
                   >Padre</label
                 >
@@ -372,6 +482,21 @@
                   autocomplete="off"
                   bind:this={motherInputEl}
                 />
+                {#if motherId}
+                  <button
+                    type="button"
+                    class="relation-clear-btn"
+                    aria-label="Quitar madre seleccionada"
+                    title="Quitar madre"
+                    on:click={clearMother}
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path
+                        d="M6.22 6.22a.75.75 0 0 1 1.06 0L12 10.94l4.72-4.72a.75.75 0 1 1 1.06 1.06L13.06 12l4.72 4.72a.75.75 0 1 1-1.06 1.06L12 13.06l-4.72 4.72a.75.75 0 1 1-1.06-1.06L10.94 12 6.22 7.28a.75.75 0 0 1 0-1.06Z"
+                      />
+                    </svg>
+                  </button>
+                {/if}
                 <label for="motherAutocomplete" class:label-active={motherSearch.length > 0}
                   >Madre</label
                 >
@@ -409,8 +534,28 @@
               </div>
               {#if siblingsIds.length > 0}
                 <div class="selected-list">
-                  <b>Hermanos añadidos</b>
-                  <span>{listOrFallback(siblingsIds)}</span>
+                  <div class="selected-list-head">
+                    <b class="selected-list-title">Hermanos añadidos</b>
+                    <span class="selected-list-count">{siblingsIds.length}</span>
+                  </div>
+                  <div class="selected-chips">
+                    {#each siblingsIds as siblingId (siblingId)}
+                      <button
+                        type="button"
+                        class="selected-chip"
+                        aria-label={`Quitar a ${getMemberName(siblingId)} de hermanos`}
+                        title="Quitar hermano"
+                        on:click={() => removeSibling(siblingId)}
+                      >
+                        <span>{getMemberName(siblingId)}</span>
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                          <path
+                            d="M6.22 6.22a.75.75 0 0 1 1.06 0L12 10.94l4.72-4.72a.75.75 0 1 1 1.06 1.06L13.06 12l4.72 4.72a.75.75 0 1 1-1.06 1.06L12 13.06l-4.72 4.72a.75.75 0 1 1-1.06-1.06L10.94 12 6.22 7.28a.75.75 0 0 1 0-1.06Z"
+                          />
+                        </svg>
+                      </button>
+                    {/each}
+                  </div>
                 </div>
               {/if}
               <h3>Hijos</h3>
@@ -440,8 +585,28 @@
               </div>
               {#if childrenIds.length > 0}
                 <div class="selected-list">
-                  <b>Hijos añadidos</b>
-                  <span>{listOrFallback(childrenIds)}</span>
+                  <div class="selected-list-head">
+                    <b class="selected-list-title">Hijos añadidos</b>
+                    <span class="selected-list-count">{childrenIds.length}</span>
+                  </div>
+                  <div class="selected-chips">
+                    {#each childrenIds as childId (childId)}
+                      <button
+                        type="button"
+                        class="selected-chip"
+                        aria-label={`Quitar a ${getMemberName(childId)} de hijos`}
+                        title="Quitar hijo"
+                        on:click={() => removeChild(childId)}
+                      >
+                        <span>{getMemberName(childId)}</span>
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                          <path
+                            d="M6.22 6.22a.75.75 0 0 1 1.06 0L12 10.94l4.72-4.72a.75.75 0 1 1 1.06 1.06L13.06 12l4.72 4.72a.75.75 0 1 1-1.06 1.06L12 13.06l-4.72 4.72a.75.75 0 1 1-1.06-1.06L10.94 12 6.22 7.28a.75.75 0 0 1 0-1.06Z"
+                          />
+                        </svg>
+                      </button>
+                    {/each}
+                  </div>
                 </div>
               {/if}
               {#if suggestedChildrenList.length > 0}
@@ -478,6 +643,21 @@
                   autocomplete="off"
                   bind:this={actualPartnerInputEl}
                 />
+                {#if actualPartnerId}
+                  <button
+                    type="button"
+                    class="relation-clear-btn"
+                    aria-label="Quitar pareja seleccionada"
+                    title="Quitar pareja"
+                    on:click={clearActualPartner}
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path
+                        d="M6.22 6.22a.75.75 0 0 1 1.06 0L12 10.94l4.72-4.72a.75.75 0 1 1 1.06 1.06L13.06 12l4.72 4.72a.75.75 0 1 1-1.06 1.06L12 13.06l-4.72 4.72a.75.75 0 1 1-1.06-1.06L10.94 12 6.22 7.28a.75.75 0 0 1 0-1.06Z"
+                      />
+                    </svg>
+                  </button>
+                {/if}
                 <label
                   for="partnerAutocomplete"
                   class:label-active={actualPartnerSearch && actualPartnerSearch.length > 0}
@@ -517,14 +697,30 @@
               </div>
               {#if previousPartnersIds.length > 0}
                 <div class="selected-list">
-                  <b>Exparejas añadidas</b>
-                  <span>{listOrFallback(previousPartnersIds)}</span>
+                  <div class="selected-list-head">
+                    <b class="selected-list-title">Exparejas añadidas</b>
+                    <span class="selected-list-count">{previousPartnersIds.length}</span>
+                  </div>
+                  <div class="selected-chips">
+                    {#each previousPartnersIds as previousPartnerId (previousPartnerId)}
+                      <button
+                        type="button"
+                        class="selected-chip"
+                        aria-label={`Quitar a ${getMemberName(previousPartnerId)} de exparejas`}
+                        title="Quitar expareja"
+                        on:click={() => removePreviousPartner(previousPartnerId)}
+                      >
+                        <span>{getMemberName(previousPartnerId)}</span>
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                          <path
+                            d="M6.22 6.22a.75.75 0 0 1 1.06 0L12 10.94l4.72-4.72a.75.75 0 1 1 1.06 1.06L13.06 12l4.72 4.72a.75.75 0 1 1-1.06 1.06L12 13.06l-4.72 4.72a.75.75 0 1 1-1.06-1.06L10.94 12 6.22 7.28a.75.75 0 0 1 0-1.06Z"
+                          />
+                        </svg>
+                      </button>
+                    {/each}
+                  </div>
                 </div>
               {/if}
-
-              <button type="button" class="summary-toggle" on:click={() => (showSummary = !showSummary)}>
-                {showSummary ? 'Ocultar resumen' : 'Ver resumen antes de guardar'}
-              </button>
 
               {#if showSummary}
                 <div class="summary-panel" transition:fade={{ duration: 140 }}>
@@ -560,12 +756,26 @@
               {/each}
 
               <div class="step-actions">
-                <button type="button" on:click={() => formStep--}>Atrás</button>
+                <button
+                  type="button"
+                  class="app-btn app-btn--ghost"
+                  aria-label={showSummary ? 'Ocultar resumen' : 'Ver resumen antes de guardar'}
+                  title={showSummary ? 'Ocultar resumen' : 'Ver resumen'}
+                  on:click={() => (showSummary = !showSummary)}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M12 5c4.8 0 8.8 2.7 10.4 7-1.6 4.3-5.6 7-10.4 7S3.2 16.3 1.6 12C3.2 7.7 7.2 5 12 5Zm0 2.2A4.8 4.8 0 1 0 12 16.8 4.8 4.8 0 0 0 12 7.2Zm0 2A2.8 2.8 0 1 1 12 14.8 2.8 2.8 0 0 1 12 9.2Z" />
+                  </svg>
+                  <span class="sr-only">
+                    {showSummary ? 'Ocultar resumen' : 'Ver resumen antes de guardar'}
+                  </span>
+                </button>
                 <button
                   type="submit"
+                  class="app-btn app-btn--primary"
                   disabled={submitting || !step2Valid}
                 >
-                  {submitting ? 'Guardando...' : 'Guardar miembro'}
+                  {submitting ? 'Guardando...' : 'Guardar'}
                 </button>
               </div>
             </section>
@@ -579,15 +789,13 @@
 
 <style lang="scss">
   .add-member-modal {
-
       h2 {
-        margin-top: 0;
-        margin-bottom: 0.35rem;
-        text-wrap: nowrap;
+        margin: 0;
+        text-wrap: balance;
       }
 
       .step-caption {
-        margin: 0 0 1rem;
+        margin: 0;
         font-size: var(--fs-xs);
         color: var(--text-muted);
       }
@@ -600,82 +808,35 @@
           margin-bottom: 1.5rem;
         }
 
-        button {
+        .app-btn {
           width: 100%;
           min-height: 44px;
-          padding: 10px;
-          border: none;
-          border-radius: 10px;
-          cursor: pointer;
-          font-size: var(--fs-sm);
-          font-weight: 700;
-          color: #5b4330;
-          background: #f1e7da;
-          box-shadow:
-            5px 5px 12px rgba(149, 121, 95, 0.14),
-            -5px -5px 12px rgba(255, 255, 255, 0.72);
-          transition:
-            transform 0.22s var(--motion-standard),
-            box-shadow 0.22s var(--motion-standard),
-            background-color 0.22s var(--motion-standard);
-
-          &:hover {
-            transform: translateY(-1px);
-            box-shadow:
-              7px 7px 14px rgba(149, 121, 95, 0.18),
-              -6px -6px 14px rgba(255, 255, 255, 0.78);
-            background: #f6ede2;
-          }
-
-          &[type='submit'] {
-            background: #d8dece;
-            color: #4d5a43;
-            box-shadow:
-              5px 5px 12px rgba(124, 137, 108, 0.2),
-              -5px -5px 12px rgba(250, 254, 246, 0.82);
-
-            &:hover {
-              background: #dfe6d5;
-              box-shadow:
-                7px 7px 14px rgba(124, 137, 108, 0.24),
-                -6px -6px 14px rgba(252, 255, 250, 0.86);
-            }
-
-            &:disabled,
-            &:disabled:hover {
-              background-color: #c3ccd6;
-              color: #5c6673;
-            }
-          }
-
-          &:disabled {
-            opacity: 1;
-            cursor: not-allowed;
-            scale: 1;
-            background: #c3ccd6;
-            color: #5c6673;
-            box-shadow: none;
-          }
         }
 
         .step-actions {
           display: grid;
-          grid-template-columns: 1fr;
+          grid-template-columns: 52px minmax(0, 1fr);
           gap: 0.75rem;
+          align-items: stretch;
+
+          .app-btn {
+            width: 100%;
+          }
+
+          .app-btn:first-child {
+            min-width: 52px;
+            padding-inline: 0;
+
+            svg {
+              width: 18px;
+              height: 18px;
+              fill: currentColor;
+            }
+          }
 
           @media (min-width: 640px) {
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 52px minmax(0, 1fr);
           }
-        }
-
-        .summary-toggle {
-          margin-top: 0.3rem;
-          background: #f4ece2;
-          color: #6a4a31;
-          font-weight: 600;
-          box-shadow:
-            4px 4px 10px rgba(149, 121, 95, 0.14),
-            -4px -4px 10px rgba(255, 255, 255, 0.72);
         }
 
         .summary-panel {
@@ -701,14 +862,44 @@
         }
 
         .selected-list {
-          margin: 0.25rem 0 0.95rem;
-          padding: 8px 10px;
-          border-radius: 10px;
-          border: 1px solid rgba(223, 194, 165, 0.58);
-          background: rgba(255, 248, 239, 0.7);
+          margin: 0.45rem 0 1.05rem;
+          padding: 0.68rem 0.72rem 0.74rem;
+          border-radius: 13px;
+          border: none;
+          background: rgba(247, 239, 229, 0.52);
           display: flex;
           flex-direction: column;
-          gap: 2px;
+          gap: 0.48rem;
+
+          .selected-list-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            padding-bottom: 0.38rem;
+            border-bottom: 1px solid rgba(195, 160, 124, 0.14);
+          }
+
+          .selected-list-title {
+            font-size: var(--fs-xs);
+            font-weight: 600;
+            color: #73543f;
+            letter-spacing: 0.01em;
+          }
+
+          .selected-list-count {
+            min-width: 1.6rem;
+            height: 1.28rem;
+            padding: 0 0.38rem;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.69rem;
+            font-weight: 600;
+            color: #85644d;
+            background: rgba(236, 220, 201, 0.6);
+          }
 
           b {
             font-size: var(--fs-xs);
@@ -731,5 +922,203 @@
           color: #8a4a22;
         }
     }
+
+        .field-invalid :global(.modern-input) {
+          box-shadow:
+            var(--neu-shadow-inset),
+            0 0 0 2px rgba(188, 70, 70, 0.55);
+          background: #f8efec;
+        }
+
+        .field-invalid :global(label) {
+          color: #9a3a3a;
+        }
+
+        .field-invalid-pulse-a :global(.modern-input) {
+          animation: field-invalid-pulse-a 440ms var(--motion-standard);
+        }
+
+        .field-invalid-pulse-b :global(.modern-input) {
+          animation: field-invalid-pulse-b 440ms var(--motion-standard);
+        }
+  }
+
+  .step-back-icon {
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    min-height: 34px;
+    padding: 0;
+    border: none;
+    border-radius: 10px;
+    background: #efe7dc;
+    color: #1f1f1f;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow:
+      3px 3px 8px rgba(149, 121, 95, 0.14),
+      -3px -3px 8px rgba(255, 255, 255, 0.6);
+    transition:
+      background-color 0.2s var(--motion-standard),
+      box-shadow 0.2s var(--motion-standard),
+      color 0.2s var(--motion-standard);
+
+    svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    &:hover {
+      box-shadow:
+        4px 4px 9px rgba(149, 121, 95, 0.16),
+        -4px -4px 9px rgba(255, 255, 255, 0.7);
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgba(149, 121, 95, 0.52);
+      outline-offset: 2px;
+    }
+  }
+
+  .selected-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.42rem;
+  }
+
+  .selected-chip {
+    border: none;
+    border-radius: 999px;
+    background: rgba(236, 221, 203, 0.7);
+    color: #6f4f39;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.27rem 0.6rem 0.27rem 0.65rem;
+    cursor: pointer;
+    font-size: var(--fs-xs);
+    line-height: 1.25;
+    box-shadow: 0 1px 2px rgba(149, 121, 95, 0.09);
+    transition:
+      transform 0.15s var(--motion-standard),
+      box-shadow 0.15s var(--motion-standard),
+      background-color 0.2s var(--motion-standard);
+
+    svg {
+      width: 10px;
+      height: 10px;
+      fill: currentColor;
+      opacity: 0.7;
+    }
+
+    &:hover {
+      transform: translateY(-0.5px);
+      background: rgba(230, 212, 192, 0.78);
+      box-shadow: 0 2px 5px rgba(149, 121, 95, 0.12);
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgba(149, 121, 95, 0.52);
+      outline-offset: 2px;
+    }
+  }
+
+  .autocomplete-wrapper {
+    position: relative;
+  }
+
+  .autocomplete-wrapper :global(.modern-input) {
+    padding-right: 2.2rem;
+  }
+
+  .relation-clear-btn {
+    position: absolute;
+    top: 50%;
+    right: 0.5rem;
+    transform: translateY(-50%);
+    width: 1.3rem;
+    height: 1.3rem;
+    border: none;
+    border-radius: 999px;
+    background: rgba(236, 221, 203, 0.74);
+    color: #6f4f39;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+    z-index: 4;
+    box-shadow: 0 1px 2px rgba(149, 121, 95, 0.09);
+    transition:
+      background-color 0.2s var(--motion-standard),
+      box-shadow 0.2s var(--motion-standard),
+      transform 0.2s var(--motion-standard);
+
+    svg {
+      width: 10px;
+      height: 10px;
+      fill: currentColor;
+      opacity: 0.7;
+    }
+
+    &:hover {
+      background: rgba(230, 212, 192, 0.8);
+      box-shadow: 0 2px 5px rgba(149, 121, 95, 0.12);
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgba(149, 121, 95, 0.52);
+      outline-offset: 2px;
+    }
+  }
+
+
+  @keyframes field-invalid-pulse-a {
+    0% {
+      box-shadow:
+        var(--neu-shadow-inset),
+        0 0 0 0 rgba(188, 70, 70, 0.28);
+    }
+    45% {
+      box-shadow:
+        var(--neu-shadow-inset),
+        0 0 0 5px rgba(188, 70, 70, 0.2);
+    }
+    100% {
+      box-shadow:
+        var(--neu-shadow-inset),
+        0 0 0 2px rgba(188, 70, 70, 0.55);
+    }
+  }
+
+  @keyframes field-invalid-pulse-b {
+    0% {
+      box-shadow:
+        var(--neu-shadow-inset),
+        0 0 0 0 rgba(188, 70, 70, 0.28);
+    }
+    45% {
+      box-shadow:
+        var(--neu-shadow-inset),
+        0 0 0 5px rgba(188, 70, 70, 0.2);
+    }
+    100% {
+      box-shadow:
+        var(--neu-shadow-inset),
+        0 0 0 2px rgba(188, 70, 70, 0.55);
+    }
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 </style>

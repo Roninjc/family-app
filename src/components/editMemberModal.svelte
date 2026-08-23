@@ -151,6 +151,7 @@
 >
   {#if member}
     <div class="edit-member-modal">
+        <div class="modal-heading modal-heading--member">
         <div class="member-header">
           <div class="member-avatar" aria-hidden="true">
             {#if memberAvatar}
@@ -160,6 +161,7 @@
             {/if}
           </div>
           <h2 id="edit-member-title">{member.name} {member.familyName}</h2>
+        </div>
         </div>
         {#if !editable}
           <p class="viewer-note" role="status">
@@ -209,7 +211,7 @@
 
         {#if activeSection === 'datos'}
           <div in:fade={{ duration: 140 }}>
-          <form method="POST" action="?/updateMember" use:enhance={enhanceMemberForm}>
+          <form method="POST" action="?/updateMember" use:enhance={enhanceMemberForm} class="edit-data-form modal-form">
             <input type="hidden" name="memberId" value={member.id} />
             <div class="input-wrapper floating-input-wrapper">
               <input
@@ -258,9 +260,11 @@
               </label>
             </div>
             {#if editable}
-              <button type="submit" disabled={!canSubmitEdit}>
-                {submitting ? 'Guardando…' : 'Guardar cambios'}
-              </button>
+              <div class="modal-form-actions edit-data-actions">
+                <button type="submit" class="app-btn app-btn--primary" disabled={!canSubmitEdit}>
+                  {submitting ? 'Guardando…' : 'Guardar cambios'}
+                </button>
+              </div>
             {/if}
           </form>
           </div>
@@ -394,7 +398,7 @@
         display: flex;
         align-items: center;
         gap: 0.7rem;
-        margin: 0 0 1.15rem;
+        margin: 0;
 
         h2 {
           margin: 0;
@@ -483,6 +487,14 @@
       form {
         display: flex;
         flex-direction: column;
+      }
+
+      .edit-data-form {
+        margin: 0;
+      }
+
+      .edit-data-actions :global(.app-btn) {
+        width: 100%;
       }
 
       .input-wrapper {
