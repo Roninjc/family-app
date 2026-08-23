@@ -321,111 +321,81 @@ describe('deleteMember action', () => {
   })
 })
 
-describe('page load family filtering', () => {
-  it('returns members and relations from the selected persisted family', async () => {
-    const members = [
-      { id: 'a', name: 'Ana', family_name: 'C', birth_date: null, photo_url: null },
-      { id: 'b', name: 'Beto', family_name: 'C', birth_date: null, photo_url: null },
-      { id: 'c', name: 'Cris', family_name: 'L', birth_date: null, photo_url: null }
-    ]
+describe('root route canonical redirect', () => {
+  it('redirects unauthenticated users to /login', async () => {
+    await expect(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (load as any)({
+        locals: { supabase: {}, user: null },
+        cookies: { get: () => null, set: () => {} },
+        url: new URL('http://localhost/')
+      })
+    ).rejects.toMatchObject({ status: 303, location: '/login' })
+  })
 
-    const relationships = [{ member_a: 'a', member_b: 'b', type: 'partner' as const }]
+  it('redirects to /family/:id using persisted active family', async () => {
     const cookieWrites: Array<{ name: string; value: string }> = []
 
     const supabase = {
       from: (table: string) => {
-        if (table === 'family_memberships') {
-          return {
-            select: () => ({
-              eq: async () => ({
-                data: [{ family_id: 'c', role: 'viewer', families: { id: 'c', name: 'Familia C' } }],
-                error: null
-              })
+        if (table !== 'family_memberships') {
+          throw new Error(`Unexpected table: ${table}`)
+        }
+
+        return {
+          select: () => ({
+            eq: async () => ({
+              data: [{ family_id: 'f2', role: 'editor', families: { id: 'f2', name: 'Familia 2' } }],
+              error: null
             })
-          }
+          })
         }
-
-        if (table === 'members') {
-          return {
-            select: () => ({
-              eq: () => ({ order: async () => ({ data: members.filter((member) => member.id === 'c'), error: null }) })
-            })
-          }
-        }
-
-        if (table === 'relationships') {
-          return {
-            select: async () => ({ data: relationships, error: null })
-          }
-        }
-
-        throw new Error(`Unexpected table: ${table}`)
       }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = await (load as any)({
-      locals: { supabase, user: { id: 'u1' } },
-      cookies: {
-        get: () => null,
-        set: (name: string, value: string) => cookieWrites.push({ name, value })
-      },
-      url: new URL('http://localhost/?family=c')
+    await expect(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (load as any)({
+        locals: { supabase, user: { id: 'u1' } },
+        cookies: {
+          get: () => null,
+          set: (name: string, value: string) => cookieWrites.push({ name, value })
+        },
+        url: new URL('http://localhost/')
+      })
+    ).rejects.toMatchObject({
+      status: 303,
+      location: '/family/f2'
     })
 
-    expect(data.activeFamilyId).toBe('c')
-    expect(data.familyData.members.map((member: { id: string }) => member.id)).toEqual(['c'])
-    expect(cookieWrites).toContainEqual({ name: 'active_family_id', value: 'c' })
+    expect(cookieWrites).toContainEqual({ name: 'active_family_id', value: 'f2' })
   })
 
-  it('falls back to the first family when query and cookie are invalid', async () => {
-    const members = [
-      { id: 'a', name: 'Ana', family_name: 'C', birth_date: null, photo_url: null },
-      { id: 'b', name: 'Beto', family_name: 'C', birth_date: null, photo_url: null }
-    ]
-
+  it('redirects to /hub?state=no_family when user has no families', async () => {
     const supabase = {
       from: (table: string) => {
-        if (table === 'family_memberships') {
-          return {
-            select: () => ({
-              eq: async () => ({
-                data: [{ family_id: 'a', role: 'viewer', families: { id: 'a', name: 'Familia A' } }],
-                error: null
-              })
-            })
-          }
+        if (table !== 'family_memberships') {
+          throw new Error(`Unexpected table: ${table}`)
         }
 
-        if (table === 'members') {
-          return {
-            select: () => ({
-              eq: () => ({ order: async () => ({ data: members.filter((member) => member.id === 'a'), error: null }) })
-            })
-          }
+        return {
+          select: () => ({
+            eq: async () => ({ data: [], error: null })
+          })
         }
-
-        if (table === 'relationships') {
-          return {
-            select: async () => ({ data: [], error: null })
-          }
-        }
-
-        throw new Error(`Unexpected table: ${table}`)
       }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = await (load as any)({
-      locals: { supabase, user: { id: 'u1' } },
-      cookies: {
-        get: () => 'missing',
-        set: () => {}
-      },
-      url: new URL('http://localhost/?family=not-found')
+    await expect(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (load as any)({
+        locals: { supabase, user: { id: 'u1' } },
+        cookies: { get: () => null, set: () => {} },
+        url: new URL('http://localhost/')
+      })
+    ).rejects.toMatchObject({
+      status: 303,
+      location: '/hub?state=no_family'
     })
-
-    expect(data.activeFamilyId).toBe('a')
-    expect(data.familyData.members.map((member: { id: string }) => member.id)).toEqual(['a'])
   })
 })

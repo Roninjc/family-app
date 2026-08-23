@@ -12,14 +12,12 @@
   $: adminHref = familyBasePath ? `${familyBasePath}/admin` : '/hub?state=no_family'
   $: familyHubHref = familyBasePath ? `${familyBasePath}/hub` : '/hub?state=no_family'
   $: isFamilyLevel =
-    pathname === '/' ||
-    pathname === '/admin' ||
     treeRoutePattern.test(pathname) ||
     familyHubRoutePattern.test(pathname) ||
     familyAdminRoutePattern.test(pathname)
-  $: isFamilyTreePath = pathname === '/' || treeRoutePattern.test(pathname)
+  $: isFamilyTreePath = treeRoutePattern.test(pathname)
   $: isFamilyHubPath = familyHubRoutePattern.test(pathname)
-  $: isFamilyAdminPath = pathname === '/admin' || familyAdminRoutePattern.test(pathname)
+  $: isFamilyAdminPath = familyAdminRoutePattern.test(pathname)
 </script>
 
 <footer class="app-footer-nav" aria-label="Navegación principal fija">

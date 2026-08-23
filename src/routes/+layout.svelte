@@ -40,10 +40,9 @@
     return parts.length > 0 ? ` ${parts.join(' ')}` : ''
   }
 
-  const isFamilyTreePath = (value: string) => value === '/' || /^\/family\/[^/]+$/.test(value)
+  const isFamilyTreePath = (value: string) => /^\/family\/[^/]+$/.test(value)
   const isFamilyHubPath = (value: string) => /^\/family\/[^/]+\/hub$/.test(value)
-  const isFamilyAdminPath = (value: string) =>
-    value === '/admin' || /^\/family\/[^/]+\/admin$/.test(value)
+  const isFamilyAdminPath = (value: string) => /^\/family\/[^/]+\/admin$/.test(value)
   const isProfilePath = (value: string) => value === '/profile'
 
   $: ({ supabase, user } = data)
@@ -484,6 +483,11 @@
     --tree-line-soft: #a29182;
     --tree-band-a: rgba(250, 245, 238, 0.2);
     --tree-band-b: rgba(234, 225, 214, 0.12);
+    --page-shell-top-mobile: 24px;
+    --page-shell-top-desktop: 30px;
+    --page-shell-inline-mobile: 14px;
+    --page-shell-inline-desktop: 18px;
+    --page-content-max: 920px;
   }
 
   :global(html),
@@ -920,7 +924,17 @@
   :global(.page-shell) {
     width: min(1040px, 100%);
     margin: 0 auto;
-    padding: max(18px, env(safe-area-inset-top)) 14px max(20px, env(safe-area-inset-bottom));
+    padding: max(var(--page-shell-top-mobile), env(safe-area-inset-top))
+      var(--page-shell-inline-mobile)
+      max(20px, env(safe-area-inset-bottom));
+  }
+
+  @media (min-width: 760px) {
+    :global(.page-shell) {
+      padding-top: max(var(--page-shell-top-desktop), env(safe-area-inset-top));
+      padding-left: var(--page-shell-inline-desktop);
+      padding-right: var(--page-shell-inline-desktop);
+    }
   }
 
   :global(.app-text-link) {

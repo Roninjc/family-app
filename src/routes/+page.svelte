@@ -7,7 +7,7 @@
   import AddFamilyMemberModal from '../components/addFamilyMemberModal.svelte'
   import EditMemberModal from '../components/editMemberModal.svelte'
 
-  export let data
+  export let data: any
   export let params: Record<string, string> = {}
   $: routeParamsCount = Object.keys(params).length
 
@@ -101,7 +101,7 @@
     background: transparent;
     height: 100%;
     min-height: 100vh;
-    padding: 24px;
+    padding: 30px 18px 24px;
     padding-bottom: max(154px, env(safe-area-inset-bottom));
     overflow: scroll;
     scroll-behavior: smooth;
@@ -111,7 +111,7 @@
       --tree-row-height: 120px;
       --tree-band-height: calc(var(--tree-row-height) + 8px);
       gap: 80px;
-      padding: 16px;
+      padding: 24px 14px 16px;
       padding-bottom: max(182px, env(safe-area-inset-bottom));
     }
   }

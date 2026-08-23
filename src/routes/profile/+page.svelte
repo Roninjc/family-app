@@ -49,14 +49,13 @@
     flex-direction: column;
     gap: 0;
     min-height: 100vh;
-    padding-top: 0;
     padding-bottom: max(108px, env(safe-area-inset-bottom));
   }
 
   .profile-content {
     display: flex;
     flex-direction: column;
-    width: min(920px, 100%);
+    width: min(var(--page-content-max), 100%);
     margin-inline: auto;
     padding: 2px 4px 2px;
     border-radius: 15px;

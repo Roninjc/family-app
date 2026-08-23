@@ -19,6 +19,19 @@
   size="compact"
 >
   <div class="users-confirm-card family-settings-card" in:fade={{ duration: 140 }}>
+    <button
+      type="button"
+      class="modal-close-button"
+      aria-label="Cerrar ajustes de familia"
+      on:click={onClose}
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path
+          d="M6.22 6.22a.75.75 0 0 1 1.06 0L12 10.94l4.72-4.72a.75.75 0 1 1 1.06 1.06L13.06 12l4.72 4.72a.75.75 0 1 1-1.06 1.06L12 13.06l-4.72 4.72a.75.75 0 1 1-1.06-1.06L10.94 12 6.22 7.28a.75.75 0 0 1 0-1.06Z"
+        />
+      </svg>
+    </button>
+
     <h2 id="family-settings-title">Ajustes de familia</h2>
 
     <form method="POST" action="?/updateFamilySettings" use:enhance>
@@ -47,7 +60,6 @@
       {/if}
 
       <div class="users-confirm-actions">
-        <button type="button" class="app-btn app-btn--secondary" on:click={onClose}>Cancelar</button>
         <button type="submit" class="app-btn app-btn--primary">Guardar</button>
       </div>
     </form>
@@ -64,6 +76,8 @@
   }
 
   .family-settings-card {
+    position: relative;
+
     form {
       display: flex;
       flex-direction: column;
@@ -73,6 +87,7 @@
     .users-confirm-actions {
       margin-top: 0.1rem;
       gap: 8px;
+      justify-content: flex-end;
     }
 
     .ok-note,
@@ -86,19 +101,49 @@
   }
 
   .users-confirm-actions {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    justify-content: flex-end;
     gap: 0.75rem;
     margin-top: 12px;
 
     :global(.app-btn) {
-      width: 100%;
+      width: auto;
+      min-width: 132px;
       min-height: 42px;
     }
+  }
 
-    @media (min-width: 640px) {
-      grid-template-columns: 1fr 1fr;
-    }
+  .modal-close-button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 10px;
+    background: #efe7dc;
+    color: #1f1f1f;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow:
+      3px 3px 8px rgba(149, 121, 95, 0.14),
+      -3px -3px 8px rgba(255, 255, 255, 0.6);
+    transition:
+      background-color 0.2s var(--motion-standard),
+      box-shadow 0.2s var(--motion-standard),
+      color 0.2s var(--motion-standard);
+  }
+
+  .modal-close-button svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+  }
+
+  .modal-close-button:hover {
+    background: #f4ede4;
+    box-shadow: var(--neu-shadow-hover-strong);
   }
 
   .ok-note {

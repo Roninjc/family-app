@@ -382,7 +382,6 @@
     flex-direction: column;
     gap: 0;
     min-height: 100vh;
-    padding-top: 0;
     padding-bottom: max(114px, env(safe-area-inset-bottom));
   }
 
@@ -390,6 +389,8 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    width: min(var(--page-content-max), 100%);
+    margin-inline: auto;
     border-radius: 18px;
     padding: 0;
     background: transparent;
@@ -400,6 +401,8 @@
     display: flex;
     flex-direction: column;
     gap: 14px;
+    width: min(var(--page-content-max), 100%);
+    margin-inline: auto;
   }
 
   .personal-empty-card {
@@ -460,7 +463,7 @@
   .carousel-shell {
     position: relative;
     border-radius: 16px;
-    margin-inline: 20px;
+    margin-inline: 0;
     padding: 6px;
     background: color-mix(in srgb, var(--neu-surface) 72%, transparent);
     box-shadow: var(--neu-shadow-inset);

@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { goto } from '$app/navigation'
   import { page } from '$app/stores'
   import type { SubmitFunction } from '@sveltejs/kit'
-  import { onDestroy, onMount } from 'svelte'
+  import { onDestroy } from 'svelte'
   import type {
     AdminFamilySummary,
     AdminInviteFilter,
@@ -11,9 +10,8 @@
     AdminUserDraft,
     AdminUserProfile
   } from '../../components/admin/types'
-  import type { ActionData, PageData } from './$types'
   import CollapsibleAdminSection from '../../components/admin/collapsibleAdminSection.svelte'
-  import FamilyScopeCarousel from '../../components/admin/familyScopeCarousel.svelte'
+  import GearIcon from '../../components/icons/gearIcon.svelte'
   import FamilySettingsModal from '../../components/admin/familySettingsModal.svelte'
   import GeneralInvitePanel from '../../components/admin/generalInvitePanel.svelte'
   import IssuedInvitesPanel from '../../components/admin/issuedInvitesPanel.svelte'
@@ -21,8 +19,19 @@
   import UsersManagementPanel from '../../components/admin/usersManagementPanel.svelte'
   import UsersConfirmModal from '../../components/admin/usersConfirmModal.svelte'
 
-  export let data: PageData
-  export let form: ActionData | null | undefined
+  type AdminPageData = {
+    families: AdminFamilySummary[]
+    activeFamily: AdminFamilySummary | null
+    canManageInvites: boolean
+    profiles: Array<AdminUserProfile & { member_id: string | null; created_at: string }>
+    invites: AdminInviteSummary[]
+    members: AdminMemberOption[]
+    currentUserId?: string | null
+    manager?: { id?: string | null } | null
+  }
+
+  export let data: AdminPageData
+  export let form: Record<string, any> | null | undefined
   export let params: Record<string, string> = {}
   $: routeParamsCount = Object.keys(params).length
 
@@ -80,11 +89,6 @@
       inviteFilter = nextFilter
     }
   }
-  let familyCarousel: HTMLDivElement | null = null
-  const familyCards = new Map<string, HTMLElement>()
-  let focusedFamilyId = ''
-  let pendingFamilyId: string | null = null
-  let switchFamilyTimer: ReturnType<typeof setTimeout> | null = null
   let showFamilySettingsModal = false
   let familySettingsFamilyId = ''
   let familyNameDraft = ''
@@ -133,7 +137,6 @@
 
   onDestroy(() => {
     if (clearCopyStatusTimer) clearTimeout(clearCopyStatusTimer)
-    if (switchFamilyTimer) clearTimeout(switchFamilyTimer)
   })
 
   const formatDate = (value: string | null) => {
@@ -148,7 +151,7 @@
     })
   }
 
-  $: memberNameById = new Map(
+  $: memberNameById = new Map<string, string>(
     data.members.map((member) => [member.id, `${member.name} ${member.family_name}`])
   )
   $: preselectedMemberId = $page.url.searchParams.get('memberId') ?? ''
@@ -158,10 +161,6 @@
   $: activeFamilyId = data.activeFamily?.id ?? ''
   $: activeFamily = data.families.find((family) => family.id === activeFamilyId) ?? null
   $: activeFamilyRole = activeFamily?.role ?? 'viewer'
-  $: focusedFamilyId = activeFamilyId
-  $: if (pendingFamilyId && pendingFamilyId === activeFamilyId) {
-    pendingFamilyId = null
-  }
   $: filteredInvites = data.invites.filter((invite) => inviteMatchesFilter(invite, inviteFilter))
   $: currentUserId = data.currentUserId ?? data.manager?.id ?? ''
 
@@ -360,29 +359,8 @@
     availableMembersByProfileId = nextByProfileId
   }
 
-  const switchFamily = async (familyId: string) => {
-    if (!familyId || familyId === activeFamilyId) return
-
-    pendingFamilyId = familyId
-    const nextHref = `/family/${encodeURIComponent(familyId)}/admin`
-
-    try {
-      await goto(nextHref, {
-        keepFocus: true,
-        noScroll: true
-      })
-    } catch {
-      pendingFamilyId = null
-    }
-  }
-
-  const focusAndSwitchFamily = (familyId: string) => {
-    focusedFamilyId = familyId
-    switchFamily(familyId)
-  }
-
-  const openFamilySettingsModal = (family: AdminFamilySummary) => {
-    if (family.role === 'viewer') return
+  const openFamilySettingsModal = (family: AdminFamilySummary | null) => {
+    if (!family || family.role === 'viewer') return
     familySettingsFamilyId = family.id
     familyNameDraft = family.name
     showFamilySettingsModal = true
@@ -391,78 +369,6 @@
   const closeFamilySettingsModal = () => {
     showFamilySettingsModal = false
   }
-
-  const goToFamilyAt = (index: number) => {
-    const family = data.families[index]
-    if (!family) return
-
-    const card = familyCards.get(family.id)
-    if (card && typeof card.scrollIntoView === 'function') {
-      card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
-    }
-
-    focusedFamilyId = family.id
-    switchFamily(family.id)
-  }
-
-  const setFamilyCardRef = (familyId: string, element: HTMLElement | null) => {
-    if (!element) {
-      familyCards.delete(familyId)
-      return
-    }
-    familyCards.set(familyId, element)
-  }
-
-  const trackFamilyCard = (node: HTMLElement, familyId: string) => {
-    setFamilyCardRef(familyId, node)
-    return {
-      destroy() {
-        setFamilyCardRef(familyId, null)
-      }
-    }
-  }
-
-  const scheduleFamilySwitch = (familyId: string) => {
-    if (!familyId || familyId === activeFamilyId) return
-    if (switchFamilyTimer) clearTimeout(switchFamilyTimer)
-    switchFamilyTimer = setTimeout(() => {
-      switchFamily(familyId)
-    }, 220)
-  }
-
-  const detectCenteredFamily = () => {
-    if (!familyCarousel) return
-
-    const trackRect = familyCarousel.getBoundingClientRect()
-    const trackCenter = trackRect.left + trackRect.width / 2
-    let closestId = ''
-    let minDistance = Number.POSITIVE_INFINITY
-
-    for (const family of data.families) {
-      const card = familyCards.get(family.id)
-      if (!card) continue
-      const rect = card.getBoundingClientRect()
-      const center = rect.left + rect.width / 2
-      const distance = Math.abs(center - trackCenter)
-
-      if (distance < minDistance) {
-        minDistance = distance
-        closestId = family.id
-      }
-    }
-
-    if (!closestId) return
-    focusedFamilyId = closestId
-    scheduleFamilySwitch(closestId)
-  }
-
-  onMount(() => {
-    if (!activeFamilyId) return
-    const activeCard = familyCards.get(activeFamilyId)
-    if (activeCard && typeof activeCard.scrollIntoView === 'function') {
-      activeCard.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' })
-    }
-  })
 </script>
 
 <svelte:head>
@@ -470,17 +376,50 @@
 </svelte:head>
 
 <main class="admin-page page-shell" data-route-params-count={routeParamsCount}>
-  <FamilyScopeCarousel
-    families={data.families}
-    {focusedFamilyId}
-    {activeFamilyId}
-    bind:familyCarousel
-    {trackFamilyCard}
-    onDetectCenteredFamily={detectCenteredFamily}
-    onSwitchFamily={focusAndSwitchFamily}
-    onOpenFamilySettings={openFamilySettingsModal}
-    onGoToFamilyAt={goToFamilyAt}
-  />
+  <section class="family-context reveal-fade-up reveal-delay-1" aria-label="Contexto familiar">
+    <div class="family-context-card app-card-soft">
+      <div class="family-context-header">
+        <h2>{activeFamily?.name ?? 'Sin familia'}</h2>
+
+        {#if activeFamily && activeFamily.role !== 'viewer'}
+          <button
+            type="button"
+            class="app-settings-trigger"
+            aria-label={`Abrir ajustes de ${activeFamily.name}`}
+            title="Ajustes de familia"
+            on:click={() => openFamilySettingsModal(activeFamily)}
+          >
+            <GearIcon />
+          </button>
+        {/if}
+      </div>
+
+      {#if activeFamily}
+        <div class="family-metrics-grid app-stat-grid">
+          <p class="app-stat-item">
+            <strong>{activeFamily.metrics.membersCount}</strong>
+            <span>Miembros</span>
+          </p>
+          <p class="app-stat-item">
+            <strong>{activeFamily.metrics.usersCount}</strong>
+            <span>Usuarios</span>
+          </p>
+          <p class="app-stat-item">
+            <strong>{activeFamily.metrics.unlinkedMembersCount}</strong>
+            <span>Sin vincular</span>
+          </p>
+          <p class="app-stat-item">
+            <strong>{activeFamily.metrics.activeInvitesCount}</strong>
+            <span>Invitaciones activas</span>
+          </p>
+          <p class="app-stat-item">
+            <strong>{activeFamily.metrics.managersCount}</strong>
+            <span>Gestores</span>
+          </p>
+        </div>
+      {/if}
+    </div>
+  </section>
 
   {#if data.canManageInvites}
     <CollapsibleAdminSection
@@ -494,7 +433,7 @@
     >
       <GeneralInvitePanel
         {activeFamilyId}
-        activeFamilyRole={data.activeFamily.role}
+        {activeFamilyRole}
         bind:generalRole
         bind:generalExpiry
         bind:generalMaxUses
@@ -519,7 +458,7 @@
     >
       <MemberInvitePanel
         {activeFamilyId}
-        activeFamilyRole={data.activeFamily.role}
+        {activeFamilyRole}
         members={data.members}
         bind:memberEmail
         bind:memberId
@@ -618,7 +557,53 @@
     flex-direction: column;
     gap: 0;
     min-height: 100vh;
-    padding-top: 0;
     padding-bottom: max(114px, env(safe-area-inset-bottom));
+  }
+
+  .family-context {
+    width: min(var(--page-content-max), 100%);
+    margin-inline: auto;
+    margin-bottom: 0.8rem;
+    padding: 2px 2px 4px;
+  }
+
+  .admin-page :global(.admin-section) {
+    width: min(var(--page-content-max), 100%);
+    margin-inline: auto;
+  }
+
+  .family-context-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding: 1rem 1.05rem;
+    background: color-mix(in srgb, var(--neu-surface) 92%, #ffffff 8%);
+    box-shadow:
+      inset 5px 5px 12px rgba(149, 121, 95, 0.18),
+      inset -5px -5px 12px rgba(255, 255, 255, 0.72);
+  }
+
+  .family-context-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .family-context-header h2 {
+    margin: 0;
+    font-size: var(--fs-lg);
+    line-height: var(--lh-tight);
+  }
+
+  .family-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+
+    p:last-child {
+      grid-column: 1 / -1;
+    }
   }
 </style>
