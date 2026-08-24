@@ -12,9 +12,9 @@ export const GET: RequestHandler = async ({ url, locals: { supabase } }) => {
 
     if (!error) {
       const nextWithNotice = await withSignupNotice(supabase, next)
-      redirect(303, nextWithNotice)
+      throw redirect(303, nextWithNotice)
     }
   }
 
-  redirect(303, `/login?error=${encodeURIComponent('oauth_failed')}`)
+  throw redirect(303, `/login?error=${encodeURIComponent('oauth_failed')}`)
 }

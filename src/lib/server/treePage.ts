@@ -74,7 +74,7 @@ export const loadTreePage = async (
     }
   }
 
-  if (!user) redirect(303, '/login')
+  if (!user) throw redirect(303, '/login')
 
   const userFamilies = await loadUserFamilies(supabase, user.id)
   const selectedFamilyId = resolveAndPersistActiveFamily({
@@ -85,7 +85,7 @@ export const loadTreePage = async (
   })
 
   if (!selectedFamilyId) {
-    redirect(303, '/hub?state=no_family')
+    throw redirect(303, '/hub?state=no_family')
   }
 
   const { data: membersData, error: membersError } = await supabase
@@ -129,7 +129,7 @@ type TreeActionContext = {
 
 export const createTreeActions = (options?: { forcedFamilyId?: string | null }) => ({
   addMember: async ({ request, locals: { supabase, user }, cookies }: TreeActionContext) => {
-    if (!user) redirect(303, '/login')
+    if (!user) throw redirect(303, '/login')
     if (isMockFamilyMode()) {
       return fail(400, {
         addError:
@@ -210,7 +210,7 @@ export const createTreeActions = (options?: { forcedFamilyId?: string | null }) 
   },
 
   updateMember: async ({ request, locals: { supabase, user } }: TreeActionContext) => {
-    if (!user) redirect(303, '/login')
+    if (!user) throw redirect(303, '/login')
     if (isMockFamilyMode()) {
       return fail(400, {
         editError:
@@ -243,7 +243,7 @@ export const createTreeActions = (options?: { forcedFamilyId?: string | null }) 
   },
 
   deleteMember: async ({ request, locals: { supabase, user } }: TreeActionContext) => {
-    if (!user) redirect(303, '/login')
+    if (!user) throw redirect(303, '/login')
     if (isMockFamilyMode()) {
       return fail(400, {
         editError:
@@ -270,7 +270,7 @@ export const createTreeActions = (options?: { forcedFamilyId?: string | null }) 
   },
 
   addRelation: async ({ request, locals: { supabase, user } }: TreeActionContext) => {
-    if (!user) redirect(303, '/login')
+    if (!user) throw redirect(303, '/login')
     if (isMockFamilyMode()) {
       return fail(400, {
         relationError:
@@ -305,7 +305,7 @@ export const createTreeActions = (options?: { forcedFamilyId?: string | null }) 
   },
 
   removeRelation: async ({ request, locals: { supabase, user } }: TreeActionContext) => {
-    if (!user) redirect(303, '/login')
+    if (!user) throw redirect(303, '/login')
     if (isMockFamilyMode()) {
       return fail(400, {
         relationError:

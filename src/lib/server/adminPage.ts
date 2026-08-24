@@ -73,7 +73,7 @@ const resolveManagerFamily = async (options: {
     }
 
     const activeFamily = families.find((family) => family.id === activeFamilyId) ?? null
-    if (!activeFamily) redirect(303, '/hub')
+    if (!activeFamily) throw redirect(303, '/hub')
 
     return {
       profile: {
@@ -89,7 +89,7 @@ const resolveManagerFamily = async (options: {
     }
   }
 
-  if (!options.locals.user) redirect(303, '/login')
+  if (!options.locals.user) throw redirect(303, '/login')
 
   const [profileRes, families] = await Promise.all([
     options.locals.supabase.from('profiles').select('*').eq('id', options.locals.user.id).single(),
@@ -104,7 +104,7 @@ const resolveManagerFamily = async (options: {
   })
 
   const activeFamily = families.find((family) => family.id === activeFamilyId) ?? null
-  if (!activeFamily) redirect(303, '/hub')
+  if (!activeFamily) throw redirect(303, '/hub')
 
   return {
     profile: (profileRes.data as Profile | null) ?? null,

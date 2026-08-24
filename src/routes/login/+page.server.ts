@@ -42,7 +42,7 @@ export const actions: Actions = {
     if (error) return fail(error.status ?? 400, { error: friendlyAuthError(error), email })
 
     if (data.session) {
-      redirect(303, '/hub')
+      throw redirect(303, '/hub')
     }
 
     return {
@@ -67,7 +67,7 @@ export const actions: Actions = {
 
     if (error) return fail(error.status ?? 400, { error: friendlyAuthError(error), email })
 
-    redirect(303, '/hub')
+    throw redirect(303, '/hub')
   },
 
   google: async ({ url, locals: { supabase } }) => {
@@ -90,6 +90,6 @@ export const actions: Actions = {
       })
     }
 
-    redirect(303, data.url)
+    throw redirect(303, data.url)
   }
 }

@@ -62,10 +62,18 @@ self.addEventListener('fetch', (event: FetchEvent) => {
   if (event.request.mode === 'navigate') {
     event.respondWith(
       (async () => {
+        const preloaded = await event.preloadResponse
+
         try {
-          const preloaded = await event.preloadResponse
           if (preloaded) {
-            return preloaded
+            if (preloaded.ok) {
+              if (!preloaded.headers.get('cache-control')?.includes('no-store')) {
+                const cache = await caches.open(CACHE)
+                await cache.put(event.request, preloaded.clone())
+              }
+
+              return preloaded
+            }
           }
 
           const network = await fetch(event.request)
@@ -75,12 +83,9 @@ self.addEventListener('fetch', (event: FetchEvent) => {
             await cache.put(event.request, network.clone())
           }
 
-          if (!network.ok) {
-            return navigationFallback(event.request)
-          }
-
           return network
         } catch {
+          if (preloaded) return preloaded
           return navigationFallback(event.request)
         }
       })()

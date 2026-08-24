@@ -2,14 +2,14 @@ import { fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ locals: { user } }) => {
-  if (!user) redirect(303, '/login')
+  if (!user) throw redirect(303, '/login')
 
   return {}
 }
 
 export const actions: Actions = {
   setPassword: async ({ request, locals: { supabase, user } }) => {
-    if (!user) redirect(303, '/login')
+    if (!user) throw redirect(303, '/login')
 
     const form = await request.formData()
     const password = String(form.get('password') ?? '')
@@ -31,6 +31,6 @@ export const actions: Actions = {
   },
   logout: async ({ locals: { supabase } }) => {
     await supabase.auth.signOut()
-    redirect(303, '/login')
+    throw redirect(303, '/login')
   }
 }

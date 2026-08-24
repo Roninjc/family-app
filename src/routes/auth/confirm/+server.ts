@@ -25,10 +25,10 @@ export const GET: RequestHandler = async ({ url, locals: { supabase } }) => {
 
     if (!error) {
       const nextWithNotice = await withSignupNotice(supabase, next)
-      redirect(303, nextWithNotice)
+      throw redirect(303, nextWithNotice)
     }
 
-    redirect(303, loginErrorRedirect(confirmErrorCode(error.message)))
+    throw redirect(303, loginErrorRedirect(confirmErrorCode(error.message)))
   }
 
   if (code) {
@@ -36,11 +36,11 @@ export const GET: RequestHandler = async ({ url, locals: { supabase } }) => {
 
     if (!error) {
       const nextWithNotice = await withSignupNotice(supabase, next)
-      redirect(303, nextWithNotice)
+      throw redirect(303, nextWithNotice)
     }
 
-    redirect(303, loginErrorRedirect('auth_confirm_failed'))
+    throw redirect(303, loginErrorRedirect('auth_confirm_failed'))
   }
 
-  redirect(303, loginErrorRedirect('link_invalid'))
+  throw redirect(303, loginErrorRedirect('link_invalid'))
 }

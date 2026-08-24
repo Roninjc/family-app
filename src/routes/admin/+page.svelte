@@ -218,6 +218,11 @@
   let isPageVisible = true
   let crowdVisibilityObserver: IntersectionObserver | null = null
 
+  const canUseAnimationFrame = () =>
+    typeof window !== 'undefined' &&
+    typeof requestAnimationFrame === 'function' &&
+    typeof cancelAnimationFrame === 'function'
+
   const hashSeed = (value: string) => {
     let hash = 2166136261
     for (let i = 0; i < value.length; i += 1) {
@@ -236,6 +241,8 @@
   }
 
   const stopCrowdAnimation = () => {
+    if (!canUseAnimationFrame()) return
+
     if (crowdAnimationFrame !== null) {
       cancelAnimationFrame(crowdAnimationFrame)
       crowdAnimationFrame = null
@@ -257,6 +264,8 @@
     crowdAvatars.length > 0 && isPageVisible && isCrowdInViewport
 
   const updateCrowdAnimationState = () => {
+    if (!canUseAnimationFrame()) return
+
     if (shouldRunCrowdAnimation()) {
       if (crowdAnimationFrame === null) {
         crowdLastFrameTs = 0

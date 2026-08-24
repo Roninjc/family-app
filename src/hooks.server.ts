@@ -19,15 +19,20 @@ const supabase: Handle = async ({ event, resolve }) => {
 
   // Use getUser() so auth is validated by Supabase Auth server.
   event.locals.safeGetSession = async () => {
-    const {
-      data: { user },
-      error
-    } = await event.locals.supabase.auth.getUser()
+    try {
+      const {
+        data: { user },
+        error
+      } = await event.locals.supabase.auth.getUser()
 
-    if (error || !user) return { session: null, user: null }
+      if (error || !user) return { session: null, user: null }
 
-    // The app only needs authenticated user checks in server hooks.
-    return { session: null as Session | null, user }
+      // The app only needs authenticated user checks in server hooks.
+      return { session: null as Session | null, user }
+    } catch {
+      // Treat transient auth transport errors as unauthenticated request.
+      return { session: null as Session | null, user: null }
+    }
   }
 
   return resolve(event, {
@@ -46,11 +51,11 @@ const authGuard: Handle = async ({ event, resolve }) => {
     event.url.pathname.startsWith('/login') || event.url.pathname.startsWith('/auth')
 
   if (!user && !isAuthRoute && !isMockFamilyMode()) {
-    redirect(303, '/login')
+    throw redirect(303, '/login')
   }
 
   if (user && event.url.pathname === '/login') {
-    redirect(303, '/hub')
+    throw redirect(303, '/hub')
   }
 
   return resolve(event)

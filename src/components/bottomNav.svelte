@@ -30,7 +30,6 @@
             aria-current={isFamilyTreePath ? 'page' : undefined}
             href={treeHref}
             data-sveltekit-preload-data="tap"
-            data-sveltekit-preload-code="eager"
             aria-label="Ir al árbol familiar"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -45,7 +44,6 @@
             aria-current={isFamilyHubPath ? 'page' : undefined}
             href={familyHubHref}
             data-sveltekit-preload-data="tap"
-            data-sveltekit-preload-code="eager"
             aria-label="Ir al hub familiar"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -60,7 +58,6 @@
             aria-current={isFamilyAdminPath ? 'page' : undefined}
             href={adminHref}
             data-sveltekit-preload-data="tap"
-            data-sveltekit-preload-code="eager"
             aria-label="Ir a administración familiar"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -76,7 +73,6 @@
             aria-current={pathname === '/hub' ? 'page' : undefined}
             href="/hub"
             data-sveltekit-preload-data="tap"
-            data-sveltekit-preload-code="eager"
             aria-label="Ir al panel personal"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -89,7 +85,6 @@
             aria-current={pathname === '/profile' ? 'page' : undefined}
             href="/profile"
             data-sveltekit-preload-data="tap"
-            data-sveltekit-preload-code="eager"
             aria-label="Ir a cuenta y perfil"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">

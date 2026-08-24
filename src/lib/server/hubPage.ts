@@ -136,7 +136,7 @@ export const loadHubPage = async (
     }
   }
 
-  if (!user) redirect(303, '/login')
+  if (!user) throw redirect(303, '/login')
 
   const [profileRes, userFamilies] = await Promise.all([
     supabase.from('profiles').select('display_name, role').eq('id', user.id).single(),
@@ -248,7 +248,7 @@ type HubActionContext = {
 
 export const createHubActions = (options?: { forcedFamilyId?: string | null }) => ({
   createNote: async ({ request, locals: { supabase, user }, cookies }: HubActionContext) => {
-    if (!user) redirect(303, '/login')
+    if (!user) throw redirect(303, '/login')
     if (isMockFamilyMode()) {
       return fail(400, {
         noteError:
@@ -302,7 +302,7 @@ export const createHubActions = (options?: { forcedFamilyId?: string | null }) =
   },
 
   updateNote: async ({ request, locals: { supabase, user }, cookies }: HubActionContext) => {
-    if (!user) redirect(303, '/login')
+    if (!user) throw redirect(303, '/login')
     if (isMockFamilyMode()) {
       return fail(400, {
         noteError:
@@ -357,7 +357,7 @@ export const createHubActions = (options?: { forcedFamilyId?: string | null }) =
   },
 
   deleteNote: async ({ request, locals: { supabase, user }, cookies }: HubActionContext) => {
-    if (!user) redirect(303, '/login')
+    if (!user) throw redirect(303, '/login')
     if (isMockFamilyMode()) {
       return fail(400, {
         noteError:

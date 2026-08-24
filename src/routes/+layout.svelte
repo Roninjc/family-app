@@ -1,5 +1,6 @@
 <script lang="ts">
   import { base } from '$app/paths'
+  import { dev } from '$app/environment'
   import { goto, invalidate } from '$app/navigation'
   import { navigating, page } from '$app/stores'
   import { onMount } from 'svelte'
@@ -173,7 +174,16 @@
     handleViewportScroll()
     window.addEventListener('scroll', handleViewportScroll, { passive: true })
 
-    if ('serviceWorker' in navigator) {
+    if (dev && 'serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+        .catch(() => {
+          // Ignore SW cleanup failures in local development.
+        })
+    }
+
+    if (!dev && 'serviceWorker' in navigator) {
       navigator.serviceWorker
         .register(`${base}/service-worker.js`, { type: 'module' })
         .catch(() => {
@@ -276,7 +286,6 @@
                 href="/admin"
                 role="menuitem"
                 data-sveltekit-preload-data="tap"
-                data-sveltekit-preload-code="eager"
                 on:click={() => closeDetails(profileMenu)}
               >
                 Crear familia
@@ -365,7 +374,6 @@
             href="/admin"
             aria-label="Ir a invitaciones"
             data-sveltekit-preload-data="tap"
-            data-sveltekit-preload-code="eager"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path
