@@ -13,6 +13,8 @@ export default defineConfig({
       '$app/environment': fileURLToPath(
         new URL('./tests/mocks/app-environment.ts', import.meta.url)
       ),
+      '$app/forms': fileURLToPath(new URL('./tests/mocks/app-forms.ts', import.meta.url)),
+      '$app/stores': fileURLToPath(new URL('./tests/mocks/app-stores.ts', import.meta.url)),
       '$env/dynamic/private': fileURLToPath(
         new URL('./tests/mocks/env-dynamic-private.ts', import.meta.url)
       ),

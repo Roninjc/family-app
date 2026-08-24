@@ -105,7 +105,7 @@ describe('hub page carousel', () => {
     expect(dots[1].getAttribute('tabindex')).toBe('-1')
   })
 
-  it('shows note create and edit controls only when family allows note management', async () => {
+  it('shows note edit controls only when family allows note management', async () => {
     const data = {
       ...baseData,
       families: [
@@ -127,10 +127,12 @@ describe('hub page carousel', () => {
 
     await tick()
 
-    expect(document.querySelector('.family-panel.active .note-create-toggle')).toBeTruthy()
-    expect(
-      document.querySelector('.family-panel.active .note-create-toggle')?.getAttribute('title')
-    ).toContain('Nueva nota')
+    const noteButtons = [
+      ...document.querySelectorAll('.family-panel.active .note-action-btn')
+    ] as HTMLButtonElement[]
+    expect(noteButtons.length).toBeGreaterThan(0)
+    expect(noteButtons.some((button) => button.textContent?.includes('Editar'))).toBe(true)
+
     expect(document.querySelector('.family-panel.active .note-action-btn')?.textContent).toContain(
       'Editar'
     )
@@ -139,24 +141,16 @@ describe('hub page carousel', () => {
     secondDot.click()
     await tick()
 
-    expect(document.querySelector('.family-panel.active .note-create-toggle')).toBeNull()
     expect(document.querySelector('.family-panel.active .note-action-btn')).toBeNull()
   })
 
-  it('opens create form, opens edit form, and closes edit form on cancel', async () => {
+  it('opens edit form and closes edit form on cancel', async () => {
     new HubPage({
       target: document.body,
       props: { data: baseData }
     })
 
     await tick()
-
-    const createToggle = document.querySelector('.note-create-toggle') as HTMLButtonElement
-    expect(createToggle).toBeTruthy()
-    createToggle.click()
-    await tick()
-
-    expect(document.querySelector('form[action="?/createNote"]')).toBeTruthy()
 
     const editButton = document.querySelector('.note-action-btn') as HTMLButtonElement
     expect(editButton).toBeTruthy()
