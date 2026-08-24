@@ -20,7 +20,11 @@
     <span>{title}</span>
     <small>
       {subtitle}
-      <b class="toggle-state" aria-hidden="true">{open ? '−' : '+'}</b>
+      <b class="toggle-state" aria-hidden="true" class:open={open}>
+        <svg viewBox="0 0 20 20" focusable="false">
+          <path d="m5.5 7.5 4.5 4.5 4.5-4.5" />
+        </svg>
+      </b>
     </small>
   </button>
 
@@ -93,17 +97,37 @@
         .toggle-state {
           display: inline-grid;
           place-items: center;
-          width: 18px;
-          height: 18px;
+          width: 19px;
+          height: 19px;
           border-radius: 999px;
-          font-size: 0.9rem;
-          line-height: 1;
-          font-weight: 700;
           color: #6b4b31;
-          background: #f1e6d8;
+          background: #eee4d8;
           box-shadow:
             inset 2px 2px 5px rgba(149, 121, 95, 0.16),
             inset -2px -2px 5px rgba(255, 255, 255, 0.74);
+          transition:
+            transform 0.22s var(--motion-standard),
+            box-shadow 0.22s var(--motion-standard),
+            background-color 0.22s var(--motion-standard);
+
+          svg {
+            width: 12px;
+            height: 12px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2.2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transform: translateY(0.5px);
+          }
+
+          &.open {
+            transform: rotate(180deg);
+            background: #e8dbcd;
+            box-shadow:
+              inset 2px 2px 5px rgba(149, 121, 95, 0.22),
+              inset -2px -2px 5px rgba(255, 255, 255, 0.72);
+          }
         }
       }
     }

@@ -75,6 +75,10 @@ self.addEventListener('fetch', (event: FetchEvent) => {
             await cache.put(event.request, network.clone())
           }
 
+          if (!network.ok) {
+            return navigationFallback(event.request)
+          }
+
           return network
         } catch {
           return navigationFallback(event.request)

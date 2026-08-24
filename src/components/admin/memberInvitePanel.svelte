@@ -67,14 +67,20 @@
       padding: 0.52rem 0.76rem;
       border: none;
       border-radius: 10px;
-      background: var(--field-bg);
+      background: #f2ece4;
       font-size: 0.95rem;
       color: var(--text-main);
+      box-shadow: var(--neu-shadow-inset);
+      transition:
+        box-shadow 0.2s var(--motion-standard),
+        background-color 0.2s var(--motion-standard);
 
       &:focus {
         outline: none;
-        border-color: var(--brand);
-        box-shadow: 0 0 0 3px rgba(156, 90, 45, 0.16);
+        background: #f7f2ea;
+        box-shadow:
+          var(--neu-shadow-inset),
+          0 0 0 2px rgba(156, 123, 95, 0.18);
       }
     }
 
@@ -90,10 +96,22 @@
     min-height: 44px;
     border: none;
     border-radius: 10px;
-    background: var(--field-bg);
+    background: #f2ece4;
     color: var(--text-main);
     padding: 0.4rem 0.6rem;
     font-size: var(--fs-sm);
+    box-shadow: var(--neu-shadow-inset);
+    transition:
+      box-shadow 0.2s var(--motion-standard),
+      background-color 0.2s var(--motion-standard);
+
+    &:focus {
+      outline: none;
+      background: #f7f2ea;
+      box-shadow:
+        var(--neu-shadow-inset),
+        0 0 0 2px rgba(156, 123, 95, 0.18);
+    }
   }
 
   .ok-note {

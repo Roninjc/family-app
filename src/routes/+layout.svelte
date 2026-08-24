@@ -70,10 +70,16 @@
   $: isNavigating = Boolean($navigating)
   $: isFamilyLevel =
     isFamilyTreePath(pathname) || isFamilyHubPath(pathname) || isFamilyAdminPath(pathname)
+  $: isFamilyAdminLevel = isFamilyAdminPath(pathname)
   $: familyBasePath = activeFamilyId ? `/family/${encodeURIComponent(activeFamilyId)}` : null
   $: familyTreeHref = familyBasePath ?? '/hub?state=no_family'
   $: familyHubHref = familyBasePath ? `${familyBasePath}/hub` : '/hub?state=no_family'
-  $: familyAdminHref = familyBasePath ? `${familyBasePath}/admin` : '/hub?state=no_family'
+  $: canEditActiveFamily = Boolean(isFamilyAdminLevel && activeFamily && activeFamily.role !== 'viewer')
+  $: familySettingsHref = (() => {
+    const url = new URL($page.url)
+    url.searchParams.set('familySettings', '1')
+    return `${url.pathname}${url.search}`
+  })()
   $: headerCrumb = isFamilyTreePath(pathname)
     ? 'Árbol'
     : isFamilyHubPath(pathname)
@@ -90,7 +96,6 @@
       : `Hola, ${displayName}`
   $: composeAction = `${familyHubHref}?/createNote`
   $: composeModalTitle = composeType === 'news' ? 'Nueva noticia' : 'Nueva nota'
-  $: headerTextKey = `${headerCrumb}::${headerTitle}`
   $: signupNoticeMessage =
     signupNoticeCode === 'invitation_accepted'
       ? `Tu cuenta está lista. Ya has entrado${inviteContextText(signupFamily, signupRole)}.`
@@ -300,12 +305,29 @@
               >
                 {displayedHeaderCrumb}
               </p>
-              <h1
+              <div
+                class="header-title-row"
                 in:fade={{ duration: 120, delay: 30 }}
                 out:fade={{ duration: 90, delay: 20 }}
               >
-                {displayedHeaderTitle}
-              </h1>
+                <h1>{displayedHeaderTitle}</h1>
+                {#if canEditActiveFamily}
+                  <a
+                    class="header-title-edit"
+                    href={familySettingsHref}
+                    aria-label={`Editar familia ${displayedHeaderTitle}`}
+                    title="Editar familia"
+                    data-sveltekit-preload-data="tap"
+                    data-sveltekit-preload-code="eager"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path
+                        d="M4 16.86V20h3.14l9.27-9.27-3.14-3.14L4 16.86zm14.71-8.37a1 1 0 0 0 0-1.41l-1.79-1.79a1 1 0 0 0-1.41 0l-1.4 1.4 3.14 3.14 1.46-1.34z"
+                      />
+                    </svg>
+                  </a>
+                {/if}
+              </div>
             </div>
           {/if}
         </div>
@@ -1242,6 +1264,62 @@
     line-height: var(--lh-tight);
     letter-spacing: 0.01em;
     color: #4e392d;
+  }
+
+  .header-title-row {
+    min-height: 34px;
+    display: flex;
+    position: relative;
+    width: fit-content;
+    margin-inline: auto;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .header-title-edit {
+    width: 28px;
+    height: 28px;
+    position: absolute;
+    left: calc(100% + 14px);
+    top: 50%;
+    transform: translateY(-50%);
+    border-radius: 999px;
+    border: none;
+    background: transparent;
+    color: #6a513f;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    box-shadow:
+      2px 2px 6px rgba(149, 121, 95, 0.14),
+      -2px -2px 6px rgba(255, 255, 255, 0.72);
+    transition:
+      color 0.18s var(--motion-standard),
+      background-color 0.18s var(--motion-standard),
+      box-shadow 0.18s var(--motion-standard);
+  }
+
+  .header-title-edit:hover {
+    color: #554032;
+    background: transparent;
+    box-shadow:
+      3px 3px 7px rgba(149, 121, 95, 0.17),
+      -3px -3px 7px rgba(255, 255, 255, 0.74);
+  }
+
+  .header-title-edit:active {
+    background: transparent;
+    box-shadow:
+      inset 2px 2px 5px rgba(149, 121, 95, 0.22),
+      inset -2px -2px 5px rgba(255, 255, 255, 0.74);
+  }
+
+  .header-title-edit svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+    display: block;
   }
 
   .header-crumb {
