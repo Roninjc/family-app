@@ -29,8 +29,22 @@
     manager?: { id?: string | null } | null
   }
 
+  type AdminPageForm = {
+    invitedGeneral?: boolean
+    inviteSuccess?: string
+    inviteLink?: string
+    inviteError?: string
+    invitedMember?: string
+    revokeSuccess?: string
+    usersSaved?: number
+    usersError?: string
+    familySettingsSuccess?: string
+    familySettingsFamilyId?: string
+    familySettingsError?: string
+  }
+
   export let data: AdminPageData
-  export let form: Record<string, any> | null | undefined
+  export let form: AdminPageForm | null | undefined
   export let params: Record<string, string> = {}
   $: routeParamsCount = Object.keys(params).length
 
@@ -209,7 +223,6 @@
   let crowdAnimationFrame: number | null = null
   let crowdLastFrameTs = 0
   let crowdObserver: ResizeObserver | null = null
-  let crowdRandom = Math.random
   let crowdTickAccumulatorMs = 0
   let crowdFrameIntervalMs = 16.67
   let crowdCollisionStride = 1
@@ -292,7 +305,6 @@
     }
 
     const random = makeSeededRandom(hashSeed(`${activeFamilyId}:${count}:${unlinkedMembersCount}`))
-    crowdRandom = random
     const denseFactor = Math.max(0, Math.min(1, (count - 16) / 38))
     const nextSize = Math.max(3.9, Math.min(10.4, 17.8 - Math.sqrt(count) * 1.48 - denseFactor * 0.45))
     const maxRadius = Math.max(10, crowdRadius - nextSize * 0.72)
@@ -439,10 +451,6 @@
 
     crowdAvatars = [...crowdAvatars]
     crowdAnimationFrame = requestAnimationFrame(tickCrowdAnimation)
-  }
-
-  const startCrowdAnimation = () => {
-    updateCrowdAnimationState()
   }
 
   type UserDraftChange = {
@@ -941,7 +949,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.85rem;
-    padding: 0.35rem 0.1rem 0.2rem;
+    padding: 1.5rem 0.1rem;
     background: transparent;
     box-shadow: none;
   }
