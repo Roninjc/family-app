@@ -219,6 +219,7 @@
   let crowdAvatars: CrowdAvatar[] = []
   let crowdAvatarSize = 14
   let crowdRadius = 110
+  let crowdLayoutRadius = 110
   let crowdSeedKey = ''
   let crowdAnimationFrame: number | null = null
   let crowdLastFrameTs = 0
@@ -296,18 +297,36 @@
     updateCrowdAnimationState()
   }
 
+  const getCrowdEdgeInset = (radius: number, avatarSize: number) => {
+    const isNarrowViewport =
+      typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+        ? window.matchMedia('(max-width: 780px)').matches
+        : false
+    const insetRatio = isNarrowViewport ? 0.125 : 0.088
+
+    return Math.max(avatarSize * 1.05, radius * insetRatio, 9)
+  }
+
   const buildCrowdAvatars = () => {
     const count = Math.max(0, familyMembersCount)
     if (count === 0) {
       crowdAvatars = []
+      crowdLayoutRadius = crowdRadius
       updateCrowdPerformanceProfile()
       return
     }
 
     const random = makeSeededRandom(hashSeed(`${activeFamilyId}:${count}:${unlinkedMembersCount}`))
     const denseFactor = Math.max(0, Math.min(1, (count - 16) / 38))
-    const nextSize = Math.max(3.9, Math.min(10.4, 17.8 - Math.sqrt(count) * 1.48 - denseFactor * 0.45))
-    const maxRadius = Math.max(10, crowdRadius - nextSize * 0.72)
+    const minAvatarSize = Math.max(2.8, Math.min(3.9, crowdRadius * 0.055))
+    const maxAvatarSize = Math.max(minAvatarSize + 1.2, Math.min(10.4, crowdRadius * 0.12))
+    const nextSize = Math.max(
+      minAvatarSize,
+      Math.min(maxAvatarSize, 17.8 - Math.sqrt(count) * 1.48 - denseFactor * 0.45)
+    )
+    const motionScale = Math.max(0.72, Math.min(1.08, crowdRadius / 150))
+    const edgeInset = getCrowdEdgeInset(crowdRadius, nextSize)
+    const maxRadius = Math.max(10, crowdRadius - edgeInset)
     const minDistance = Math.max(3.9, nextSize * (0.67 + denseFactor * 0.1))
     crowdAvatarSize = nextSize
 
@@ -350,17 +369,18 @@
         id: i,
         x,
         y,
-        vx: (random() - 0.5) * 0.12,
-        vy: (random() - 0.5) * 0.12,
+        vx: (random() - 0.5) * 0.12 * motionScale,
+        vy: (random() - 0.5) * 0.12 * motionScale,
         phase: random() * Math.PI * 2,
-        speed: 0.00045 + random() * 0.00018,
-        ampX: nextSize * (0.1 + random() * 0.2),
-        ampY: nextSize * (0.1 + random() * 0.2),
+        speed: (0.00045 + random() * 0.00018) * motionScale,
+        ampX: nextSize * (0.1 + random() * 0.2) * (0.9 + motionScale * 0.2),
+        ampY: nextSize * (0.1 + random() * 0.2) * (0.9 + motionScale * 0.2),
         isLinked: i >= unlinkedMembersCount
       })
     }
 
     crowdAvatars = avatars
+    crowdLayoutRadius = crowdRadius
     updateCrowdPerformanceProfile()
   }
 
@@ -382,7 +402,8 @@
     const deltaMs = crowdTickAccumulatorMs
     crowdTickAccumulatorMs = 0
     const dt = deltaMs / 16.67
-    const maxRadius = Math.max(8, crowdRadius - crowdAvatarSize * 0.72)
+    const edgeInset = getCrowdEdgeInset(crowdRadius, crowdAvatarSize)
+    const maxRadius = Math.max(8, crowdRadius - edgeInset)
     const collisionDistance = Math.max(5.6, crowdAvatarSize * 0.95)
     const collisionDistanceSq = collisionDistance * collisionDistance
 
@@ -676,6 +697,9 @@
       const entry = entries[0]
       if (!entry) return
       crowdRadius = Math.max(30, Math.min(entry.contentRect.width, entry.contentRect.height) * 0.5 - 5)
+      if (Math.abs(crowdRadius - crowdLayoutRadius) > 6 && crowdAvatars.length > 0) {
+        buildCrowdAvatars()
+      }
       updateCrowdAnimationState()
     })
 
@@ -725,6 +749,11 @@
             role="img"
             aria-label={`${familyMembersCount} miembros en la familia`}
           >
+            <div class="crowd-floor-count" aria-hidden="true">
+              <span class="crowd-floor-count__value"
+                >{familyMembersCount}</span
+              >
+            </div>
             {#each crowdAvatars as avatar (avatar.id)}
               <div
                 class="mini-person"
@@ -962,7 +991,7 @@
 
   .family-crowd-circle {
     position: relative;
-    width: min(92vw, 410px);
+    width: min(66vw, 410px);
     aspect-ratio: 1;
     border-radius: 999px;
     background: radial-gradient(circle at 34% 26%, rgba(255, 253, 250, 0.98), rgba(236, 225, 211, 0.8));
@@ -974,11 +1003,40 @@
     overflow: clip;
   }
 
+  .crowd-floor-count {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .crowd-floor-count__value {
+    position: static;
+    display: inline-block;
+    font-family: inherit;
+    font-size: clamp(3.5rem, calc(11vw + 1.8rem), 6rem);
+    font-weight: 200;
+    letter-spacing: 0.012em;
+    line-height: 0.9;
+    color: #95bde7;
+    text-shadow:
+      0 0 0.01em rgba(219, 233, 250, 0.85),
+      0 0 0.07em rgba(160, 194, 234, 0.42),
+      0 0 0.16em rgba(110, 146, 191, 0.26),
+      0 1px 1.6px rgba(42, 63, 93, 0.22);
+    filter: saturate(1.1) brightness(1.07);
+    user-select: none;
+  }
+
   .mini-person {
     position: absolute;
     left: 50%;
     top: 50%;
-    z-index: var(--depth, 10);
+    z-index: calc(var(--depth, 10) + 2);
     width: calc(var(--size) * 1.08);
     height: calc(var(--size) * 2.14);
     transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y)));
