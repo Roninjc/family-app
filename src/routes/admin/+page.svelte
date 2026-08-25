@@ -761,6 +761,7 @@
                 style={`--x:${avatar.x.toFixed(2)}px; --y:${avatar.y.toFixed(2)}px; --size:${crowdAvatarSize.toFixed(2)}px; --depth:${Math.round((avatar.y + crowdRadius) * 10) * 100 + avatar.id}; --front:${Math.max(0, Math.min(1, (avatar.y + crowdRadius) / Math.max(crowdRadius * 2, 1))).toFixed(3)}; --walk-duration:${1250 + (avatar.id % 7) * 90}ms; --walk-delay-a:${-(avatar.id % 11) * 90}ms; --walk-delay-b:${-((avatar.id % 11) * 90 + (1250 + (avatar.id % 7) * 90) / 2)}ms;`}
                 aria-hidden="true"
               >
+                <span class="mini-ground-shadow"></span>
                 <span class="mini-head"></span>
                 <span class="mini-body"></span>
                 <span class="mini-legs"></span>
@@ -1044,6 +1045,7 @@
     --person-tone-mid: #e8dfd4;
     --person-tone-dark: #d7cabe;
     --shadow-rgb: 122 93 68;
+    --ground-rgb: 114 83 58;
     filter: drop-shadow(
       1px
       calc(0.65px + var(--front, 0.5) * 0.95px)
@@ -1055,11 +1057,31 @@
 
     .mini-head,
     .mini-body,
-    .mini-legs {
+    .mini-legs,
+    .mini-ground-shadow {
       position: absolute;
       left: 50%;
       transform: translateX(-50%);
       display: block;
+    }
+
+    .mini-ground-shadow {
+      top: calc(var(--size) * 2.03);
+      width: calc(var(--size) * 1.34);
+      height: calc(var(--size) * 0.36);
+      border-radius: 999px;
+      background: radial-gradient(
+        ellipse at 58% 56%,
+        rgb(var(--ground-rgb) / calc(0.18 + var(--front, 0.5) * 0.15)) 0%,
+        rgb(var(--ground-rgb) / calc(0.1 + var(--front, 0.5) * 0.08)) 44%,
+        rgb(var(--ground-rgb) / 0) 100%
+      );
+      filter: blur(0.8px);
+      z-index: 0;
+      transform-origin: 50% 50%;
+      transform: translateX(calc(-50% + var(--size) * 0.08)) translateY(calc(var(--size) * 0.03));
+      animation: ground-breathe var(--walk-duration, 1450ms) ease-in-out infinite;
+      animation-delay: var(--walk-delay-a, 0ms);
     }
 
     .mini-head {
@@ -1152,6 +1174,7 @@
     --person-tone-mid: #dfd5c9;
     --person-tone-dark: #cfc0b2;
     --shadow-rgb: 126 97 73;
+    --ground-rgb: 120 90 68;
   }
 
   .mini-person:not(.mini-person--linked) {
@@ -1183,6 +1206,24 @@
     }
     100% {
       transform: rotate(16deg) translateY(0.32px) scaleY(1.04);
+    }
+  }
+
+  @keyframes ground-breathe {
+    0% {
+      transform: translateX(calc(-50% + var(--size) * 0.07)) translateY(calc(var(--size) * 0.03))
+        scaleX(0.92);
+      opacity: 0.7;
+    }
+    50% {
+      transform: translateX(calc(-50% + var(--size) * 0.1)) translateY(calc(var(--size) * 0.04))
+        scaleX(1.04);
+      opacity: 0.94;
+    }
+    100% {
+      transform: translateX(calc(-50% + var(--size) * 0.07)) translateY(calc(var(--size) * 0.03))
+        scaleX(0.92);
+      opacity: 0.7;
     }
   }
 
@@ -1226,6 +1267,7 @@
     .mini-person,
     .mini-head,
     .mini-body,
+    .mini-ground-shadow,
     .mini-legs::before,
     .mini-legs::after {
       animation: none;
