@@ -15,6 +15,7 @@
   import GeneralInvitePanel from '../../components/admin/generalInvitePanel.svelte'
   import IssuedInvitesPanel from '../../components/admin/issuedInvitesPanel.svelte'
   import MemberInvitePanel from '../../components/admin/memberInvitePanel.svelte'
+  import CrowdCanvas from '../../components/admin/crowdCanvas.svelte'
   import UsersManagementPanel from '../../components/admin/usersManagementPanel.svelte'
   import UsersConfirmModal from '../../components/admin/usersConfirmModal.svelte'
 
@@ -150,29 +151,6 @@
 
   onDestroy(() => {
     if (clearCopyStatusTimer) clearTimeout(clearCopyStatusTimer)
-    stopCrowdAnimation()
-    crowdObserver?.disconnect()
-    crowdVisibilityObserver?.disconnect()
-    if (typeof document !== 'undefined') {
-      document.removeEventListener('visibilitychange', onVisibilityChange)
-    }
-  })
-
-  onMount(() => {
-    isPageVisible = typeof document === 'undefined' ? true : document.visibilityState === 'visible'
-    if (typeof document !== 'undefined') {
-      document.addEventListener('visibilitychange', onVisibilityChange)
-    }
-
-    return () => {
-      if (typeof document !== 'undefined') {
-        document.removeEventListener('visibilitychange', onVisibilityChange)
-      }
-      crowdObserver?.disconnect()
-      crowdVisibilityObserver?.disconnect()
-      crowdObserver = null
-      crowdVisibilityObserver = null
-    }
   })
 
   const formatDate = (value: string | null) => {
@@ -187,6 +165,9 @@
     })
   }
 
+  let crowdDebug = false
+  let crowdRenderer: 'canvas2d' | 'pixi' = 'canvas2d'
+
   $: memberNameById = new Map<string, string>(
     data.members.map((member) => [member.id, `${member.name} ${member.family_name}`])
   )
@@ -195,284 +176,16 @@
     memberId = preselectedMemberId
   }
   $: activeFamilyId = data.activeFamily?.id ?? ''
+  $: crowdDebug =
+    $page.url.searchParams.get('crowdDebug') === '1' ||
+    $page.url.searchParams.get('crowdDebug') === 'true'
+  $: crowdRenderer = $page.url.searchParams.get('crowdRenderer') === 'pixi' ? 'pixi' : 'canvas2d'
   $: activeFamily = data.families.find((family) => family.id === activeFamilyId) ?? null
   $: activeFamilyRole = activeFamily?.role ?? 'viewer'
   $: familyMembersCount = activeFamily?.metrics.membersCount ?? 0
   $: unlinkedMembersCount = activeFamily?.metrics.unlinkedMembersCount ?? 0
   $: filteredInvites = data.invites.filter((invite) => inviteMatchesFilter(invite, inviteFilter))
   $: currentUserId = data.currentUserId ?? data.manager?.id ?? ''
-
-  type CrowdAvatar = {
-    id: number
-    x: number
-    y: number
-    vx: number
-    vy: number
-    phase: number
-    speed: number
-    ampX: number
-    ampY: number
-    isLinked: boolean
-  }
-
-  let crowdCircleEl: HTMLDivElement | null = null
-  let crowdAvatars: CrowdAvatar[] = []
-  let crowdAvatarSize = 14
-  let crowdRadius = 110
-  let crowdLayoutRadius = 110
-  let crowdSeedKey = ''
-  let crowdAnimationFrame: number | null = null
-  let crowdLastFrameTs = 0
-  let crowdObserver: ResizeObserver | null = null
-  let crowdTickAccumulatorMs = 0
-  let crowdFrameIntervalMs = 16.67
-  let crowdCollisionStride = 1
-  let crowdCollisionPhase = 0
-  let isCrowdInViewport = true
-  let isPageVisible = true
-  let crowdVisibilityObserver: IntersectionObserver | null = null
-
-  const canUseAnimationFrame = () =>
-    typeof window !== 'undefined' &&
-    typeof requestAnimationFrame === 'function' &&
-    typeof cancelAnimationFrame === 'function'
-
-  const hashSeed = (value: string) => {
-    let hash = 2166136261
-    for (let i = 0; i < value.length; i += 1) {
-      hash ^= value.charCodeAt(i)
-      hash = Math.imul(hash, 16777619)
-    }
-    return hash >>> 0
-  }
-
-  const makeSeededRandom = (seed: number) => {
-    let state = seed || 123456789
-    return () => {
-      state = (1664525 * state + 1013904223) >>> 0
-      return state / 4294967296
-    }
-  }
-
-  const stopCrowdAnimation = () => {
-    if (!canUseAnimationFrame()) return
-
-    if (crowdAnimationFrame !== null) {
-      cancelAnimationFrame(crowdAnimationFrame)
-      crowdAnimationFrame = null
-    }
-  }
-
-  const updateCrowdPerformanceProfile = () => {
-    const count = crowdAvatars.length
-    const isCoarsePointer =
-      typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-        ? window.matchMedia('(pointer: coarse)').matches
-        : false
-
-    crowdFrameIntervalMs = isCoarsePointer || count > 36 ? 33.34 : 16.67
-    crowdCollisionStride = count > 58 ? 3 : count > 36 ? 2 : 1
-  }
-
-  const shouldRunCrowdAnimation = () =>
-    crowdAvatars.length > 0 && isPageVisible && isCrowdInViewport
-
-  const updateCrowdAnimationState = () => {
-    if (!canUseAnimationFrame()) return
-
-    if (shouldRunCrowdAnimation()) {
-      if (crowdAnimationFrame === null) {
-        crowdLastFrameTs = 0
-        crowdTickAccumulatorMs = 0
-        crowdAnimationFrame = requestAnimationFrame(tickCrowdAnimation)
-      }
-      return
-    }
-
-    stopCrowdAnimation()
-  }
-
-  const onVisibilityChange = () => {
-    isPageVisible = typeof document === 'undefined' ? true : document.visibilityState === 'visible'
-    updateCrowdAnimationState()
-  }
-
-  const getCrowdEdgeInset = (radius: number, avatarSize: number) => {
-    const isNarrowViewport =
-      typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-        ? window.matchMedia('(max-width: 780px)').matches
-        : false
-    const insetRatio = isNarrowViewport ? 0.125 : 0.088
-
-    return Math.max(avatarSize * 1.05, radius * insetRatio, 9)
-  }
-
-  const buildCrowdAvatars = () => {
-    const count = Math.max(0, familyMembersCount)
-    if (count === 0) {
-      crowdAvatars = []
-      crowdLayoutRadius = crowdRadius
-      updateCrowdPerformanceProfile()
-      return
-    }
-
-    const random = makeSeededRandom(hashSeed(`${activeFamilyId}:${count}:${unlinkedMembersCount}`))
-    const denseFactor = Math.max(0, Math.min(1, (count - 16) / 38))
-    const minAvatarSize = Math.max(2.8, Math.min(3.9, crowdRadius * 0.055))
-    const maxAvatarSize = Math.max(minAvatarSize + 1.2, Math.min(10.4, crowdRadius * 0.12))
-    const nextSize = Math.max(
-      minAvatarSize,
-      Math.min(maxAvatarSize, 17.8 - Math.sqrt(count) * 1.48 - denseFactor * 0.45)
-    )
-    const motionScale = Math.max(0.72, Math.min(1.08, crowdRadius / 150))
-    const edgeInset = getCrowdEdgeInset(crowdRadius, nextSize)
-    const maxRadius = Math.max(10, crowdRadius - edgeInset)
-    const minDistance = Math.max(3.9, nextSize * (0.67 + denseFactor * 0.1))
-    crowdAvatarSize = nextSize
-
-    const avatars: CrowdAvatar[] = []
-    for (let i = 0; i < count; i += 1) {
-      let placed = false
-      let x = 0
-      let y = 0
-
-      for (let attempt = 0; attempt < 380; attempt += 1) {
-        const angle = random() * Math.PI * 2
-        const distance = Math.sqrt(random()) * maxRadius
-        x = Math.cos(angle) * distance
-        y = Math.sin(angle) * distance
-
-        let overlaps = false
-        for (const other of avatars) {
-          const dx = x - other.x
-          const dy = y - other.y
-          if (dx * dx + dy * dy < minDistance * minDistance) {
-            overlaps = true
-            break
-          }
-        }
-
-        if (!overlaps) {
-          placed = true
-          break
-        }
-      }
-
-      if (!placed) {
-        const fallbackAngle = (i / Math.max(count, 1)) * Math.PI * 2
-        const fallbackDistance = maxRadius * (0.65 + random() * 0.25)
-        x = Math.cos(fallbackAngle) * fallbackDistance
-        y = Math.sin(fallbackAngle) * fallbackDistance
-      }
-
-      avatars.push({
-        id: i,
-        x,
-        y,
-        vx: (random() - 0.5) * 0.12 * motionScale,
-        vy: (random() - 0.5) * 0.12 * motionScale,
-        phase: random() * Math.PI * 2,
-        speed: (0.00045 + random() * 0.00018) * motionScale,
-        ampX: nextSize * (0.1 + random() * 0.2) * (0.9 + motionScale * 0.2),
-        ampY: nextSize * (0.1 + random() * 0.2) * (0.9 + motionScale * 0.2),
-        isLinked: i >= unlinkedMembersCount
-      })
-    }
-
-    crowdAvatars = avatars
-    crowdLayoutRadius = crowdRadius
-    updateCrowdPerformanceProfile()
-  }
-
-  const tickCrowdAnimation = (time: number) => {
-    if (!shouldRunCrowdAnimation()) {
-      stopCrowdAnimation()
-      return
-    }
-
-    const elapsedMs = crowdLastFrameTs ? Math.min(time - crowdLastFrameTs, 64) : crowdFrameIntervalMs
-    crowdLastFrameTs = time
-    crowdTickAccumulatorMs += elapsedMs
-
-    if (crowdTickAccumulatorMs < crowdFrameIntervalMs) {
-      crowdAnimationFrame = requestAnimationFrame(tickCrowdAnimation)
-      return
-    }
-
-    const deltaMs = crowdTickAccumulatorMs
-    crowdTickAccumulatorMs = 0
-    const dt = deltaMs / 16.67
-    const edgeInset = getCrowdEdgeInset(crowdRadius, crowdAvatarSize)
-    const maxRadius = Math.max(8, crowdRadius - edgeInset)
-    const collisionDistance = Math.max(5.6, crowdAvatarSize * 0.95)
-    const collisionDistanceSq = collisionDistance * collisionDistance
-
-    for (const avatar of crowdAvatars) {
-      const t = time * avatar.speed + avatar.phase
-      const driftX = Math.cos(t) * avatar.ampX * 0.0048
-      const driftY = Math.sin(t * 1.07) * avatar.ampY * 0.0048
-      avatar.vx += driftX * dt
-      avatar.vy += driftY * dt
-    }
-
-    for (let i = 0; i < crowdAvatars.length; i += 1) {
-      const avatar = crowdAvatars[i]
-      for (let j = i + 1; j < crowdAvatars.length; j += 1) {
-        if (crowdCollisionStride > 1 && (i + j + crowdCollisionPhase) % crowdCollisionStride !== 0) {
-          continue
-        }
-
-        const other = crowdAvatars[j]
-        const dx = avatar.x - other.x
-        const dy = avatar.y - other.y
-        const distanceSq = dx * dx + dy * dy
-
-        if (distanceSq > 0.0001 && distanceSq < collisionDistanceSq) {
-          const distance = Math.sqrt(distanceSq)
-          const overlap = collisionDistance - distance
-          const nx = dx / distance
-          const ny = dy / distance
-          const push = overlap * 0.5
-
-          avatar.x += nx * push
-          avatar.y += ny * push
-          other.x -= nx * push
-          other.y -= ny * push
-
-          const impulse = overlap * 0.024 * dt
-          avatar.vx += nx * impulse
-          avatar.vy += ny * impulse
-          other.vx -= nx * impulse
-          other.vy -= ny * impulse
-        }
-      }
-    }
-
-    for (const avatar of crowdAvatars) {
-      const distanceFromCenter = Math.hypot(avatar.x, avatar.y) || 0.001
-      if (distanceFromCenter > maxRadius) {
-        const excess = distanceFromCenter - maxRadius
-        const nx = avatar.x / distanceFromCenter
-        const ny = avatar.y / distanceFromCenter
-        avatar.x -= nx * excess
-        avatar.y -= ny * excess
-        avatar.vx -= nx * excess * 0.068
-        avatar.vy -= ny * excess * 0.068
-      }
-
-      avatar.vx *= 0.92
-      avatar.vy *= 0.92
-      avatar.x += avatar.vx * dt * 0.7
-      avatar.y += avatar.vy * dt * 0.7
-    }
-
-    if (crowdCollisionStride > 1) {
-      crowdCollisionPhase = (crowdCollisionPhase + 1) % crowdCollisionStride
-    }
-
-    crowdAvatars = [...crowdAvatars]
-    crowdAnimationFrame = requestAnimationFrame(tickCrowdAnimation)
-  }
 
   type UserDraftChange = {
     profileId: string
@@ -691,47 +404,6 @@
     openFamilySettingsModal(activeFamily)
     clearFamilySettingsQueryFlag()
   }
-
-  $: if (crowdCircleEl && !crowdObserver && typeof ResizeObserver !== 'undefined') {
-    crowdObserver = new ResizeObserver((entries) => {
-      const entry = entries[0]
-      if (!entry) return
-      crowdRadius = Math.max(30, Math.min(entry.contentRect.width, entry.contentRect.height) * 0.5 - 5)
-      if (Math.abs(crowdRadius - crowdLayoutRadius) > 6 && crowdAvatars.length > 0) {
-        buildCrowdAvatars()
-      }
-      updateCrowdAnimationState()
-    })
-
-    crowdObserver.observe(crowdCircleEl)
-    const initialRect = crowdCircleEl.getBoundingClientRect()
-    crowdRadius = Math.max(30, Math.min(initialRect.width, initialRect.height) * 0.5 - 5)
-    updateCrowdAnimationState()
-  }
-
-  $: if (crowdCircleEl && !crowdVisibilityObserver && typeof IntersectionObserver !== 'undefined') {
-    crowdVisibilityObserver = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0]
-        if (!entry) return
-        isCrowdInViewport = entry.isIntersecting
-        updateCrowdAnimationState()
-      },
-      {
-        rootMargin: '220px 0px',
-        threshold: 0.01
-      }
-    )
-
-    crowdVisibilityObserver.observe(crowdCircleEl)
-  }
-
-  $: nextCrowdSeedKey = `${activeFamilyId}:${familyMembersCount}:${unlinkedMembersCount}`
-  $: if (nextCrowdSeedKey !== crowdSeedKey) {
-    crowdSeedKey = nextCrowdSeedKey
-    buildCrowdAvatars()
-    updateCrowdAnimationState()
-  }
 </script>
 
 <svelte:head>
@@ -743,30 +415,17 @@
     <div class="family-context-card">
       {#if activeFamily}
         <div class="family-crowd-wrap" aria-label="Miembros de la familia">
-          <div
-            class="family-crowd-circle"
-            bind:this={crowdCircleEl}
-            role="img"
-            aria-label={`${familyMembersCount} miembros en la familia`}
-          >
+          <div class="family-crowd-stage">
+            <CrowdCanvas
+              membersCount={familyMembersCount}
+              unlinkedMembersCount={unlinkedMembersCount}
+              seedKey={`${activeFamilyId}:${familyMembersCount}:${unlinkedMembersCount}`}
+              debug={crowdDebug}
+              renderer={crowdRenderer}
+            />
             <div class="crowd-floor-count" aria-hidden="true">
-              <span class="crowd-floor-count__value"
-                >{familyMembersCount}</span
-              >
+              <span class="crowd-floor-count__value">{familyMembersCount}</span>
             </div>
-            {#each crowdAvatars as avatar (avatar.id)}
-              <div
-                class="mini-person"
-                class:mini-person--linked={avatar.isLinked}
-                style={`--x:${avatar.x.toFixed(2)}px; --y:${avatar.y.toFixed(2)}px; --size:${crowdAvatarSize.toFixed(2)}px; --depth:${Math.round((avatar.y + crowdRadius) * 10) * 100 + avatar.id}; --front:${Math.max(0, Math.min(1, (avatar.y + crowdRadius) / Math.max(crowdRadius * 2, 1))).toFixed(3)}; --walk-duration:${1250 + (avatar.id % 7) * 90}ms; --walk-delay-a:${-(avatar.id % 11) * 90}ms; --walk-delay-b:${-((avatar.id % 11) * 90 + (1250 + (avatar.id % 7) * 90) / 2)}ms;`}
-                aria-hidden="true"
-              >
-                <span class="mini-ground-shadow"></span>
-                <span class="mini-head"></span>
-                <span class="mini-body"></span>
-                <span class="mini-legs"></span>
-              </div>
-            {/each}
           </div>
         </div>
       {/if}
@@ -775,7 +434,7 @@
 
   {#if data.canManageInvites}
     <div
-      class="admin-section-group admin-section-group--after-context reveal-fade-up reveal-delay-1"
+      class="admin-section-group admin-section-group--after-context"
       aria-label="Grupo de invitaciones"
     >
       <CollapsibleAdminSection
@@ -990,25 +649,17 @@
     place-items: center;
   }
 
-  .family-crowd-circle {
+  .family-crowd-stage {
     position: relative;
-    width: min(66vw, 410px);
-    aspect-ratio: 1;
-    border-radius: 999px;
-    background: radial-gradient(circle at 34% 26%, rgba(255, 253, 250, 0.98), rgba(236, 225, 211, 0.8));
-    box-shadow:
-      10px 10px 26px rgba(140, 109, 83, 0.18),
-      -10px -10px 26px rgba(255, 255, 255, 0.82),
-      inset 7px 7px 14px rgba(149, 121, 95, 0.14),
-      inset -7px -7px 14px rgba(255, 255, 255, 0.82);
-    overflow: clip;
+    display: grid;
+    place-items: center;
   }
 
   .crowd-floor-count {
     position: absolute;
     left: 50%;
     top: 50%;
-    z-index: 1;
+    z-index: 2;
     display: grid;
     place-items: center;
     transform: translate(-50%, -50%);
@@ -1031,247 +682,5 @@
       0 1px 1.6px rgba(42, 63, 93, 0.22);
     filter: saturate(1.1) brightness(1.07);
     user-select: none;
-  }
-
-  .mini-person {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    z-index: calc(var(--depth, 10) + 2);
-    width: calc(var(--size) * 1.08);
-    height: calc(var(--size) * 2.14);
-    transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y)));
-    --person-tone-light: #f6f2eb;
-    --person-tone-mid: #e8dfd4;
-    --person-tone-dark: #d7cabe;
-    --shadow-rgb: 122 93 68;
-    --ground-rgb: 114 83 58;
-    filter: drop-shadow(
-      1px
-      calc(0.65px + var(--front, 0.5) * 0.95px)
-      calc(1.35px + var(--front, 0.5) * 1.55px)
-      rgb(var(--shadow-rgb) / calc(0.14 + var(--front, 0.5) * 0.18))
-    );
-    pointer-events: none;
-    animation: person-bob calc(var(--walk-duration, 1450ms) * 0.9) ease-in-out infinite;
-
-    .mini-head,
-    .mini-body,
-    .mini-legs,
-    .mini-ground-shadow {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      display: block;
-    }
-
-    .mini-ground-shadow {
-      top: calc(var(--size) * 2.03);
-      width: calc(var(--size) * 1.34);
-      height: calc(var(--size) * 0.36);
-      border-radius: 999px;
-      background: radial-gradient(
-        ellipse at 58% 56%,
-        rgb(var(--ground-rgb) / calc(0.18 + var(--front, 0.5) * 0.15)) 0%,
-        rgb(var(--ground-rgb) / calc(0.1 + var(--front, 0.5) * 0.08)) 44%,
-        rgb(var(--ground-rgb) / 0) 100%
-      );
-      filter: blur(0.8px);
-      z-index: 0;
-      transform-origin: 50% 50%;
-      transform: translateX(calc(-50% + var(--size) * 0.08)) translateY(calc(var(--size) * 0.03));
-      animation: ground-breathe var(--walk-duration, 1450ms) ease-in-out infinite;
-      animation-delay: var(--walk-delay-a, 0ms);
-    }
-
-    .mini-head {
-      top: 0;
-      width: calc(var(--size) * 0.9);
-      height: calc(var(--size) * 0.9);
-      border-radius: 999px;
-      background: radial-gradient(
-        circle at 34% 28%,
-        var(--person-tone-light) 0%,
-        var(--person-tone-mid) 64%,
-        var(--person-tone-dark) 100%
-      );
-      box-shadow:
-        inset 0.8px 0.8px 1.6px rgba(255, 255, 255, 0.75),
-        inset -0.9px -0.9px 1.6px rgba(161, 130, 102, 0.2),
-        0.8px 1.1px 2px rgba(122, 94, 70, 0.2);
-      z-index: 3;
-      animation: head-bob var(--walk-duration, 1450ms) ease-in-out infinite;
-      animation-delay: var(--walk-delay-a, 0ms);
-    }
-
-    .mini-body {
-      top: calc(var(--size) * 0.66);
-      width: calc(var(--size) * 0.82);
-      height: calc(var(--size) * 1.24);
-      border-radius: 45% 45% 40% 40% / 35% 35% 58% 58%;
-      background: radial-gradient(
-        ellipse at 38% 26%,
-        color-mix(in srgb, var(--person-tone-light) 88%, #ffffff 12%) 0%,
-        var(--person-tone-mid) 58%,
-        var(--person-tone-dark) 100%
-      );
-      box-shadow:
-        inset 1px 1px 2px rgba(255, 255, 255, 0.72),
-        inset -1px -1px 2px rgba(160, 129, 101, 0.18),
-        1px 1.2px 2.6px rgba(124, 95, 71, 0.2);
-      z-index: 2;
-      animation: body-bob var(--walk-duration, 1450ms) ease-in-out infinite;
-      animation-delay: var(--walk-delay-a, 0ms);
-    }
-
-    .mini-legs {
-      top: calc(var(--size) * 1.56);
-      width: calc(var(--size) * 0.8);
-      height: calc(var(--size) * 0.72);
-      background: transparent;
-      z-index: 1;
-
-      &::before,
-      &::after {
-        content: '';
-        position: absolute;
-        top: calc(var(--size) * -0.02);
-        width: calc(var(--size) * 0.34);
-        height: calc(var(--size) * 0.72);
-        border-radius: 999px;
-        background: linear-gradient(
-          170deg,
-          color-mix(in srgb, var(--person-tone-light) 72%, #ffffff 28%),
-          var(--person-tone-mid) 54%,
-          var(--person-tone-dark) 100%
-        );
-        box-shadow:
-          inset 0.7px 0.7px 1.3px rgba(255, 255, 255, 0.66),
-          inset -0.7px -0.7px 1.3px rgba(160, 129, 101, 0.16),
-          0.8px 1px 1.8px rgba(118, 90, 67, 0.17),
-          0 0.8px 0.4px rgba(110, 82, 60, 0.14);
-        transform-origin: 50% 10%;
-      }
-
-      &::before {
-        left: calc(var(--size) * 0.02);
-        animation: leg-swing var(--walk-duration, 1450ms) cubic-bezier(0.45, 0.02, 0.55, 0.98)
-          infinite;
-        animation-delay: var(--walk-delay-a, 0ms);
-      }
-
-      &::after {
-        right: calc(var(--size) * 0.02);
-        animation: leg-swing var(--walk-duration, 1450ms)
-          cubic-bezier(0.45, 0.02, 0.55, 0.98) infinite;
-        animation-delay: var(--walk-delay-b, -700ms);
-      }
-    }
-  }
-
-  .mini-person--linked {
-    --person-tone-light: #f1ede6;
-    --person-tone-mid: #dfd5c9;
-    --person-tone-dark: #cfc0b2;
-    --shadow-rgb: 126 97 73;
-    --ground-rgb: 120 90 68;
-  }
-
-  .mini-person:not(.mini-person--linked) {
-    .mini-head,
-    .mini-body,
-    .mini-legs {
-      opacity: 0.9;
-    }
-  }
-
-  @media (min-width: 780px) {
-    .family-crowd-circle {
-      width: 430px;
-    }
-  }
-
-  @keyframes leg-swing {
-    0% {
-      transform: rotate(16deg) translateY(0.32px) scaleY(1.04);
-    }
-    25% {
-      transform: rotate(6deg) translateY(-0.22px) scaleY(1.01);
-    }
-    50% {
-      transform: rotate(-16deg) translateY(-1.02px) scaleY(0.94);
-    }
-    75% {
-      transform: rotate(-6deg) translateY(-0.2px) scaleY(0.98);
-    }
-    100% {
-      transform: rotate(16deg) translateY(0.32px) scaleY(1.04);
-    }
-  }
-
-  @keyframes ground-breathe {
-    0% {
-      transform: translateX(calc(-50% + var(--size) * 0.07)) translateY(calc(var(--size) * 0.03))
-        scaleX(0.92);
-      opacity: 0.7;
-    }
-    50% {
-      transform: translateX(calc(-50% + var(--size) * 0.1)) translateY(calc(var(--size) * 0.04))
-        scaleX(1.04);
-      opacity: 0.94;
-    }
-    100% {
-      transform: translateX(calc(-50% + var(--size) * 0.07)) translateY(calc(var(--size) * 0.03))
-        scaleX(0.92);
-      opacity: 0.7;
-    }
-  }
-
-  @keyframes person-bob {
-    0% {
-      transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y)));
-    }
-    50% {
-      transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y) - 0.55px));
-    }
-    100% {
-      transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y)));
-    }
-  }
-
-  @keyframes head-bob {
-    0% {
-      transform: translateX(-50%) rotate(-2.5deg);
-    }
-    50% {
-      transform: translateX(-50%) rotate(2.5deg) translateY(-0.2px);
-    }
-    100% {
-      transform: translateX(-50%) rotate(-2.5deg);
-    }
-  }
-
-  @keyframes body-bob {
-    0% {
-      transform: translateX(-50%) translateY(0);
-    }
-    50% {
-      transform: translateX(-50%) translateY(-0.32px);
-    }
-    100% {
-      transform: translateX(-50%) translateY(0);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .mini-person,
-    .mini-head,
-    .mini-body,
-    .mini-ground-shadow,
-    .mini-legs::before,
-    .mini-legs::after {
-      animation: none;
-      transform: none;
-    }
   }
 </style>

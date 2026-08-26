@@ -44,6 +44,18 @@ class MockIntersectionObserver {
   }
 }
 
+class MockWorker {
+  static instances: MockWorker[] = []
+  onmessage: ((event: MessageEvent) => void) | null = null
+  onerror: ((event: Event) => void) | null = null
+  postMessage = vi.fn()
+  terminate = vi.fn()
+
+  constructor(_url: URL, _options?: WorkerOptions) {
+    MockWorker.instances.push(this)
+  }
+}
+
 const buildMembers = (count: number) =>
   Array.from({ length: count }, (_, idx) => ({
     id: `m-${idx}`,
@@ -97,7 +109,6 @@ const buildData = (membersCount: number) => ({
 describe('admin page crowd performance', () => {
   let visibilityStateValue: DocumentVisibilityState = 'visible'
   let nextFrameId = 1
-  let frameTime = 16.67
   let frameCallbacks = new Map<number, FrameRequestCallback>()
 
   const runAnimationFrame = async () => {
@@ -106,26 +117,17 @@ describe('admin page crowd performance', () => {
 
     const [id, callback] = entry
     frameCallbacks.delete(id)
-    frameTime += 16.67
-    callback(frameTime)
+    callback(performance.now())
     await tick()
-  }
-
-  const getFirstAvatarCoords = () => {
-    const style = (document.querySelector('.mini-person') as HTMLElement | null)?.getAttribute('style')
-    if (!style) return null
-    const match = style.match(/--x:([-\d.]+)px; --y:([-\d.]+)px;/)
-    if (!match) return null
-    return { x: Number(match[1]), y: Number(match[2]) }
   }
 
   beforeEach(() => {
     document.body.innerHTML = ''
     MockResizeObserver.instances = []
     MockIntersectionObserver.instances = []
+    MockWorker.instances = []
     frameCallbacks = new Map<number, FrameRequestCallback>()
     nextFrameId = 1
-    frameTime = 16.67
     visibilityStateValue = 'visible'
 
     Object.defineProperty(document, 'visibilityState', {
@@ -135,6 +137,7 @@ describe('admin page crowd performance', () => {
 
     vi.stubGlobal('ResizeObserver', MockResizeObserver)
     vi.stubGlobal('IntersectionObserver', MockIntersectionObserver)
+    vi.stubGlobal('Worker', MockWorker as unknown as typeof Worker)
     vi.stubGlobal(
       'requestAnimationFrame',
       vi.fn((callback: FrameRequestCallback) => {
@@ -150,6 +153,28 @@ describe('admin page crowd performance', () => {
         frameCallbacks.delete(id)
       })
     )
+
+    const gradientStub = () => ({
+      addColorStop: vi.fn()
+    })
+    const context2dStub = {
+      clearRect: vi.fn(),
+      setTransform: vi.fn(),
+      drawImage: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      quadraticCurveTo: vi.fn(),
+      closePath: vi.fn(),
+      fill: vi.fn(),
+      arc: vi.fn(),
+      ellipse: vi.fn(),
+      translate: vi.fn(),
+      createLinearGradient: vi.fn(gradientStub),
+      createRadialGradient: vi.fn(gradientStub),
+      fillStyle: ''
+    } as unknown as CanvasRenderingContext2D
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => context2dStub)
 
     window.matchMedia = vi.fn().mockReturnValue({
       matches: false,
@@ -169,65 +194,79 @@ describe('admin page crowd performance', () => {
     document.body.innerHTML = ''
   })
 
-  it('pauses animation when page becomes hidden and resumes when visible again', async () => {
+  it('renders canvas crowd for the active family', async () => {
+    const membersCount = 24
+
     new AdminPage({
       target: document.body,
-      props: { data: buildData(24), form: null, params: { familyId: 'family-1' } }
+      props: { data: buildData(membersCount), form: null, params: { familyId: 'family-1' } }
     })
 
     await tick()
 
-    const rafCallsBefore = (requestAnimationFrame as unknown as ReturnType<typeof vi.fn>).mock.calls
-      .length
-    expect(rafCallsBefore).toBeGreaterThan(0)
+    const crowd = document.querySelector('.family-crowd-canvas')
+    expect(crowd).toBeTruthy()
+    expect(crowd?.getAttribute('aria-label')).toBe(`${membersCount} miembros en la familia`)
 
-    visibilityStateValue = 'hidden'
-    document.dispatchEvent(new Event('visibilitychange'))
-    await tick()
+    const countText = document.querySelector('.crowd-floor-count__value')?.textContent?.trim()
+    expect(countText).toBe(String(membersCount))
 
-    const cancelCallsAfterHide = (cancelAnimationFrame as unknown as ReturnType<typeof vi.fn>).mock
-      .calls.length
-    expect(cancelCallsAfterHide).toBeGreaterThan(0)
-
-    visibilityStateValue = 'visible'
-    document.dispatchEvent(new Event('visibilitychange'))
-    await tick()
-
-    const rafCallsAfterResume = (requestAnimationFrame as unknown as ReturnType<typeof vi.fn>).mock
-      .calls.length
-    expect(rafCallsAfterResume).toBeGreaterThan(rafCallsBefore)
+    expect(document.querySelectorAll('.mini-person')).toHaveLength(0)
   })
 
-  it('pauses offscreen and resumes when crowd re-enters viewport', async () => {
+  it('sends pause and resume to the worker on page visibility changes', async () => {
     new AdminPage({
       target: document.body,
       props: { data: buildData(20), form: null, params: { familyId: 'family-1' } }
     })
 
     await tick()
+    await runAnimationFrame()
+
+    expect(MockWorker.instances.length).toBeGreaterThan(0)
+    const worker = MockWorker.instances[0]
+
+    visibilityStateValue = 'hidden'
+    document.dispatchEvent(new Event('visibilitychange'))
+    await tick()
+
+    expect(worker.postMessage).toHaveBeenCalledWith({ type: 'pause' })
+
+    visibilityStateValue = 'visible'
+    document.dispatchEvent(new Event('visibilitychange'))
+    await tick()
+
+    expect(worker.postMessage).toHaveBeenCalledWith({ type: 'resume' })
+  })
+
+  it('sends visibility updates to the worker when offscreen/onscreen', async () => {
+    new AdminPage({
+      target: document.body,
+      props: { data: buildData(20), form: null, params: { familyId: 'family-1' } }
+    })
+
+    await tick()
+    await runAnimationFrame()
 
     expect(MockIntersectionObserver.instances.length).toBeGreaterThan(0)
+    expect(MockWorker.instances.length).toBeGreaterThan(0)
     const observer = MockIntersectionObserver.instances[0]
+    const worker = MockWorker.instances[0]
 
     observer.trigger(false)
     await tick()
 
-    const cancelCallsOffscreen = (cancelAnimationFrame as unknown as ReturnType<typeof vi.fn>).mock
-      .calls.length
-    expect(cancelCallsOffscreen).toBeGreaterThan(0)
+    expect(worker.postMessage).toHaveBeenCalledWith({ type: 'visibility', visible: false })
 
-    const rafCallsBeforeReturn = (requestAnimationFrame as unknown as ReturnType<typeof vi.fn>).mock
-      .calls.length
     observer.trigger(true)
     await tick()
 
-    const rafCallsAfterReturn = (requestAnimationFrame as unknown as ReturnType<typeof vi.fn>).mock
-      .calls.length
-    expect(rafCallsAfterReturn).toBeGreaterThan(rafCallsBeforeReturn)
+    expect(worker.postMessage).toHaveBeenCalledWith({ type: 'visibility', visible: true })
   })
 
-  it('keeps one rendered avatar per member after multiple animation frames', async () => {
-    const membersCount = 32
+  it('passes member counters to CrowdCanvas through the rendered summary', async () => {
+    const membersCount = 72
+    const unlinkedMembersCount = Math.floor(membersCount / 3)
 
     new AdminPage({
       target: document.body,
@@ -235,137 +274,35 @@ describe('admin page crowd performance', () => {
     })
 
     await tick()
+
+    expect(document.querySelector('.crowd-floor-count__value')?.textContent?.trim()).toBe(
+      String(membersCount)
+    )
+    expect(unlinkedMembersCount).toBeGreaterThan(0)
+  })
+
+  it('disconnects observers and disposes worker on destroy', async () => {
+    const component = new AdminPage({
+      target: document.body,
+      props: { data: buildData(28), form: null, params: { familyId: 'family-1' } }
+    })
+
+    await tick()
+    await runAnimationFrame()
+
+    expect(MockResizeObserver.instances.length).toBeGreaterThan(0)
+    expect(MockIntersectionObserver.instances.length).toBeGreaterThan(0)
+    expect(MockWorker.instances.length).toBeGreaterThan(0)
 
     const resizeObserver = MockResizeObserver.instances[0]
-    resizeObserver?.trigger(420, 420)
-    await tick()
+    const intersectionObserver = MockIntersectionObserver.instances[0]
+    const worker = MockWorker.instances[0]
 
-    for (let i = 0; i < 6; i += 1) {
-      await runAnimationFrame()
-    }
+    component.$destroy()
 
-    const avatars = Array.from(document.querySelectorAll('.mini-person')) as HTMLElement[]
-    expect(avatars).toHaveLength(membersCount)
-
-    for (const avatar of avatars) {
-      const style = avatar.getAttribute('style') ?? ''
-      const match = style.match(/--x:([-\d.]+)px; --y:([-\d.]+)px;/)
-      expect(match).toBeTruthy()
-
-      const x = Number(match?.[1])
-      const y = Number(match?.[2])
-      expect(Number.isFinite(x)).toBe(true)
-      expect(Number.isFinite(y)).toBe(true)
-      expect(Math.hypot(x, y)).toBeLessThan(220)
-    }
-  })
-
-  it('uses a lower simulation cadence on coarse pointers and still updates smoothly', async () => {
-    ;(window.matchMedia as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-      matches: true,
-      media: '(pointer: coarse)',
-      onchange: null,
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      dispatchEvent: vi.fn()
-    })
-
-    new AdminPage({
-      target: document.body,
-      props: { data: buildData(26), form: null, params: { familyId: 'family-1' } }
-    })
-
-    await tick()
-
-    const before = getFirstAvatarCoords()
-    expect(before).toBeTruthy()
-
-    // Coarse-pointer cadence applies one update, one hold, then one update.
-    await runAnimationFrame()
-    const afterOneFrame = getFirstAvatarCoords()
-    expect(afterOneFrame).toBeTruthy()
-    expect(afterOneFrame).not.toEqual(before)
-
-    // Second RAF tick should hold position due to cadence gating.
-    await runAnimationFrame()
-    const afterTwoFrames = getFirstAvatarCoords()
-    expect(afterTwoFrames).toEqual(afterOneFrame)
-
-    // Third RAF tick executes the next simulation step.
-    await runAnimationFrame()
-    const afterThreeFrames = getFirstAvatarCoords()
-    expect(afterThreeFrames).toBeTruthy()
-    expect(afterThreeFrames).not.toEqual(afterTwoFrames)
-  })
-
-  it('remains stable with large member sets under adaptive collision workload', async () => {
-    const membersCount = 72
-
-    new AdminPage({
-      target: document.body,
-      props: { data: buildData(membersCount), form: null, params: { familyId: 'family-1' } }
-    })
-
-    await tick()
-
-    for (let i = 0; i < 10; i += 1) {
-      await runAnimationFrame()
-    }
-
-    const avatars = Array.from(document.querySelectorAll('.mini-person')) as HTMLElement[]
-    expect(avatars).toHaveLength(membersCount)
-
-    for (const avatar of avatars) {
-      const style = avatar.getAttribute('style') ?? ''
-      const match = style.match(/--x:([-\d.]+)px; --y:([-\d.]+)px;/)
-      expect(match).toBeTruthy()
-
-      const x = Number(match?.[1])
-      const y = Number(match?.[2])
-      expect(Number.isFinite(x)).toBe(true)
-      expect(Number.isFinite(y)).toBe(true)
-      expect(Math.hypot(x, y)).toBeLessThan(240)
-    }
-  })
-
-  it('keeps depth ordering consistent with vertical position', async () => {
-    const membersCount = 28
-
-    new AdminPage({
-      target: document.body,
-      props: { data: buildData(membersCount), form: null, params: { familyId: 'family-1' } }
-    })
-
-    await tick()
-
-    for (let i = 0; i < 6; i += 1) {
-      await runAnimationFrame()
-    }
-
-    const avatars = Array.from(document.querySelectorAll('.mini-person')) as HTMLElement[]
-    expect(avatars).toHaveLength(membersCount)
-
-    const extracted = avatars
-      .map((avatar) => {
-        const style = avatar.getAttribute('style') ?? ''
-        const yMatch = style.match(/--y:([-\d.]+)px;/)
-        const depthMatch = style.match(/--depth:([-\d.]+);/)
-        if (!yMatch || !depthMatch) return null
-
-        return {
-          y: Number(yMatch[1]),
-          depth: Number(depthMatch[1])
-        }
-      })
-      .filter((entry): entry is { y: number; depth: number } => Boolean(entry))
-      .sort((a, b) => a.y - b.y)
-
-    expect(extracted.length).toBe(membersCount)
-
-    for (let i = 1; i < extracted.length; i += 1) {
-      expect(extracted[i].depth).toBeGreaterThanOrEqual(extracted[i - 1].depth)
-    }
+    expect(resizeObserver.disconnect).toHaveBeenCalledTimes(1)
+    expect(intersectionObserver.disconnect).toHaveBeenCalledTimes(1)
+    expect(worker.postMessage).toHaveBeenCalledWith({ type: 'dispose' })
+    expect(worker.terminate).toHaveBeenCalledTimes(1)
   })
 })

@@ -36,6 +36,19 @@ interface UserBulkChangeInput {
 }
 
 const MOCK_FAMILY_ROLE_ROTATION: Role[] = ['admin', 'editor', 'viewer']
+const MOCK_CROWD_MEMBERS_COUNT = 100
+const MOCK_CROWD_MEMBERS_MIN = 1
+const MOCK_CROWD_MEMBERS_MAX = 400
+
+const resolveMockCrowdMembersCount = (url: URL): number => {
+  const rawValue = url.searchParams.get('mockCrowd')
+  if (!rawValue) return MOCK_CROWD_MEMBERS_COUNT
+
+  const parsed = Number.parseInt(rawValue, 10)
+  if (!Number.isFinite(parsed)) return MOCK_CROWD_MEMBERS_COUNT
+
+  return Math.max(MOCK_CROWD_MEMBERS_MIN, Math.min(MOCK_CROWD_MEMBERS_MAX, parsed))
+}
 
 const expiryFromPreset = (preset: string): string | null => {
   if (preset === '7d') return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
@@ -149,6 +162,7 @@ export const loadAdminPage = async (
   })
 
   if (isMockFamilyMode()) {
+    const mockCrowdMembersCount = resolveMockCrowdMembersCount(url)
     const rows = toRowsFromFamilyData(mockFamilyData)
     const groups = buildFamilyGroups(rows.members, rows.relationships)
     const activeGroup = groups.find((candidate) => candidate.id === managerContext.activeFamily.id)
@@ -214,7 +228,7 @@ export const loadAdminPage = async (
 
     const familiesWithMetrics = managerContext.families.map((family) => {
       const group = groups.find((candidate) => candidate.id === family.id)
-      const membersCount = group?.membersCount ?? 0
+      const membersCount = mockCrowdMembersCount
       const mockProfiles = buildMockProfilesForFamily(family.id, group?.memberIds ?? [])
       const mockLinkedCount = mockProfiles.filter((profile) => profile.member_id).length
       const mockManagersCount = mockProfiles.filter(
