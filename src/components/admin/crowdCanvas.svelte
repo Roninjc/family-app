@@ -13,6 +13,7 @@
   export let seedKey = ''
   export let debug = false
   export let renderer: 'canvas2d' | 'pixi' = 'canvas2d'
+  export let showCenterCount = false
 
   let wrapperEl: HTMLDivElement | null = null
   let canvasEl: HTMLCanvasElement | null = null
@@ -78,6 +79,18 @@
 
   const qualityByRank: Array<'eco' | 'balanced' | 'high'> = ['eco', 'balanced', 'high']
 
+  type GaitFrame = 0 | 1 | 2
+
+  const resolveGaitFrame = (avatarIndex: number, frameTs: number): GaitFrame => {
+    if (renderQuality === 'eco') return 0
+
+    const phase = frameTs * 0.0108 + avatarIndex * 0.79
+    const swing = Math.sin(phase)
+    if (swing > 0.32) return 1
+    if (swing < -0.32) return 2
+    return 0
+  }
+
   const resolveQualityCeilingRank = (count: number, coarsePointer: boolean) => {
     if (coarsePointer) {
       if (count >= 320) return 0
@@ -136,7 +149,7 @@
     }
   }
 
-  type AtlasKey = `${0 | 1 | 2}-${0 | 1}`
+  type AtlasKey = `2-${0 | 1}-${GaitFrame}`
   const spriteAtlas = new Map<AtlasKey, HTMLCanvasElement>()
   // TODO: Evaluate pre-generated sprite sheets versus runtime atlas generation for startup cost/art quality tradeoffs.
 
@@ -166,7 +179,7 @@
     ctx.closePath()
   }
 
-  const buildAtlasSprite = (tier: 0 | 1 | 2, linked: 0 | 1) => {
+  const buildAtlasSprite = (linked: 0 | 1, gaitFrame: GaitFrame) => {
     const size = 64
     const atlas = document.createElement('canvas')
     atlas.width = size
@@ -174,69 +187,134 @@
     const ctx = atlas.getContext('2d')
     if (!ctx) return atlas
 
-    const tone = linked ? { light: '#f1ede6', mid: '#dfd5c9', dark: '#cfc0b2' } : { light: '#f6f2eb', mid: '#e8dfd4', dark: '#d7cabe' }
+    const fillBase = linked ? '#7f9fc7' : '#7595bf'
+    const fillHigh = linked ? '#a9c2e1' : '#9fb9dc'
+    const fillLow = linked ? '#5f7fa9' : '#5777a2'
+    const contour = linked ? 'rgba(56,84,121,0.24)' : 'rgba(50,78,116,0.22)'
+    const shadow = linked ? 'rgba(23,35,56,0.16)' : 'rgba(23,35,56,0.13)'
 
     ctx.clearRect(0, 0, size, size)
     ctx.translate(size / 2, size / 2)
 
-    if (tier === 0) {
-      const g = ctx.createLinearGradient(0, -16, 0, 24)
-      g.addColorStop(0, tone.light)
-      g.addColorStop(0.58, tone.mid)
-      g.addColorStop(1, tone.dark)
-      ctx.fillStyle = g
-      drawRoundedRect(ctx, -12, -18, 24, 36, 12)
-      ctx.fill()
-      return atlas
-    }
+    const walkerYOffset = -2.4
 
-    if (tier === 1) {
-      const bodyGradient = ctx.createLinearGradient(0, -6, 0, 20)
-      bodyGradient.addColorStop(0, tone.light)
-      bodyGradient.addColorStop(0.6, tone.mid)
-      bodyGradient.addColorStop(1, tone.dark)
-      ctx.fillStyle = bodyGradient
-      drawRoundedRect(ctx, -11, -4, 22, 30, 11)
-      ctx.fill()
+    const armLeftEnd =
+      gaitFrame === 1 ? { x: -9.0, y: 9.4 } : gaitFrame === 2 ? { x: -11.2, y: 5.3 } : { x: -10.2, y: 7.6 }
+    const armRightEnd =
+      gaitFrame === 1 ? { x: 11.2, y: 4.9 } : gaitFrame === 2 ? { x: 9.0, y: 9.2 } : { x: 10.2, y: 7.2 }
+    const legLeftEnd =
+      gaitFrame === 1 ? { x: -7.4, y: 25.9 } : gaitFrame === 2 ? { x: -3.6, y: 30.4 } : { x: -4.8, y: 28.8 }
+    const legRightEnd =
+      gaitFrame === 1 ? { x: 6.9, y: 31.2 } : gaitFrame === 2 ? { x: 2.9, y: 26.9 } : { x: 6.2, y: 29.6 }
 
-      const headGradient = ctx.createRadialGradient(-3, -20, 1, 0, -20, 10)
-      headGradient.addColorStop(0, tone.light)
-      headGradient.addColorStop(1, tone.mid)
-      ctx.fillStyle = headGradient
-      ctx.beginPath()
-      ctx.arc(0, -20, 10, 0, Math.PI * 2)
-      ctx.fill()
-
-      return atlas
-    }
-
-    const shadowColor = linked ? 'rgba(120,90,68,0.2)' : 'rgba(114,83,58,0.16)'
-    ctx.fillStyle = shadowColor
+    ctx.fillStyle = shadow
     ctx.beginPath()
-    ctx.ellipse(2, 22, 16, 5, 0, 0, Math.PI * 2)
+    ctx.ellipse(3.5, 31.2 + walkerYOffset, 13.3, 3.3, 0.24, 0, Math.PI * 2)
     ctx.fill()
 
-    const bodyGradient = ctx.createLinearGradient(0, -8, 0, 20)
-    bodyGradient.addColorStop(0, tone.light)
-    bodyGradient.addColorStop(0.6, tone.mid)
-    bodyGradient.addColorStop(1, tone.dark)
+    // Minimal walker silhouette: flat head/body, simple limbs and one leading leg.
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+
+    const limbGradient = ctx.createLinearGradient(0, -16, 0, 30)
+    limbGradient.addColorStop(0, fillHigh)
+    limbGradient.addColorStop(0.58, fillBase)
+    limbGradient.addColorStop(1, fillLow)
+    ctx.strokeStyle = limbGradient
+    ctx.lineWidth = 4.2
+    ctx.beginPath()
+    ctx.moveTo(-4.6, -5 + walkerYOffset)
+    ctx.lineTo(armLeftEnd.x, armLeftEnd.y + walkerYOffset)
+    ctx.stroke()
+
+    ctx.beginPath()
+    ctx.moveTo(4.6, -5 + walkerYOffset)
+    ctx.lineTo(armRightEnd.x, armRightEnd.y + walkerYOffset)
+    ctx.stroke()
+
+    ctx.beginPath()
+    ctx.moveTo(-2.2, 15 + walkerYOffset)
+    ctx.lineTo(legLeftEnd.x, legLeftEnd.y + walkerYOffset)
+    ctx.stroke()
+
+    ctx.beginPath()
+    ctx.moveTo(2.2, 15 + walkerYOffset)
+    ctx.lineTo(legRightEnd.x, legRightEnd.y + walkerYOffset)
+    ctx.stroke()
+
+    const bodyGradient = ctx.createLinearGradient(0, -12, 0, 28)
+    bodyGradient.addColorStop(0, fillHigh)
+    bodyGradient.addColorStop(0.62, fillBase)
+    bodyGradient.addColorStop(1, fillLow)
     ctx.fillStyle = bodyGradient
-    drawRoundedRect(ctx, -11, -4, 22, 30, 11)
+    drawRoundedRect(ctx, -6.2, -8.6 + walkerYOffset, 12.4, 30.6, 6.2)
     ctx.fill()
 
-    const headGradient = ctx.createRadialGradient(-3, -20, 1, 0, -20, 10)
-    headGradient.addColorStop(0, tone.light)
-    headGradient.addColorStop(1, tone.mid)
+    ctx.strokeStyle = contour
+    ctx.lineWidth = 0.9
+    drawRoundedRect(ctx, -6.2, -8.6 + walkerYOffset, 12.4, 30.6, 6.2)
+    ctx.stroke()
+
+    const headGradient = ctx.createLinearGradient(0, -31, 0, -11)
+    headGradient.addColorStop(0, fillHigh)
+    headGradient.addColorStop(0.66, fillBase)
+    headGradient.addColorStop(1, fillLow)
     ctx.fillStyle = headGradient
     ctx.beginPath()
-    ctx.arc(0, -20, 10, 0, Math.PI * 2)
+    ctx.arc(0, -19.4 + walkerYOffset, 9.2, 0, Math.PI * 2)
     ctx.fill()
 
-    ctx.fillStyle = tone.dark
-    drawRoundedRect(ctx, -10, 14, 8, 18, 5)
+    ctx.strokeStyle = contour
+    ctx.lineWidth = 0.9
+    ctx.beginPath()
+    ctx.arc(0, -19.4 + walkerYOffset, 9.2, 0, Math.PI * 2)
+    ctx.stroke()
+
+    return atlas
+  }
+
+  const buildEmergencyAtlasSprite = (linked: 0 | 1, gaitFrame: GaitFrame) => {
+      const legLeftEnd = gaitFrame === 1 ? { x: -6.5, y: 26.1 } : gaitFrame === 2 ? { x: -3.1, y: 30.1 } : { x: -4.2, y: 31 }
+      const legRightEnd = gaitFrame === 1 ? { x: 6.3, y: 31.3 } : gaitFrame === 2 ? { x: 2.5, y: 27.2 } : { x: 5.6, y: 32 }
+
+    const size = 64
+    const atlas = document.createElement('canvas')
+    atlas.width = size
+    atlas.height = size
+    const ctx = atlas.getContext('2d')
+    if (!ctx) return atlas
+
+    const fill = linked ? '#87a8d4' : '#7d9fcd'
+    const shade = linked ? '#6d8fbe' : '#6487b8'
+
+    ctx.clearRect(0, 0, size, size)
+    ctx.translate(size / 2, size / 2)
+    ctx.fillStyle = 'rgba(20, 32, 54, 0.16)'
+    ctx.beginPath()
+    ctx.ellipse(4.1, 26.2, 14.1, 3.1, 0.24, 0, Math.PI * 2)
     ctx.fill()
-    drawRoundedRect(ctx, 2, 14, 8, 18, 5)
+
+    ctx.fillStyle = fill
+    drawRoundedRect(ctx, -6.5, -5, 13, 29, 6.5)
     ctx.fill()
+    ctx.fillStyle = shade
+    ctx.beginPath()
+    ctx.arc(0, -15.5, 9, 0, Math.PI * 2)
+    ctx.fill()
+
+    ctx.lineCap = 'round'
+    ctx.strokeStyle = fill
+    ctx.lineWidth = 4
+    ctx.beginPath()
+    ctx.moveTo(-4, -1)
+    ctx.lineTo(-9.2, 10)
+    ctx.moveTo(4, -1)
+    ctx.lineTo(9.2, 10)
+    ctx.moveTo(-2, 18)
+    ctx.lineTo(legLeftEnd.x, legLeftEnd.y)
+    ctx.moveTo(2, 18)
+    ctx.lineTo(legRightEnd.x, legRightEnd.y)
+    ctx.stroke()
 
     return atlas
   }
@@ -244,9 +322,13 @@
   const ensureAtlas = () => {
     if (spriteAtlas.size > 0) return
 
-    for (const tier of [0, 1, 2] as const) {
-      for (const linked of [0, 1] as const) {
-        spriteAtlas.set(`${tier}-${linked}`, buildAtlasSprite(tier, linked))
+    for (const linked of [0, 1] as const) {
+      for (const gaitFrame of [0, 1, 2] as const) {
+        try {
+          spriteAtlas.set(`2-${linked}-${gaitFrame}`, buildAtlasSprite(linked, gaitFrame))
+        } catch {
+          spriteAtlas.set(`2-${linked}-${gaitFrame}`, buildEmergencyAtlasSprite(linked, gaitFrame))
+        }
       }
     }
   }
@@ -449,7 +531,7 @@
     }
   }
 
-  const renderPixi = (totalStartTs = performance.now()) => {
+  const renderPixi = (totalStartTs = performance.now(), frameTs = performance.now()) => {
     const renderStart = performance.now()
     if (!pixiApp || !hasFrame || displayPositions.length === 0 || depthOrder.length === 0) return
 
@@ -477,7 +559,8 @@
       }
 
       const linkedValue = linked[i] as 0 | 1
-      const texture = pixiTextures.get(`${tier}-${linkedValue}`)
+      const gaitFrame = resolveGaitFrame(i, frameTs)
+      const texture = pixiTextures.get(`2-${linkedValue}-${gaitFrame}`)
       if (texture) sprite.texture = texture
 
       sprite.visible = true
@@ -547,7 +630,7 @@
     updateDisplayPositions(frameTs)
 
     if (activeRenderer === 'pixi') {
-      renderPixi(totalStartTs)
+      renderPixi(totalStartTs, frameTs)
       return
     }
 
@@ -585,7 +668,8 @@
         }
       }
 
-      const sprite = spriteAtlas.get(`${tier}-${linkedValue}`)
+      const gaitFrame = resolveGaitFrame(i, frameTs)
+      const sprite = spriteAtlas.get(`2-${linkedValue}-${gaitFrame}`)
       if (!sprite) continue
 
       const drawX = cx + x - sprite.width * 0.5 * scale
@@ -710,12 +794,8 @@
 
     activeRenderer = renderer
 
-    try {
-      ensureAtlas()
-      setupCanvasSize()
-    } catch {
-      return
-    }
+    setupCanvasSize()
+    ensureAtlas()
 
     if (activeRenderer === 'pixi') {
       void initPixiRenderer().then((ok) => {
@@ -819,6 +899,11 @@
 </script>
 
 <div class="family-crowd-canvas" bind:this={wrapperEl} role="img" aria-label={`${membersCount} miembros en la familia`}>
+  {#if showCenterCount}
+    <div class="crowd-floor-count" aria-hidden="true">
+      <span class="crowd-floor-count__value">{membersCount}</span>
+    </div>
+  {/if}
   <div class="pixi-host" bind:this={pixiHostEl}></div>
   <canvas bind:this={canvasEl} class:canvas-hidden={activeRenderer === 'pixi'}></canvas>
 </div>
@@ -855,6 +940,7 @@
   canvas {
     position: absolute;
     inset: 0;
+    z-index: 2;
     width: 100%;
     height: 100%;
   }
@@ -866,7 +952,36 @@
   .pixi-host {
     position: absolute;
     inset: 0;
+    z-index: 2;
+  }
+
+  .crowd-floor-count {
+    position: absolute;
+    left: 50%;
+    top: 50%;
     z-index: 1;
+    display: grid;
+    place-items: center;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .crowd-floor-count__value {
+    position: static;
+    display: inline-block;
+    font-family: inherit;
+    font-size: clamp(3.5rem, calc(11vw + 1.8rem), 6rem);
+    font-weight: 200;
+    letter-spacing: 0.012em;
+    line-height: 0.9;
+    color: #95bde7;
+    text-shadow:
+      0 0 0.01em rgba(219, 233, 250, 0.85),
+      0 0 0.07em rgba(160, 194, 234, 0.42),
+      0 0 0.16em rgba(110, 146, 191, 0.26),
+      0 1px 1.6px rgba(42, 63, 93, 0.22);
+    filter: saturate(1.1) brightness(1.07);
+    user-select: none;
   }
 
   .pixi-host :global(canvas) {

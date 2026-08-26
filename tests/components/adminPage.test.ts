@@ -172,6 +172,7 @@ describe('admin page crowd performance', () => {
       translate: vi.fn(),
       createLinearGradient: vi.fn(gradientStub),
       createRadialGradient: vi.fn(gradientStub),
+      stroke: vi.fn(),
       fillStyle: ''
     } as unknown as CanvasRenderingContext2D
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => context2dStub)

@@ -422,10 +422,8 @@
               seedKey={`${activeFamilyId}:${familyMembersCount}:${unlinkedMembersCount}`}
               debug={crowdDebug}
               renderer={crowdRenderer}
+              showCenterCount={true}
             />
-            <div class="crowd-floor-count" aria-hidden="true">
-              <span class="crowd-floor-count__value">{familyMembersCount}</span>
-            </div>
           </div>
         </div>
       {/if}
@@ -653,34 +651,5 @@
     position: relative;
     display: grid;
     place-items: center;
-  }
-
-  .crowd-floor-count {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    z-index: 2;
-    display: grid;
-    place-items: center;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-  }
-
-  .crowd-floor-count__value {
-    position: static;
-    display: inline-block;
-    font-family: inherit;
-    font-size: clamp(3.5rem, calc(11vw + 1.8rem), 6rem);
-    font-weight: 200;
-    letter-spacing: 0.012em;
-    line-height: 0.9;
-    color: #95bde7;
-    text-shadow:
-      0 0 0.01em rgba(219, 233, 250, 0.85),
-      0 0 0.07em rgba(160, 194, 234, 0.42),
-      0 0 0.16em rgba(110, 146, 191, 0.26),
-      0 1px 1.6px rgba(42, 63, 93, 0.22);
-    filter: saturate(1.1) brightness(1.07);
-    user-select: none;
   }
 </style>
