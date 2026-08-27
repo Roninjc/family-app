@@ -455,7 +455,7 @@
     border-radius: 16px;
     margin-inline: 0;
     padding: 6px;
-    background: color-mix(in srgb, var(--neu-surface) 72%, transparent);
+    background: transparent;
     box-shadow: var(--neu-shadow-inset);
   }
 

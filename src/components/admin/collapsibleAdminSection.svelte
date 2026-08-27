@@ -37,23 +37,27 @@
 
 <style lang="scss">
   .admin-section {
+    --admin-section-shadow-rest: 5px 5px 12px rgba(149, 121, 95, 0.14),
+      -5px -5px 12px rgba(255, 255, 255, 0.74);
+    --admin-section-shadow-open: 7px 7px 15px rgba(149, 121, 95, 0.18),
+      -6px -6px 15px rgba(255, 255, 255, 0.8);
+    --admin-section-toggle-state-shadow: inset 2px 2px 5px rgba(149, 121, 95, 0.16),
+      inset -2px -2px 5px rgba(255, 255, 255, 0.74);
+    --admin-section-toggle-state-open-shadow: inset 2px 2px 5px rgba(149, 121, 95, 0.22),
+      inset -2px -2px 5px rgba(255, 255, 255, 0.72);
     margin-bottom: 1.05rem;
     background: transparent;
     border: none;
     border-radius: 15px;
     overflow: clip;
-    box-shadow:
-      5px 5px 12px rgba(149, 121, 95, 0.14),
-      -5px -5px 12px rgba(255, 255, 255, 0.74);
+    box-shadow: var(--admin-section-shadow-rest);
     transition:
-      box-shadow 0.22s var(--motion-standard),
+      box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
       background-color 0.22s var(--motion-standard);
 
     &.open {
       background: transparent;
-      box-shadow:
-        7px 7px 15px rgba(149, 121, 95, 0.18),
-        -6px -6px 15px rgba(255, 255, 255, 0.8);
+      box-shadow: var(--admin-section-shadow-open);
     }
 
     .section-toggle {
@@ -102,12 +106,10 @@
           border-radius: 999px;
           color: #6b4b31;
           background: #eee4d8;
-          box-shadow:
-            inset 2px 2px 5px rgba(149, 121, 95, 0.16),
-            inset -2px -2px 5px rgba(255, 255, 255, 0.74);
+          box-shadow: var(--admin-section-toggle-state-shadow);
           transition:
             transform 0.22s var(--motion-standard),
-            box-shadow 0.22s var(--motion-standard),
+            box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
             background-color 0.22s var(--motion-standard);
 
           svg {
@@ -124,9 +126,7 @@
           &.open {
             transform: rotate(180deg);
             background: #e8dbcd;
-            box-shadow:
-              inset 2px 2px 5px rgba(149, 121, 95, 0.22),
-              inset -2px -2px 5px rgba(255, 255, 255, 0.72);
+            box-shadow: var(--admin-section-toggle-state-open-shadow);
           }
         }
       }

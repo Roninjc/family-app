@@ -75,6 +75,7 @@
 
 <style lang="scss">
   .invite-row {
+    --invite-focus-ring-shadow: 0 0 0 2px rgba(156, 123, 95, 0.18);
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
@@ -90,7 +91,7 @@
       color: var(--text-main);
       box-shadow: var(--neu-shadow-inset);
       transition:
-        box-shadow 0.2s var(--motion-standard),
+        box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
         background-color 0.2s var(--motion-standard);
 
       &:focus {
@@ -98,7 +99,7 @@
         background: #f7f2ea;
         box-shadow:
           var(--neu-shadow-inset),
-          0 0 0 2px rgba(156, 123, 95, 0.18);
+          var(--invite-focus-ring-shadow);
       }
     }
   }
@@ -114,7 +115,7 @@
     font-size: var(--fs-sm);
     box-shadow: var(--neu-shadow-inset);
     transition:
-      box-shadow 0.2s var(--motion-standard),
+      box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
       background-color 0.2s var(--motion-standard);
 
     &:focus {
@@ -122,7 +123,7 @@
       background: #f7f2ea;
       box-shadow:
         var(--neu-shadow-inset),
-        0 0 0 2px rgba(156, 123, 95, 0.18);
+        var(--invite-focus-ring-shadow);
     }
   }
 

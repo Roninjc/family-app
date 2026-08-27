@@ -130,15 +130,17 @@
 
 <style lang="scss">
   .notes-card {
+    --notes-card-shadow: 4px 4px 9px rgba(154, 132, 109, 0.17),
+      -4px -4px 9px rgba(255, 255, 255, 0.72);
+    --notes-list-item-shadow: 3px 3px 7px rgba(154, 132, 109, 0.14),
+      -3px -3px 7px rgba(255, 255, 255, 0.7);
     border-radius: 14px;
     background: color-mix(in srgb, var(--neu-surface-soft) 88%, #ffffff 12%);
     border: none;
-    box-shadow:
-      4px 4px 9px rgba(154, 132, 109, 0.17),
-      -4px -4px 9px rgba(255, 255, 255, 0.72);
+    box-shadow: var(--notes-card-shadow);
     transition:
       transform 0.22s var(--motion-standard),
-      box-shadow 0.22s var(--motion-standard);
+      box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease);
     position: relative;
     padding: 14px;
     display: flex;
@@ -274,9 +276,8 @@
     border-radius: 10px;
     background: color-mix(in srgb, var(--neu-surface-soft) 90%, #ffffff 10%);
     border: none;
-    box-shadow:
-      3px 3px 7px rgba(154, 132, 109, 0.14),
-      -3px -3px 7px rgba(255, 255, 255, 0.7);
+    box-shadow: var(--notes-list-item-shadow);
+    transition: box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease);
   }
 
   h5,

@@ -117,6 +117,7 @@
   }
 
   .empty-tree-message {
+    --empty-tree-shadow: 0 14px 24px rgba(106, 62, 30, 0.12);
     margin: 0 auto;
     max-width: 520px;
     text-align: center;
@@ -124,7 +125,8 @@
     border-radius: 14px;
     color: var(--text-muted);
     background: linear-gradient(160deg, rgba(255, 252, 247, 0.72), rgba(255, 241, 224, 0.46));
-    box-shadow: 0 14px 24px rgba(106, 62, 30, 0.12);
+    box-shadow: var(--empty-tree-shadow);
+    transition: box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease);
 
     .empty-title,
     .empty-subtitle {

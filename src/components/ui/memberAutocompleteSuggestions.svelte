@@ -29,6 +29,6 @@
 
 <style lang="scss">
   .app-autocomplete-suggestions--neutral {
-    background: #fff;
+    background: var(--app-glass-panel-bg-strong);
   }
 </style>

@@ -24,8 +24,22 @@
   let displayedHeaderTitle = ''
   let headerTextVisible = true
   let headerTextSwapTimer: ReturnType<typeof setTimeout> | null = null
+  let showBootOverlay = true
+  let bootOverlayFadingOut = false
 
   const HEADER_TEXT_FADE_OUT_MS = 120
+  const NEUMO_READY_ATTRIBUTE = 'data-neumo'
+  const NEUMO_BOOT_VALUE = 'boot'
+  const NEUMO_READY_VALUE = 'ready'
+  const NEUMO_OVERLAY_COLOR_FADE_OUT_MS = 280
+  const NEUMO_OVERLAY_BLUR_FADE_DELAY_MS = 140
+  const NEUMO_OVERLAY_BLUR_FADE_OUT_MS = 520
+  const NEUMO_OVERLAY_TOTAL_MS = Math.max(
+    NEUMO_OVERLAY_COLOR_FADE_OUT_MS,
+    NEUMO_OVERLAY_BLUR_FADE_DELAY_MS + NEUMO_OVERLAY_BLUR_FADE_OUT_MS
+  )
+  const NEUMO_SHADOW_ACTIVATION_OVERLAP_MS = 180
+  const NEUMO_OVERLAY_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
   const roleLabel = (role: string | null) => {
     if (role === 'admin') return 'administrador'
@@ -171,6 +185,27 @@
   }
 
   onMount(() => {
+    const root = document.documentElement
+    let shadowActivationFrameA = 0
+    let shadowActivationFrameB = 0
+    let shadowActivationTimer: ReturnType<typeof setTimeout> | null = null
+    let hideBootOverlayTimer: ReturnType<typeof setTimeout> | null = null
+
+    // Phase 1: render content with a short fade. Phase 2: activate depth a bit later.
+    root.setAttribute(NEUMO_READY_ATTRIBUTE, NEUMO_BOOT_VALUE)
+    shadowActivationFrameA = requestAnimationFrame(() => {
+      shadowActivationFrameB = requestAnimationFrame(() => {
+        bootOverlayFadingOut = true
+        hideBootOverlayTimer = setTimeout(() => {
+          showBootOverlay = false
+        }, NEUMO_OVERLAY_TOTAL_MS)
+
+        shadowActivationTimer = setTimeout(() => {
+          root.setAttribute(NEUMO_READY_ATTRIBUTE, NEUMO_READY_VALUE)
+        }, Math.max(0, NEUMO_OVERLAY_TOTAL_MS - NEUMO_SHADOW_ACTIVATION_OVERLAP_MS))
+      })
+    })
+
     handleViewportScroll()
     window.addEventListener('scroll', handleViewportScroll, { passive: true })
 
@@ -222,6 +257,10 @@
     document.addEventListener('keydown', handleEscapeClose)
 
     return () => {
+      cancelAnimationFrame(shadowActivationFrameA)
+      cancelAnimationFrame(shadowActivationFrameB)
+      if (shadowActivationTimer) clearTimeout(shadowActivationTimer)
+      if (hideBootOverlayTimer) clearTimeout(hideBootOverlayTimer)
       window.removeEventListener('scroll', handleViewportScroll)
       subscription.unsubscribe()
       document.removeEventListener('pointerdown', handleDocumentPointerDown)
@@ -243,6 +282,23 @@
   data-route-params-count={routeParamsCount}
   aria-hidden="true"
 ></div>
+
+{#if showBootOverlay}
+  <div
+    class="app-boot-overlay"
+    aria-hidden="true"
+    style="position:fixed;inset:0;z-index:2205;pointer-events:none;overflow:hidden;"
+  >
+    <div
+      class="app-boot-overlay__color"
+      style={`position:absolute;inset:0;background:var(--app-bg, #f1ece4);opacity:${bootOverlayFadingOut ? '0' : '1'};transition:opacity ${NEUMO_OVERLAY_COLOR_FADE_OUT_MS}ms ${NEUMO_OVERLAY_EASE};`}
+    ></div>
+    <div
+      class="app-boot-overlay__blur"
+      style={`position:absolute;inset:0;background:rgba(241,236,228,0.26);opacity:${bootOverlayFadingOut ? '0' : '1'};backdrop-filter:blur(8px) saturate(0.94);-webkit-backdrop-filter:blur(8px) saturate(0.94);transition:opacity ${NEUMO_OVERLAY_BLUR_FADE_OUT_MS}ms ${NEUMO_OVERLAY_EASE} ${NEUMO_OVERLAY_BLUR_FADE_DELAY_MS}ms;`}
+    ></div>
+  </div>
+{/if}
 
 {#if showPersistentHeader}
   <header class="app-route-header" aria-label="Cabecera principal">
@@ -464,20 +520,84 @@
     --glass-surface-strong: rgba(255, 254, 251, 0.78);
     --glass-border: rgba(236, 226, 212, 0.9);
     --glass-border-soft: rgba(219, 205, 188, 0.62);
-    --glass-shadow: 0 16px 34px rgba(79, 66, 53, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    --glass-shadow: none;
+    --glass-shadow-active: 0 16px 34px rgba(79, 66, 53, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    --app-glass-panel-bg: rgba(255, 255, 255, 0.05);
+    --app-glass-panel-bg-soft: rgba(255, 255, 255, 0.035);
+    --app-glass-panel-bg-strong: rgba(255, 255, 255, 0.07);
+    --app-glass-panel-border: transparent;
+    --app-glass-panel-border-soft: transparent;
+    --app-glass-panel-blur: 16px;
+    --app-glass-panel-saturate: 1.06;
+    --app-glass-menu-bg: var(--app-glass-panel-bg-strong);
+    --app-glass-menu-blur: var(--app-glass-panel-blur);
+    --app-glass-menu-saturate: var(--app-glass-panel-saturate);
+    --app-modal-surface-bg: rgba(239, 232, 222, 0.78);
+    --app-glass-panel-shadow: none;
+    --app-glass-panel-shadow-active: var(--glass-shadow-active), var(--neu-shadow-out-active);
+    --app-glass-panel-shadow-soft: none;
+    --app-glass-panel-shadow-soft-active: var(--glass-shadow-active), var(--neu-shadow-out-soft-active);
+    --app-glass-menu-item-hover-bg: rgba(230, 212, 192, 0.37);
+    --app-glass-menu-item-hover-text: #6b4f38;
+    --app-glass-menu-item-hover-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5),
+      0 5px 10px rgba(103, 79, 56, 0.12);
+    --app-glass-menu-item-active-bg: rgba(219, 198, 175, 0.36);
+    --app-glass-menu-item-active-shadow: inset 2px 2px 5px rgba(142, 114, 89, 0.22),
+      inset -2px -2px 5px rgba(255, 255, 255, 0.72);
+    --app-glass-menu-danger-bg: rgba(189, 94, 94, 0.14);
+    --app-glass-menu-danger-hover-bg: rgba(189, 94, 94, 0.22);
+    --app-glass-menu-danger-hover-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45),
+      0 5px 10px rgba(133, 52, 52, 0.14);
+    --app-modal-backdrop-bg: rgba(241, 236, 228, 0.14);
+    --app-modal-backdrop-blur: 3px;
     --neu-surface: #efe8de;
     --neu-surface-soft: #f4efe7;
     --neu-light: rgba(255, 255, 255, 0.8);
     --neu-dark: rgba(154, 132, 109, 0.3);
-    --neu-shadow-out: 8px 8px 16px var(--neu-dark), -8px -8px 16px var(--neu-light);
-    --neu-shadow-out-soft: 5px 5px 10px rgba(154, 132, 109, 0.24),
+    --neu-shadow-out: none;
+    --neu-shadow-out-active: 8px 8px 16px var(--neu-dark), -8px -8px 16px var(--neu-light);
+    --neu-shadow-out-soft: none;
+    --neu-shadow-out-soft-active: 5px 5px 10px rgba(154, 132, 109, 0.24),
       -5px -5px 10px rgba(255, 255, 255, 0.76);
-    --neu-shadow-hover-strong: 10px 10px 18px rgba(154, 132, 109, 0.26),
+    --neu-shadow-hover-strong: none;
+    --neu-shadow-hover-strong-active: 10px 10px 18px rgba(154, 132, 109, 0.26),
       -10px -10px 18px rgba(255, 255, 255, 0.86);
-    --neu-shadow-hover-soft: 8px 8px 16px rgba(149, 121, 95, 0.22),
+    --neu-shadow-hover-soft: none;
+    --neu-shadow-hover-soft-active: 8px 8px 16px rgba(149, 121, 95, 0.22),
       -8px -8px 16px rgba(255, 255, 255, 0.82);
-    --neu-shadow-inset: inset 5px 5px 10px rgba(154, 132, 109, 0.24),
+    --neu-shadow-inset: none;
+    --neu-shadow-inset-active: inset 5px 5px 10px rgba(154, 132, 109, 0.24),
       inset -5px -5px 10px rgba(255, 255, 255, 0.76);
+    --app-btn-active-shadow: none;
+    --app-btn-active-shadow-active: inset 3px 3px 7px rgba(154, 132, 109, 0.18),
+      inset -3px -3px 7px rgba(255, 255, 255, 0.72);
+    --app-btn-disabled-shadow: none;
+    --app-btn-disabled-shadow-active: inset 2px 2px 5px rgba(154, 132, 109, 0.15),
+      inset -2px -2px 5px rgba(255, 255, 255, 0.72);
+    --app-card-soft-shadow: none;
+    --app-card-soft-shadow-active: inset 2px 2px 5px rgba(149, 121, 95, 0.1),
+      inset -2px -2px 5px rgba(255, 255, 255, 0.68);
+    --app-card-soft-raised-shadow: none;
+    --app-card-soft-raised-shadow-active: 3px 3px 7px rgba(154, 132, 109, 0.14),
+      -3px -3px 7px rgba(255, 255, 255, 0.7);
+    --app-chip-interactive-shadow: none;
+    --app-chip-interactive-shadow-active: 3px 3px 8px rgba(149, 121, 95, 0.12),
+      -3px -3px 8px rgba(255, 255, 255, 0.72);
+    --app-chip-interactive-active-shadow: none;
+    --app-chip-interactive-active-shadow-active: inset 2px 2px 5px rgba(149, 121, 95, 0.16),
+      inset -2px -2px 5px rgba(255, 255, 255, 0.7);
+    --app-stat-item-shadow: none;
+    --app-stat-item-shadow-active: inset 2px 2px 5px rgba(149, 121, 95, 0.1),
+      inset -2px -2px 5px rgba(255, 255, 255, 0.7);
+    --app-settings-trigger-shadow: none;
+    --app-settings-trigger-shadow-active: 4px 4px 10px rgba(149, 121, 95, 0.14),
+      -4px -4px 10px rgba(255, 255, 255, 0.6);
+    --app-settings-trigger-active-shadow: none;
+    --app-settings-trigger-active-shadow-active: inset 3px 3px 7px rgba(149, 121, 95, 0.2),
+      inset -3px -3px 7px rgba(255, 255, 255, 0.75);
+    --app-bottom-nav-current-shadow: none;
+    --app-bottom-nav-current-shadow-active: inset 3px 3px 7px rgba(154, 132, 109, 0.22),
+      inset -3px -3px 7px rgba(255, 255, 255, 0.76);
     --text-main: #2e2823;
     --text-muted: #544b43;
     --text-soft: #675c53;
@@ -500,6 +620,12 @@
     --radius-pill: 999px;
     --page-header-content-gap: 30px;
     --motion-standard: cubic-bezier(0.22, 1, 0.36, 1);
+    --neumo-shadow-transition-ease: cubic-bezier(0.16, 0.84, 0.26, 1.2);
+    --neumo-overlay-color-fade-duration: 0.28s;
+    --neumo-overlay-blur-fade-delay: 0.14s;
+    --neumo-overlay-blur-fade-duration: 0.52s;
+    --neumo-overlay-blur-strength: 8px;
+    --neumo-shadow-transition-duration: 0.42s;
     --fs-2xs: clamp(0.78rem, 0.74rem + 0.15vw, 0.84rem);
     --fs-xs: clamp(0.84rem, 0.8rem + 0.2vw, 0.9rem);
     --fs-sm: clamp(0.9rem, 0.86rem + 0.2vw, 0.98rem);
@@ -508,14 +634,16 @@
     --fs-xl: clamp(1.35rem, 1.18rem + 0.8vw, 1.8rem);
     --lh-tight: 1.2;
     --lh-copy: 1.5;
-    --nav-dock-shadow: 0 14px 24px rgba(88, 71, 56, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.52);
+    --nav-dock-shadow: none;
+    --nav-dock-shadow-active: 0 14px 24px rgba(88, 71, 56, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.52);
     --tree-node-surface: linear-gradient(
       165deg,
       rgba(255, 253, 250, 0.94),
       rgba(242, 234, 223, 0.72)
     );
     --tree-node-border: rgba(187, 167, 147, 0.5);
-    --tree-node-shadow: 0 14px 22px rgba(88, 69, 52, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.84);
+    --tree-node-shadow: none;
+    --tree-node-shadow-active: 0 14px 22px rgba(88, 69, 52, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.84);
     --tree-line-main: #85705f;
     --tree-line-soft: #a29182;
     --tree-band-a: rgba(250, 245, 238, 0.2);
@@ -525,6 +653,36 @@
     --page-shell-inline-mobile: 14px;
     --page-shell-inline-desktop: 18px;
     --page-content-max: 920px;
+    --header-dropdown-offset-desktop: 42px;
+    --header-dropdown-offset-mobile: 46px;
+  }
+
+  :global(html[data-neumo='ready']) {
+    --glass-shadow: var(--glass-shadow-active);
+    --neu-shadow-out: var(--neu-shadow-out-active);
+    --neu-shadow-out-soft: var(--neu-shadow-out-soft-active);
+    --neu-shadow-hover-strong: var(--neu-shadow-hover-strong-active);
+    --neu-shadow-hover-soft: var(--neu-shadow-hover-soft-active);
+    --neu-shadow-inset: var(--neu-shadow-inset-active);
+    --app-btn-active-shadow: var(--app-btn-active-shadow-active);
+    --app-btn-disabled-shadow: var(--app-btn-disabled-shadow-active);
+    --app-card-soft-shadow: var(--app-card-soft-shadow-active);
+    --app-card-soft-raised-shadow: var(--app-card-soft-raised-shadow-active);
+    --app-chip-interactive-shadow: var(--app-chip-interactive-shadow-active);
+    --app-chip-interactive-active-shadow: var(--app-chip-interactive-active-shadow-active);
+    --app-stat-item-shadow: var(--app-stat-item-shadow-active);
+    --app-settings-trigger-shadow: var(--app-settings-trigger-shadow-active);
+    --app-settings-trigger-active-shadow: var(--app-settings-trigger-active-shadow-active);
+    --app-bottom-nav-current-shadow: var(--app-bottom-nav-current-shadow-active);
+    --nav-dock-shadow: var(--nav-dock-shadow-active);
+    --tree-node-shadow: var(--tree-node-shadow-active);
+    --app-glass-panel-shadow: var(--app-glass-panel-shadow-active);
+    --app-glass-panel-shadow-soft: var(--app-glass-panel-shadow-soft-active);
+  }
+
+  :global(html[data-neumo='boot']) {
+    --neu-shadow-hover-strong: none;
+    --neu-shadow-hover-soft: none;
   }
 
   :global(html),
@@ -573,6 +731,24 @@
     transform: none !important;
   }
 
+  :global(.app-glass-surface) {
+    background: var(--app-glass-local-bg, var(--app-glass-panel-bg));
+    border: none;
+    backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
+    -webkit-backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
+    box-shadow: var(--app-glass-local-shadow, var(--app-glass-panel-shadow));
+    transition:
+      box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
+      background-color 0.22s var(--motion-standard),
+        opacity 0.22s var(--motion-standard);
+  }
+
+  :global(.app-glass-surface-soft) {
+    --app-glass-local-bg: var(--app-glass-panel-bg-soft);
+    --app-glass-local-border: var(--app-glass-panel-border-soft);
+    --app-glass-local-shadow: var(--app-glass-panel-shadow-soft);
+  }
+
   :global(button:disabled),
   :global(button[aria-disabled='true']) {
     cursor: not-allowed;
@@ -596,6 +772,7 @@
     border: none;
     border-radius: var(--radius-lg);
     box-shadow: var(--neu-shadow-out);
+    transition: box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease);
   }
 
   :global(.app-btn) {
@@ -619,7 +796,7 @@
     box-shadow: var(--neu-shadow-out-soft);
     transition:
       transform 0.22s var(--motion-standard),
-      box-shadow 0.22s var(--motion-standard),
+      box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
       background-color 0.22s var(--motion-standard),
       border-color 0.22s var(--motion-standard),
       color 0.22s var(--motion-standard);
@@ -632,9 +809,7 @@
 
   :global(.app-btn:active:not(:disabled):not([aria-disabled='true'])) {
     transform: translateY(0);
-    box-shadow:
-      inset 3px 3px 7px rgba(154, 132, 109, 0.18),
-      inset -3px -3px 7px rgba(255, 255, 255, 0.72);
+    box-shadow: var(--app-btn-active-shadow);
   }
 
   :global(.app-btn--primary) {
@@ -670,17 +845,13 @@
     opacity: 1;
     color: #7f7366;
     background: #e3dbcf;
-    box-shadow:
-      inset 2px 2px 5px rgba(154, 132, 109, 0.15),
-      inset -2px -2px 5px rgba(255, 255, 255, 0.72);
+    box-shadow: var(--app-btn-disabled-shadow);
   }
 
   :global(.app-btn:disabled:hover),
   :global(.app-btn[aria-disabled='true']:hover) {
     background: #e3dbcf;
-    box-shadow:
-      inset 2px 2px 5px rgba(154, 132, 109, 0.15),
-      inset -2px -2px 5px rgba(255, 255, 255, 0.72);
+    box-shadow: var(--app-btn-disabled-shadow);
   }
 
   :global(.app-page-header) {
@@ -724,17 +895,15 @@
   :global(.app-card-soft) {
     border-radius: 10px;
     background: rgba(255, 255, 255, 0.5);
-    box-shadow:
-      inset 2px 2px 5px rgba(149, 121, 95, 0.1),
-      inset -2px -2px 5px rgba(255, 255, 255, 0.68);
+    box-shadow: var(--app-card-soft-shadow);
+    transition: box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease);
   }
 
   :global(.app-card-soft-raised) {
     border-radius: 10px;
     background: rgba(255, 255, 255, 0.52);
-    box-shadow:
-      3px 3px 7px rgba(154, 132, 109, 0.14),
-      -3px -3px 7px rgba(255, 255, 255, 0.7);
+    box-shadow: var(--app-card-soft-raised-shadow);
+    transition: box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease);
   }
 
   :global(.app-chip) {
@@ -765,12 +934,10 @@
     text-decoration: none;
     color: var(--text-main);
     background: #f3eadf;
-    box-shadow:
-      3px 3px 8px rgba(149, 121, 95, 0.12),
-      -3px -3px 8px rgba(255, 255, 255, 0.72);
+    box-shadow: var(--app-chip-interactive-shadow);
     transition:
       transform 0.2s var(--motion-standard),
-      box-shadow 0.2s var(--motion-standard),
+      box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
       background-color 0.2s var(--motion-standard),
       color 0.2s var(--motion-standard);
   }
@@ -784,9 +951,7 @@
   :global(.app-chip--interactive.active),
   :global(.app-chip--interactive[aria-pressed='true']) {
     background: #e9dccd;
-    box-shadow:
-      inset 2px 2px 5px rgba(149, 121, 95, 0.16),
-      inset -2px -2px 5px rgba(255, 255, 255, 0.7);
+    box-shadow: var(--app-chip-interactive-active-shadow);
   }
 
   :global(.app-stat-grid) {
@@ -799,12 +964,11 @@
     padding: 0.48rem 0.55rem;
     border-radius: 10px;
     background: rgba(255, 255, 255, 0.48);
-    box-shadow:
-      inset 2px 2px 5px rgba(149, 121, 95, 0.1),
-      inset -2px -2px 5px rgba(255, 255, 255, 0.7);
+    box-shadow: var(--app-stat-item-shadow);
     display: flex;
     flex-direction: column;
     gap: 2px;
+    transition: box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease);
   }
 
   :global(.app-stat-item strong) {
@@ -828,10 +992,13 @@
     list-style: none;
     max-height: 180px;
     overflow-y: auto;
-    border-radius: 10px;
-    border: 1px solid var(--field-border);
-    background: #fffdf9;
-    box-shadow: 0 8px 18px rgba(106, 62, 30, 0.14);
+    border-radius: 12px;
+    border: none;
+    background: var(--app-glass-menu-bg);
+    backdrop-filter: blur(var(--app-glass-menu-blur)) saturate(var(--app-glass-menu-saturate));
+    -webkit-backdrop-filter: blur(var(--app-glass-menu-blur)) saturate(var(--app-glass-menu-saturate));
+    will-change: backdrop-filter;
+    box-shadow: var(--app-glass-panel-shadow-soft);
     z-index: 10;
   }
 
@@ -845,7 +1012,7 @@
 
   :global(.app-autocomplete-suggestions li:hover),
   :global(.app-autocomplete-suggestions li.active) {
-    background: rgba(246, 225, 203, 0.58);
+    background: var(--app-glass-menu-item-hover-bg);
     color: #8a4a22;
   }
 
@@ -889,14 +1056,12 @@
     display: grid;
     place-items: center;
     cursor: pointer;
-    box-shadow:
-      4px 4px 10px rgba(149, 121, 95, 0.14),
-      -4px -4px 10px rgba(255, 255, 255, 0.6);
+    box-shadow: var(--app-settings-trigger-shadow);
     transition:
       transform 0.2s var(--motion-standard),
       background-color 0.2s var(--motion-standard),
       color 0.2s var(--motion-standard),
-      box-shadow 0.2s var(--motion-standard);
+        box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease);
   }
 
   :global(.app-settings-trigger svg) {
@@ -918,9 +1083,7 @@
   :global(.app-settings-trigger[aria-pressed='true']) {
     background: #ebe1d4;
     color: #6c3d20;
-    box-shadow:
-      inset 3px 3px 7px rgba(149, 121, 95, 0.2),
-      inset -3px -3px 7px rgba(255, 255, 255, 0.75);
+    box-shadow: var(--app-settings-trigger-active-shadow);
   }
 
   :global(.app-bottom-nav) {
@@ -937,7 +1100,7 @@
     box-shadow: var(--neu-shadow-out-soft);
     transition:
       transform 0.2s var(--motion-standard),
-      box-shadow 0.2s var(--motion-standard),
+      box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
       background-color 0.2s var(--motion-standard),
       color 0.2s var(--motion-standard);
   }
@@ -950,9 +1113,76 @@
   :global(.app-bottom-nav .app-bottom-nav-link[aria-current='page']) {
     color: #795f49;
     background: #e6d8c8;
-    box-shadow:
-      inset 3px 3px 7px rgba(154, 132, 109, 0.22),
-      inset -3px -3px 7px rgba(255, 255, 255, 0.76);
+    box-shadow: var(--app-bottom-nav-current-shadow);
+  }
+
+  :global(.glass-panel),
+  :global(.app-btn),
+  :global(.app-card-soft),
+  :global(.app-card-soft-raised),
+  :global(.app-chip--interactive),
+  :global(.app-stat-item),
+  :global(.app-settings-trigger),
+  :global(.app-bottom-nav-pill),
+  :global(.app-bottom-nav-link),
+  :global(.header-main-pill),
+  :global(.header-side-circle),
+  :global(.header-title-edit),
+  :global(.header-dropdown),
+  :global(.surface-wrapper),
+  :global(.admin-section),
+  :global(.preview-card),
+  :global(.notes-card),
+  :global(.notes-card li),
+  :global(.add-family-member-button),
+  :global(.empty-tree-message),
+  :global(.modern-input),
+  :global(.modern-textarea),
+  :global(select) {
+    transition:
+      box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
+      filter var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
+      background-color 0.22s var(--motion-standard),
+      color 0.22s var(--motion-standard),
+      transform 0.22s var(--motion-standard);
+  }
+
+  :global(html[data-neumo='boot'] .glass-panel),
+  :global(html[data-neumo='boot'] .app-btn),
+  :global(html[data-neumo='boot'] .app-card-soft),
+  :global(html[data-neumo='boot'] .app-card-soft-raised),
+  :global(html[data-neumo='boot'] .app-chip--interactive),
+  :global(html[data-neumo='boot'] .app-stat-item),
+  :global(html[data-neumo='boot'] .app-settings-trigger),
+  :global(html[data-neumo='boot'] .app-bottom-nav-pill),
+  :global(html[data-neumo='boot'] .app-bottom-nav-link),
+  :global(html[data-neumo='boot'] .header-main-pill),
+  :global(html[data-neumo='boot'] .header-side-circle),
+  :global(html[data-neumo='boot'] .header-title-edit),
+  :global(html[data-neumo='boot'] .header-dropdown),
+  :global(html[data-neumo='boot'] .surface-wrapper),
+  :global(html[data-neumo='boot'] .admin-section),
+  :global(html[data-neumo='boot'] .preview-card),
+  :global(html[data-neumo='boot'] .notes-card),
+  :global(html[data-neumo='boot'] .notes-card li),
+  :global(html[data-neumo='boot'] .add-family-member-button),
+  :global(html[data-neumo='boot'] .empty-tree-message),
+  :global(html[data-neumo='boot'] .modern-input),
+  :global(html[data-neumo='boot'] .modern-textarea),
+  :global(html[data-neumo='boot'] select) {
+    box-shadow: none !important;
+    filter: none !important;
+  }
+
+  .app-boot-overlay__color,
+  .app-boot-overlay__blur {
+    will-change: opacity;
+  }
+
+  .app-boot-overlay__blur {
+    /* Keep CSS variable support for future tuning when full stylesheet is loaded. */
+    backdrop-filter: blur(var(--neumo-overlay-blur-strength, 8px)) saturate(0.94);
+    -webkit-backdrop-filter: blur(var(--neumo-overlay-blur-strength, 8px)) saturate(0.94);
   }
 
   :global(.page-shell) {
@@ -1067,21 +1297,21 @@
   }
 
   :global(.reveal-fade-up) {
-    opacity: 0;
-    transform: translateY(10px);
-    animation: reveal-fade-up 0.52s var(--motion-standard) forwards;
+    opacity: 1;
+    transform: translateY(0);
+    animation: none;
   }
 
   :global(.reveal-delay-1) {
-    animation-delay: 0.06s;
+    animation-delay: 0s;
   }
 
   :global(.reveal-delay-2) {
-    animation-delay: 0.14s;
+    animation-delay: 0s;
   }
 
   :global(.reveal-delay-3) {
-    animation-delay: 0.22s;
+    animation-delay: 0s;
   }
 
   :global(.hover-lift) {
@@ -1097,6 +1327,11 @@
   }
 
   @keyframes reveal-fade-up {
+    from {
+      opacity: 0.96;
+      transform: translateY(3px);
+    }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -1128,6 +1363,11 @@
     }
 
     .viewport-fade {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+
+    .app-boot-overlay__blur {
       backdrop-filter: none;
       -webkit-backdrop-filter: none;
     }
@@ -1248,8 +1488,11 @@
   .header-main-pill {
     min-height: 72px;
     border-radius: 999px;
-    background: var(--neu-surface);
-    box-shadow: var(--neu-shadow-out);
+    background: var(--app-glass-panel-bg);
+    border: none;
+    backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
+    -webkit-backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
+    box-shadow: var(--app-glass-panel-shadow);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -1343,8 +1586,11 @@
     height: 52px;
     border-radius: 999px;
     border: none;
-    background: var(--neu-surface-soft);
-    box-shadow: var(--neu-shadow-out-soft);
+    background: var(--app-glass-panel-bg-soft);
+    border: none;
+    backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
+    -webkit-backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
+    box-shadow: var(--app-glass-panel-shadow-soft);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1372,8 +1618,11 @@
   }
 
   .header-menu[open] {
-    background: #e8dbc9;
     color: #735741;
+  }
+
+  .header-menu[open] summary {
+    background: var(--app-glass-panel-bg-strong);
     box-shadow:
       inset 3px 3px 7px rgba(154, 132, 109, 0.2),
       inset -3px -3px 7px rgba(255, 255, 255, 0.75);
@@ -1411,16 +1660,45 @@
 
   .header-menu {
     position: relative;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
+    overflow: visible;
   }
 
   .header-menu summary {
     list-style: none;
     width: 100%;
     height: 100%;
+    border-radius: 999px;
+    border: none;
+    background: var(--app-glass-panel-bg-soft);
+    backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
+    -webkit-backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
+    box-shadow: var(--app-glass-panel-shadow-soft);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    transition:
+      box-shadow 0.2s var(--motion-standard),
+      background-color 0.2s var(--motion-standard),
+      color 0.2s var(--motion-standard);
+  }
+
+  .header-menu:hover summary {
+    box-shadow: var(--neu-shadow-hover-strong);
+  }
+
+  .header-menu[open].header-side-circle:hover {
+    box-shadow: none;
+  }
+
+  .header-menu[open]:hover summary {
+    box-shadow:
+      inset 4px 4px 9px rgba(154, 132, 109, 0.24),
+      inset -4px -4px 9px rgba(255, 255, 255, 0.8);
   }
 
   .header-menu summary::-webkit-details-marker {
@@ -1429,13 +1707,17 @@
 
   .header-dropdown {
     position: absolute;
-    top: calc(100% + 32px);
+    top: calc(100% + var(--header-dropdown-offset-desktop));
     left: 0;
     min-width: 190px;
     max-width: min(280px, calc(100vw - 24px));
     border-radius: 14px;
-    background: var(--neu-surface);
-    box-shadow: var(--neu-shadow-out);
+    border: none;
+    background: var(--app-glass-menu-bg);
+    backdrop-filter: blur(var(--app-glass-menu-blur)) saturate(var(--app-glass-menu-saturate));
+    -webkit-backdrop-filter: blur(var(--app-glass-menu-blur)) saturate(var(--app-glass-menu-saturate));
+    will-change: backdrop-filter;
+    box-shadow: var(--app-glass-panel-shadow);
     padding: 10px;
     display: flex;
     flex-direction: column;
@@ -1471,21 +1753,35 @@
     cursor: pointer;
     display: inline-flex;
     align-items: center;
+    box-shadow: none;
+    transition:
+      background-color 0.18s var(--motion-standard),
+      color 0.18s var(--motion-standard),
+      box-shadow 0.18s var(--motion-standard);
   }
 
   .header-dropdown a:hover,
   .header-dropdown button:hover {
-    background: #e9dece;
+    background: var(--app-glass-menu-item-hover-bg);
+    color: var(--app-glass-menu-item-hover-text);
+    box-shadow: var(--app-glass-menu-item-hover-shadow);
+  }
+
+  .header-dropdown a:active,
+  .header-dropdown button:active {
+    background: var(--app-glass-menu-item-active-bg);
+    box-shadow: var(--app-glass-menu-item-active-shadow);
   }
 
   .header-dropdown .header-dropdown-danger {
     color: #8a3232;
-    background: rgba(189, 94, 94, 0.12);
+    background: var(--app-glass-menu-danger-bg);
   }
 
   .header-dropdown .header-dropdown-danger:hover {
-    background: rgba(189, 94, 94, 0.2);
+    background: var(--app-glass-menu-danger-hover-bg);
     color: #7a2222;
+    box-shadow: var(--app-glass-menu-danger-hover-shadow);
   }
 
   .header-dropdown form {
@@ -1599,7 +1895,7 @@
     .header-dropdown {
       min-width: 172px;
       max-width: min(250px, calc(100vw - 22px));
-      top: calc(100% + 26px);
+      top: calc(100% + var(--header-dropdown-offset-mobile));
       gap: 7px;
     }
   }

@@ -130,8 +130,9 @@
   .app-modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(241, 236, 228, 0.68);
-    backdrop-filter: blur(2px);
+    background: var(--app-modal-backdrop-bg);
+    backdrop-filter: blur(var(--app-modal-backdrop-blur));
+    -webkit-backdrop-filter: blur(var(--app-modal-backdrop-blur));
     z-index: 999;
   }
 
@@ -155,16 +156,16 @@
     height: 34px;
     border: none;
     border-radius: 10px;
-    background: #efe7dc;
+    background: var(--app-glass-panel-bg-soft);
+    backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
+    -webkit-backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
     color: #1f1f1f;
     display: grid;
     place-items: center;
     cursor: pointer;
     z-index: 8;
     pointer-events: auto;
-    box-shadow:
-      3px 3px 8px rgba(149, 121, 95, 0.14),
-      -3px -3px 8px rgba(255, 255, 255, 0.6);
+    box-shadow: var(--app-glass-panel-shadow-soft);
     transition:
       background-color 0.2s var(--motion-standard),
       box-shadow 0.2s var(--motion-standard),
@@ -189,9 +190,7 @@
   }
 
   .app-modal-close:hover {
-    box-shadow:
-      4px 4px 9px rgba(149, 121, 95, 0.16),
-      -4px -4px 9px rgba(255, 255, 255, 0.7);
+    box-shadow: var(--app-glass-panel-shadow);
   }
 
   .app-modal-shell--compact {
@@ -204,6 +203,11 @@
 
   .app-modal-shell :global(.surface-wrapper) {
     width: 100%;
+    background: var(--app-modal-surface-bg);
+    border: none;
+    backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
+    -webkit-backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
+    box-shadow: var(--app-glass-panel-shadow);
   }
 
   .app-modal-content {

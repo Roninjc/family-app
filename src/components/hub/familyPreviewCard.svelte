@@ -24,15 +24,15 @@
 
 <style lang="scss">
   .preview-card {
+    --preview-card-shadow: 4px 4px 9px rgba(154, 132, 109, 0.17),
+      -4px -4px 9px rgba(255, 255, 255, 0.72);
     border-radius: 14px;
     background: color-mix(in srgb, var(--neu-surface-soft) 88%, #ffffff 12%);
     border: none;
-    box-shadow:
-      4px 4px 9px rgba(154, 132, 109, 0.17),
-      -4px -4px 9px rgba(255, 255, 255, 0.72);
+    box-shadow: var(--preview-card-shadow);
     transition:
       transform 0.22s var(--motion-standard),
-      box-shadow 0.22s var(--motion-standard);
+      box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease);
     padding: 14px;
     display: flex;
     flex-direction: column;
