@@ -57,17 +57,17 @@
     flex-direction: column;
     width: min(var(--page-content-max), 100%);
     margin-inline: auto;
-    padding: 2px 4px 2px;
-    border-radius: 15px;
+    padding: var(--space-0) var(--space-1) var(--space-0);
+    border-radius: var(--radius-card);
 
     h2 {
-      margin: 1.5rem 0 0.25rem;
+      margin: var(--space-6) 0 var(--space-1);
       font-size: var(--fs-lg);
       line-height: 1.25;
     }
 
     .hint {
-      margin: 0 0 0.75rem;
+      margin: 0 0 var(--space-3);
       color: var(--text-muted);
       font-size: var(--fs-sm);
       line-height: var(--lh-copy);
@@ -79,7 +79,7 @@
     }
 
     .input-wrapper {
-      margin-bottom: 1rem;
+      margin-bottom: var(--space-4);
     }
 
     button {
@@ -87,19 +87,19 @@
     }
 
     .saved-note {
-      color: #16a31a;
+      color: var(--feedback-success-text);
       font-size: var(--fs-xs);
-      margin-top: 4px;
+      margin-top: var(--space-1);
     }
 
     .form-error {
-      margin-top: 0.5rem;
-      color: #dc2626;
+      margin-top: var(--space-2);
+      color: var(--feedback-error-text);
       font-size: var(--fs-xs);
     }
 
     .logout-form {
-      margin-top: 2rem;
+      margin-top: calc(var(--space-6) + var(--space-2));
     }
 
     .logout-button {
@@ -109,7 +109,7 @@
 
   @media (min-width: 720px) {
     .profile-content {
-      border-radius: 16px;
+      border-radius: var(--radius-lg);
     }
 
     .profile-content {

@@ -32,17 +32,17 @@
     pointer-events: auto;
     width: min(1080px, 100%);
     border: none;
-    padding: 10px 14px;
+    padding: var(--space-2) var(--space-3);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: var(--space-2);
   }
 
   .title-wrap {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--space-0);
 
     .section-indicator {
       margin: 0;
@@ -59,32 +59,32 @@
       line-height: 1.1;
       font-weight: 600;
       letter-spacing: 0.015em;
-      color: #4e392d;
+      color: var(--text-main);
     }
   }
 
   .add-member-inline {
     min-height: 38px;
-    padding: 0.48rem 0.78rem;
-    border-radius: 11px;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
     font-size: var(--fs-xs);
-    gap: 0.38rem;
+    gap: var(--space-1);
     flex-shrink: 0;
-    color: #6f4e33;
+    color: var(--text-warm-chip);
     border: none;
-    background: #f1e7da;
+    background: var(--chip-warm-bg-strong);
     box-shadow:
       5px 5px 12px rgba(149, 121, 95, 0.14),
       -5px -5px 12px rgba(255, 255, 255, 0.72);
     transition:
-      transform 0.2s var(--motion-standard),
-      box-shadow 0.2s var(--motion-standard),
-      background-color 0.2s var(--motion-standard),
-      color 0.2s var(--motion-standard);
+      transform var(--dur-base) var(--motion-standard),
+      box-shadow var(--dur-base) var(--motion-standard),
+      background-color var(--dur-base) var(--motion-standard),
+      color var(--dur-base) var(--motion-standard);
   }
 
   .add-member-inline:hover:not(:disabled):not([aria-disabled='true']) {
-    background: #f6ede2;
+    background: var(--chip-warm-bg-hover-strong);
     transform: translateY(-1px);
     box-shadow:
       7px 7px 14px rgba(149, 121, 95, 0.17),
@@ -106,14 +106,14 @@
 
   @media (max-width: 760px) {
     .header-content {
-      padding: 10px 12px;
+      padding: var(--space-2) var(--space-3);
     }
 
     .add-member-inline {
       min-width: 38px;
       min-height: 38px;
-      padding-inline: 0.64rem;
-      border-radius: 10px;
+      padding-inline: var(--space-2);
+      border-radius: var(--radius-control);
     }
 
     .add-member-inline .label {
@@ -123,11 +123,11 @@
 
   @media (min-width: 760px) {
     .tree-header {
-      padding-inline: 14px;
+      padding-inline: var(--space-3);
     }
 
     .header-content {
-      padding: 11px 20px;
+      padding: var(--space-3) var(--space-5);
     }
   }
 </style>

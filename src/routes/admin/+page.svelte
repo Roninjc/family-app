@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores'
   import type { SubmitFunction } from '@sveltejs/kit'
-  import { onDestroy, onMount } from 'svelte'
+  import { onDestroy } from 'svelte'
   import type {
     AdminFamilySummary,
     AdminInviteFilter,

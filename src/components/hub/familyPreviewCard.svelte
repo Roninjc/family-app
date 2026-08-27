@@ -1,7 +1,10 @@
 <script lang="ts">
   import type { HubFamilySummary } from './types'
 
-  export let family: Pick<HubFamilySummary, 'id' | 'name' | 'membersCount' | 'linksCount' | 'previewMembers'>
+  export let family: Pick<
+    HubFamilySummary,
+    'id' | 'name' | 'membersCount' | 'linksCount' | 'previewMembers'
+  >
 </script>
 
 <div class="preview-card" aria-label={`Previsualización de ${family.name}`}>
@@ -26,28 +29,28 @@
   .preview-card {
     --preview-card-shadow: 4px 4px 9px rgba(154, 132, 109, 0.17),
       -4px -4px 9px rgba(255, 255, 255, 0.72);
-    border-radius: 14px;
+    border-radius: var(--radius-card);
     background: color-mix(in srgb, var(--neu-surface-soft) 88%, #ffffff 12%);
     border: none;
     box-shadow: var(--preview-card-shadow);
     transition:
-      transform 0.22s var(--motion-standard),
+      transform var(--dur-ui) var(--motion-standard),
       box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease);
-    padding: 14px;
+    padding: var(--space-3);
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--space-3);
   }
 
   .preview-stats {
     display: flex;
-    gap: 10px;
+    gap: var(--space-2);
   }
 
   .preview-stats .app-stat-item {
     flex: 1;
-    padding: 8px 10px;
-    color: #5b4430;
+    padding: var(--space-2) var(--space-2);
+    color: var(--text-main);
   }
 
   .preview-stats .app-stat-item strong {
@@ -66,16 +69,16 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: space-evenly;
-    gap: 6px;
+    gap: var(--space-1);
     margin: 0;
     padding: 0;
   }
 
   .preview-members li {
-    border-radius: 999px;
-    background: rgba(127, 94, 66, 0.14);
-    color: #5c4534;
-    padding: 5px 9px;
+    border-radius: var(--radius-pill);
+    background: var(--chip-warm-bg);
+    color: var(--text-warm-chip);
+    padding: var(--space-1) var(--space-2);
     font-size: var(--fs-xs);
   }
 </style>

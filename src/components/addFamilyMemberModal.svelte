@@ -326,621 +326,632 @@
   </svelte:fragment>
 
   <div class="add-member-modal">
-        <div class="modal-heading">
-          <h2 id="add-member-title">Nuevo miembro familiar</h2>
-          <p class="step-caption modal-subtitle">
-            Paso {formStep} de 2 · {formStep === 1 ? 'Datos básicos' : 'Conexiones familiares'}
-          </p>
-        </div>
-        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-        <form
-          method="POST"
-          action="?/addMember"
-          use:enhance={enhanceAddMember}
-          on:keydown={handleFormKeydown}
-          on:submit={handleSubmit}
-        >
-          {#if formStep === 1}
-            <section>
-              <h3>Datos personales</h3>
-              <div
-                class="input-wrapper floating-input-wrapper"
-                class:field-invalid={step1ValidationAttempted && !isNameStep1Valid}
-                class:field-invalid-pulse-a={
-                  step1ValidationAttempted && !isNameStep1Valid && step1InvalidPulseToggle
-                }
-                class:field-invalid-pulse-b={
-                  step1ValidationAttempted && !isNameStep1Valid && !step1InvalidPulseToggle
-                }
-              >
-                <input
-                  id="newMemberName"
-                  class="modern-input"
-                  type="text"
-                  bind:value={name}
-                  required
-                  autocomplete="off"
-                />
-                <label for="newMemberName" class:label-active={name.length > 0}>Nombre</label>
-              </div>
-              <div
-                class="input-wrapper floating-input-wrapper"
-                class:field-invalid={step1ValidationAttempted && !isFamilyNameStep1Valid}
-                class:field-invalid-pulse-a={
-                  step1ValidationAttempted && !isFamilyNameStep1Valid && step1InvalidPulseToggle
-                }
-                class:field-invalid-pulse-b={
-                  step1ValidationAttempted && !isFamilyNameStep1Valid && !step1InvalidPulseToggle
-                }
-              >
-                <input
-                  id="newMemberFamilyName"
-                  class="modern-input"
-                  type="text"
-                  bind:value={familyName}
-                  required
-                  autocomplete="off"
-                />
-                <label for="newMemberFamilyName" class:label-active={familyName.length > 0}
-                  >Apellidos</label
-                >
-              </div>
-              <div
-                class="input-wrapper floating-input-wrapper"
-                class:field-invalid={step1ValidationAttempted && !isBirthDateStep1Valid}
-                class:field-invalid-pulse-a={
-                  step1ValidationAttempted && !isBirthDateStep1Valid && step1InvalidPulseToggle
-                }
-                class:field-invalid-pulse-b={
-                  step1ValidationAttempted && !isBirthDateStep1Valid && !step1InvalidPulseToggle
-                }
-              >
-                <input
-                  id="newMemberBirthDate"
-                  class="modern-input"
-                  type="date"
-                  max={new Date().toISOString().split('T')[0]}
-                  bind:value={birthDate}
-                  required
-                  autocomplete="off"
-                />
-                <label
-                  for="newMemberBirthDate"
-                  class:label-active={birthDate && birthDate.length > 0}>Fecha de nacimiento</label
-                >
-              </div>
+    <div class="modal-heading">
+      <h2 id="add-member-title">Nuevo miembro familiar</h2>
+      <p class="step-caption modal-subtitle">
+        Paso {formStep} de 2 · {formStep === 1 ? 'Datos básicos' : 'Conexiones familiares'}
+      </p>
+    </div>
+    <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+    <form
+      method="POST"
+      action="?/addMember"
+      use:enhance={enhanceAddMember}
+      on:keydown={handleFormKeydown}
+      on:submit={handleSubmit}
+    >
+      {#if formStep === 1}
+        <section>
+          <h3>Datos personales</h3>
+          <div
+            class="input-wrapper floating-input-wrapper"
+            class:field-invalid={step1ValidationAttempted && !isNameStep1Valid}
+            class:field-invalid-pulse-a={step1ValidationAttempted &&
+              !isNameStep1Valid &&
+              step1InvalidPulseToggle}
+            class:field-invalid-pulse-b={step1ValidationAttempted &&
+              !isNameStep1Valid &&
+              !step1InvalidPulseToggle}
+          >
+            <input
+              id="newMemberName"
+              class="modern-input"
+              type="text"
+              bind:value={name}
+              required
+              autocomplete="off"
+            />
+            <label for="newMemberName" class:label-active={name.length > 0}>Nombre</label>
+          </div>
+          <div
+            class="input-wrapper floating-input-wrapper"
+            class:field-invalid={step1ValidationAttempted && !isFamilyNameStep1Valid}
+            class:field-invalid-pulse-a={step1ValidationAttempted &&
+              !isFamilyNameStep1Valid &&
+              step1InvalidPulseToggle}
+            class:field-invalid-pulse-b={step1ValidationAttempted &&
+              !isFamilyNameStep1Valid &&
+              !step1InvalidPulseToggle}
+          >
+            <input
+              id="newMemberFamilyName"
+              class="modern-input"
+              type="text"
+              bind:value={familyName}
+              required
+              autocomplete="off"
+            />
+            <label for="newMemberFamilyName" class:label-active={familyName.length > 0}
+              >Apellidos</label
+            >
+          </div>
+          <div
+            class="input-wrapper floating-input-wrapper"
+            class:field-invalid={step1ValidationAttempted && !isBirthDateStep1Valid}
+            class:field-invalid-pulse-a={step1ValidationAttempted &&
+              !isBirthDateStep1Valid &&
+              step1InvalidPulseToggle}
+            class:field-invalid-pulse-b={step1ValidationAttempted &&
+              !isBirthDateStep1Valid &&
+              !step1InvalidPulseToggle}
+          >
+            <input
+              id="newMemberBirthDate"
+              class="modern-input"
+              type="date"
+              max={new Date().toISOString().split('T')[0]}
+              bind:value={birthDate}
+              required
+              autocomplete="off"
+            />
+            <label for="newMemberBirthDate" class:label-active={birthDate && birthDate.length > 0}
+              >Fecha de nacimiento</label
+            >
+          </div>
+          <button
+            type="button"
+            class="app-btn app-btn--secondary"
+            on:click={nextStep}
+            disabled={submitting}
+          >
+            Siguiente
+          </button>
+        </section>
+      {:else if formStep === 2}
+        <section>
+          <h3>Conexiones</h3>
+          <div class="input-wrapper floating-input-wrapper autocomplete-wrapper">
+            <input
+              id="fatherAutocomplete"
+              class="modern-input"
+              type="text"
+              bind:value={fatherSearch}
+              on:input={() => {
+                fatherId = ''
+                showFatherSuggestions = true
+              }}
+              on:focus={() => (showFatherSuggestions = true)}
+              on:blur={() => {
+                setTimeout(() => (showFatherSuggestions = false), 100)
+                reportMemberValidity(fatherInputEl, fatherSearch, fatherId)
+              }}
+              autocomplete="off"
+              bind:this={fatherInputEl}
+            />
+            {#if fatherId}
               <button
                 type="button"
-                class="app-btn app-btn--secondary"
-                on:click={nextStep}
-                disabled={submitting}
+                class="relation-clear-btn"
+                aria-label="Quitar padre seleccionado"
+                title="Quitar padre"
+                on:click={clearFather}
               >
-                Siguiente
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path
+                    d="M6.22 6.22a.75.75 0 0 1 1.06 0L12 10.94l4.72-4.72a.75.75 0 1 1 1.06 1.06L13.06 12l4.72 4.72a.75.75 0 1 1-1.06 1.06L12 13.06l-4.72 4.72a.75.75 0 1 1-1.06-1.06L10.94 12 6.22 7.28a.75.75 0 0 1 0-1.06Z"
+                  />
+                </svg>
               </button>
-            </section>
-          {:else if formStep === 2}
-            <section>
-              <h3>Conexiones</h3>
-              <div class="input-wrapper floating-input-wrapper autocomplete-wrapper">
-                <input
-                  id="fatherAutocomplete"
-                  class="modern-input"
-                  type="text"
-                  bind:value={fatherSearch}
-                  on:input={() => {
-                    fatherId = ''
-                    showFatherSuggestions = true
-                  }}
-                  on:focus={() => (showFatherSuggestions = true)}
-                  on:blur={() => {
-                    setTimeout(() => (showFatherSuggestions = false), 100)
-                    reportMemberValidity(fatherInputEl, fatherSearch, fatherId)
-                  }}
-                  autocomplete="off"
-                  bind:this={fatherInputEl}
-                />
-                {#if fatherId}
+            {/if}
+            <label for="fatherAutocomplete" class:label-active={fatherSearch.length > 0}
+              >Padre</label
+            >
+            <MemberAutocompleteSuggestions
+              show={showFatherSuggestions}
+              items={filteredFatherSuggestions}
+              activeIds={fatherId ? [fatherId] : []}
+              on:select={(event) => selectFather(event.detail)}
+            />
+          </div>
+          <div class="input-wrapper floating-input-wrapper autocomplete-wrapper">
+            <input
+              id="motherAutocomplete"
+              class="modern-input"
+              type="text"
+              bind:value={motherSearch}
+              on:input={() => {
+                motherId = ''
+                showMotherSuggestions = true
+              }}
+              on:focus={() => (showMotherSuggestions = true)}
+              on:blur={() => {
+                setTimeout(() => (showMotherSuggestions = false), 100)
+                reportMemberValidity(motherInputEl, motherSearch, motherId)
+              }}
+              autocomplete="off"
+              bind:this={motherInputEl}
+            />
+            {#if motherId}
+              <button
+                type="button"
+                class="relation-clear-btn"
+                aria-label="Quitar madre seleccionada"
+                title="Quitar madre"
+                on:click={clearMother}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path
+                    d="M6.22 6.22a.75.75 0 0 1 1.06 0L12 10.94l4.72-4.72a.75.75 0 1 1 1.06 1.06L13.06 12l4.72 4.72a.75.75 0 1 1-1.06 1.06L12 13.06l-4.72 4.72a.75.75 0 1 1-1.06-1.06L10.94 12 6.22 7.28a.75.75 0 0 1 0-1.06Z"
+                  />
+                </svg>
+              </button>
+            {/if}
+            <label for="motherAutocomplete" class:label-active={motherSearch.length > 0}
+              >Madre</label
+            >
+            <MemberAutocompleteSuggestions
+              show={showMotherSuggestions}
+              items={filteredMotherSuggestions}
+              activeIds={motherId ? [motherId] : []}
+              on:select={(event) => selectMother(event.detail)}
+            />
+          </div>
+          <h3>Hermanos</h3>
+          <div class="input-wrapper floating-input-wrapper autocomplete-wrapper">
+            <input
+              id="siblingsAutocomplete"
+              class="modern-input"
+              type="text"
+              bind:value={siblingsSearch}
+              on:input={() => (showSiblingsSuggestions = true)}
+              on:focus={() => (showSiblingsSuggestions = true)}
+              on:blur={() => setTimeout(() => (showSiblingsSuggestions = false), 100)}
+              autocomplete="off"
+              bind:this={siblingsInputEl}
+            />
+            <label
+              for="siblingsAutocomplete"
+              class:label-active={siblingsSearch && siblingsSearch.length > 0}
+              >Añadir hermano/a</label
+            >
+            <MemberAutocompleteSuggestions
+              show={showSiblingsSuggestions}
+              items={filteredSiblingSuggestions}
+              activeIds={siblingsIds}
+              on:select={(event) => addSibling(event.detail)}
+            />
+          </div>
+          {#if siblingsIds.length > 0}
+            <div class="selected-list">
+              <div class="selected-list-head">
+                <b class="selected-list-title">Hermanos añadidos</b>
+                <span class="selected-list-count">{siblingsIds.length}</span>
+              </div>
+              <div class="selected-chips">
+                {#each siblingsIds as siblingId (siblingId)}
                   <button
                     type="button"
-                    class="relation-clear-btn"
-                    aria-label="Quitar padre seleccionado"
-                    title="Quitar padre"
-                    on:click={clearFather}
+                    class="selected-chip"
+                    aria-label={`Quitar a ${getMemberName(siblingId)} de hermanos`}
+                    title="Quitar hermano"
+                    on:click={() => removeSibling(siblingId)}
                   >
+                    <span>{getMemberName(siblingId)}</span>
                     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                       <path
                         d="M6.22 6.22a.75.75 0 0 1 1.06 0L12 10.94l4.72-4.72a.75.75 0 1 1 1.06 1.06L13.06 12l4.72 4.72a.75.75 0 1 1-1.06 1.06L12 13.06l-4.72 4.72a.75.75 0 1 1-1.06-1.06L10.94 12 6.22 7.28a.75.75 0 0 1 0-1.06Z"
                       />
                     </svg>
                   </button>
-                {/if}
-                <label for="fatherAutocomplete" class:label-active={fatherSearch.length > 0}
-                  >Padre</label
-                >
-                <MemberAutocompleteSuggestions
-                  show={showFatherSuggestions}
-                  items={filteredFatherSuggestions}
-                  activeIds={fatherId ? [fatherId] : []}
-                  on:select={(event) => selectFather(event.detail)}
-                />
+                {/each}
               </div>
-              <div class="input-wrapper floating-input-wrapper autocomplete-wrapper">
-                <input
-                  id="motherAutocomplete"
-                  class="modern-input"
-                  type="text"
-                  bind:value={motherSearch}
-                  on:input={() => {
-                    motherId = ''
-                    showMotherSuggestions = true
-                  }}
-                  on:focus={() => (showMotherSuggestions = true)}
-                  on:blur={() => {
-                    setTimeout(() => (showMotherSuggestions = false), 100)
-                    reportMemberValidity(motherInputEl, motherSearch, motherId)
-                  }}
-                  autocomplete="off"
-                  bind:this={motherInputEl}
-                />
-                {#if motherId}
+            </div>
+          {/if}
+          <h3>Hijos</h3>
+          <div class="input-wrapper floating-input-wrapper autocomplete-wrapper">
+            <input
+              id="childrenAutocomplete"
+              class="modern-input"
+              type="text"
+              bind:value={childrenSearch}
+              on:input={() => (showChildrenSuggestions = true)}
+              on:focus={() => (showChildrenSuggestions = true)}
+              on:blur={() => setTimeout(() => (showChildrenSuggestions = false), 100)}
+              autocomplete="off"
+              bind:this={childrenInputEl}
+            />
+            <label
+              for="childrenAutocomplete"
+              class:label-active={childrenSearch && childrenSearch.length > 0}>Añadir hijo/a</label
+            >
+            <MemberAutocompleteSuggestions
+              show={showChildrenSuggestions}
+              items={filteredChildrenSuggestions}
+              activeIds={childrenIds}
+              on:select={(event) => addChild(event.detail)}
+            />
+          </div>
+          {#if childrenIds.length > 0}
+            <div class="selected-list">
+              <div class="selected-list-head">
+                <b class="selected-list-title">Hijos añadidos</b>
+                <span class="selected-list-count">{childrenIds.length}</span>
+              </div>
+              <div class="selected-chips">
+                {#each childrenIds as childId (childId)}
                   <button
                     type="button"
-                    class="relation-clear-btn"
-                    aria-label="Quitar madre seleccionada"
-                    title="Quitar madre"
-                    on:click={clearMother}
+                    class="selected-chip"
+                    aria-label={`Quitar a ${getMemberName(childId)} de hijos`}
+                    title="Quitar hijo"
+                    on:click={() => removeChild(childId)}
                   >
+                    <span>{getMemberName(childId)}</span>
                     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                       <path
                         d="M6.22 6.22a.75.75 0 0 1 1.06 0L12 10.94l4.72-4.72a.75.75 0 1 1 1.06 1.06L13.06 12l4.72 4.72a.75.75 0 1 1-1.06 1.06L12 13.06l-4.72 4.72a.75.75 0 1 1-1.06-1.06L10.94 12 6.22 7.28a.75.75 0 0 1 0-1.06Z"
                       />
                     </svg>
                   </button>
-                {/if}
-                <label for="motherAutocomplete" class:label-active={motherSearch.length > 0}
-                  >Madre</label
-                >
-                <MemberAutocompleteSuggestions
-                  show={showMotherSuggestions}
-                  items={filteredMotherSuggestions}
-                  activeIds={motherId ? [motherId] : []}
-                  on:select={(event) => selectMother(event.detail)}
-                />
+                {/each}
               </div>
-              <h3>Hermanos</h3>
-              <div class="input-wrapper floating-input-wrapper autocomplete-wrapper">
-                <input
-                  id="siblingsAutocomplete"
-                  class="modern-input"
-                  type="text"
-                  bind:value={siblingsSearch}
-                  on:input={() => (showSiblingsSuggestions = true)}
-                  on:focus={() => (showSiblingsSuggestions = true)}
-                  on:blur={() => setTimeout(() => (showSiblingsSuggestions = false), 100)}
-                  autocomplete="off"
-                  bind:this={siblingsInputEl}
-                />
-                <label
-                  for="siblingsAutocomplete"
-                  class:label-active={siblingsSearch && siblingsSearch.length > 0}
-                  >Añadir hermano/a</label
-                >
-                <MemberAutocompleteSuggestions
-                  show={showSiblingsSuggestions}
-                  items={filteredSiblingSuggestions}
-                  activeIds={siblingsIds}
-                  on:select={(event) => addSibling(event.detail)}
-                />
-              </div>
-              {#if siblingsIds.length > 0}
-                <div class="selected-list">
-                  <div class="selected-list-head">
-                    <b class="selected-list-title">Hermanos añadidos</b>
-                    <span class="selected-list-count">{siblingsIds.length}</span>
-                  </div>
-                  <div class="selected-chips">
-                    {#each siblingsIds as siblingId (siblingId)}
-                      <button
-                        type="button"
-                        class="selected-chip"
-                        aria-label={`Quitar a ${getMemberName(siblingId)} de hermanos`}
-                        title="Quitar hermano"
-                        on:click={() => removeSibling(siblingId)}
-                      >
-                        <span>{getMemberName(siblingId)}</span>
-                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                          <path
-                            d="M6.22 6.22a.75.75 0 0 1 1.06 0L12 10.94l4.72-4.72a.75.75 0 1 1 1.06 1.06L13.06 12l4.72 4.72a.75.75 0 1 1-1.06 1.06L12 13.06l-4.72 4.72a.75.75 0 1 1-1.06-1.06L10.94 12 6.22 7.28a.75.75 0 0 1 0-1.06Z"
-                          />
-                        </svg>
-                      </button>
-                    {/each}
-                  </div>
-                </div>
-              {/if}
-              <h3>Hijos</h3>
-              <div class="input-wrapper floating-input-wrapper autocomplete-wrapper">
-                <input
-                  id="childrenAutocomplete"
-                  class="modern-input"
-                  type="text"
-                  bind:value={childrenSearch}
-                  on:input={() => (showChildrenSuggestions = true)}
-                  on:focus={() => (showChildrenSuggestions = true)}
-                  on:blur={() => setTimeout(() => (showChildrenSuggestions = false), 100)}
-                  autocomplete="off"
-                  bind:this={childrenInputEl}
-                />
-                <label
-                  for="childrenAutocomplete"
-                  class:label-active={childrenSearch && childrenSearch.length > 0}
-                  >Añadir hijo/a</label
-                >
-                <MemberAutocompleteSuggestions
-                  show={showChildrenSuggestions}
-                  items={filteredChildrenSuggestions}
-                  activeIds={childrenIds}
-                  on:select={(event) => addChild(event.detail)}
-                />
-              </div>
-              {#if childrenIds.length > 0}
-                <div class="selected-list">
-                  <div class="selected-list-head">
-                    <b class="selected-list-title">Hijos añadidos</b>
-                    <span class="selected-list-count">{childrenIds.length}</span>
-                  </div>
-                  <div class="selected-chips">
-                    {#each childrenIds as childId (childId)}
-                      <button
-                        type="button"
-                        class="selected-chip"
-                        aria-label={`Quitar a ${getMemberName(childId)} de hijos`}
-                        title="Quitar hijo"
-                        on:click={() => removeChild(childId)}
-                      >
-                        <span>{getMemberName(childId)}</span>
-                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                          <path
-                            d="M6.22 6.22a.75.75 0 0 1 1.06 0L12 10.94l4.72-4.72a.75.75 0 1 1 1.06 1.06L13.06 12l4.72 4.72a.75.75 0 1 1-1.06 1.06L12 13.06l-4.72 4.72a.75.75 0 1 1-1.06-1.06L10.94 12 6.22 7.28a.75.75 0 0 1 0-1.06Z"
-                          />
-                        </svg>
-                      </button>
-                    {/each}
-                  </div>
-                </div>
-              {/if}
-              {#if suggestedChildrenList.length > 0}
-                <div class="suggested-children">
-                  <span>¿Son también hijos/as?</span>
-                  {#each suggestedChildrenList as suggestedChild (suggestedChild.id)}
-                    <button
-                      type="button"
-                      class="suggested-chip app-suggested-chip"
-                      on:click={() => addChild(suggestedChild)}
-                    >
-                      + {suggestedChild.name}
-                      {suggestedChild.familyName}
-                    </button>
-                  {/each}
-                </div>
-              {/if}
-              <h3>Pareja actual</h3>
-              <div class="input-wrapper floating-input-wrapper autocomplete-wrapper">
-                <input
-                  id="partnerAutocomplete"
-                  class="modern-input"
-                  type="text"
-                  bind:value={actualPartnerSearch}
-                  on:input={() => {
-                    actualPartnerId = ''
-                    showActualPartnerSuggestions = true
-                  }}
-                  on:focus={() => (showActualPartnerSuggestions = true)}
-                  on:blur={() => {
-                    setTimeout(() => (showActualPartnerSuggestions = false), 100)
-                    reportMemberValidity(actualPartnerInputEl, actualPartnerSearch, actualPartnerId)
-                  }}
-                  autocomplete="off"
-                  bind:this={actualPartnerInputEl}
-                />
-                {#if actualPartnerId}
-                  <button
-                    type="button"
-                    class="relation-clear-btn"
-                    aria-label="Quitar pareja seleccionada"
-                    title="Quitar pareja"
-                    on:click={clearActualPartner}
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                      <path
-                        d="M6.22 6.22a.75.75 0 0 1 1.06 0L12 10.94l4.72-4.72a.75.75 0 1 1 1.06 1.06L13.06 12l4.72 4.72a.75.75 0 1 1-1.06 1.06L12 13.06l-4.72 4.72a.75.75 0 1 1-1.06-1.06L10.94 12 6.22 7.28a.75.75 0 0 1 0-1.06Z"
-                      />
-                    </svg>
-                  </button>
-                {/if}
-                <label
-                  for="partnerAutocomplete"
-                  class:label-active={actualPartnerSearch && actualPartnerSearch.length > 0}
-                  >Añadir pareja</label
-                >
-                <MemberAutocompleteSuggestions
-                  show={showActualPartnerSuggestions}
-                  items={filteredActualPartnerSuggestions}
-                  activeIds={actualPartnerId ? [actualPartnerId] : []}
-                  on:select={(event) => selectActualPartner(event.detail)}
-                />
-              </div>
-              <h3>Exparejas</h3>
-              <div class="input-wrapper floating-input-wrapper autocomplete-wrapper">
-                <input
-                  id="previousPartnersAutocomplete"
-                  class="modern-input"
-                  type="text"
-                  bind:value={previousPartnersSearch}
-                  on:input={() => (showPreviousPartnersSuggestions = true)}
-                  on:focus={() => (showPreviousPartnersSuggestions = true)}
-                  on:blur={() => setTimeout(() => (showPreviousPartnersSuggestions = false), 100)}
-                  autocomplete="off"
-                  bind:this={previousPartnersInputEl}
-                />
-                <label
-                  for="previousPartnersAutocomplete"
-                  class:label-active={previousPartnersSearch && previousPartnersSearch.length > 0}
-                  >Añadir expareja</label
-                >
-                <MemberAutocompleteSuggestions
-                  show={showPreviousPartnersSuggestions}
-                  items={filteredPreviousPartnerSuggestions}
-                  activeIds={previousPartnersIds}
-                  on:select={(event) => addPreviousPartner(event.detail)}
-                />
-              </div>
-              {#if previousPartnersIds.length > 0}
-                <div class="selected-list">
-                  <div class="selected-list-head">
-                    <b class="selected-list-title">Exparejas añadidas</b>
-                    <span class="selected-list-count">{previousPartnersIds.length}</span>
-                  </div>
-                  <div class="selected-chips">
-                    {#each previousPartnersIds as previousPartnerId (previousPartnerId)}
-                      <button
-                        type="button"
-                        class="selected-chip"
-                        aria-label={`Quitar a ${getMemberName(previousPartnerId)} de exparejas`}
-                        title="Quitar expareja"
-                        on:click={() => removePreviousPartner(previousPartnerId)}
-                      >
-                        <span>{getMemberName(previousPartnerId)}</span>
-                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                          <path
-                            d="M6.22 6.22a.75.75 0 0 1 1.06 0L12 10.94l4.72-4.72a.75.75 0 1 1 1.06 1.06L13.06 12l4.72 4.72a.75.75 0 1 1-1.06 1.06L12 13.06l-4.72 4.72a.75.75 0 1 1-1.06-1.06L10.94 12 6.22 7.28a.75.75 0 0 1 0-1.06Z"
-                          />
-                        </svg>
-                      </button>
-                    {/each}
-                  </div>
-                </div>
-              {/if}
-
-              {#if showSummary}
-                <div class="summary-panel" transition:fade={{ duration: 140 }}>
-                  <h3>Resumen antes de guardar</h3>
-                  <ul>
-                    <li><b>Nombre:</b> {valueOrFallback(name)}</li>
-                    <li><b>Apellidos:</b> {valueOrFallback(familyName)}</li>
-                    <li><b>Fecha de nacimiento:</b> {valueOrFallback(birthDate)}</li>
-                    <li><b>Padre:</b> {valueOrFallback(getMemberName(fatherId))}</li>
-                    <li><b>Madre:</b> {valueOrFallback(getMemberName(motherId))}</li>
-                    <li><b>Hermanos:</b> {listOrFallback(siblingsIds)}</li>
-                    <li><b>Hijos:</b> {listOrFallback(childrenIds)}</li>
-                    <li><b>Pareja:</b> {valueOrFallback(getMemberName(actualPartnerId))}</li>
-                    <li><b>Exparejas:</b> {listOrFallback(previousPartnersIds)}</li>
-                  </ul>
-                </div>
-              {/if}
-
-              <input type="hidden" name="name" value={name} />
-              <input type="hidden" name="familyName" value={familyName} />
-              <input type="hidden" name="birthDate" value={birthDate} />
-              <input type="hidden" name="fatherId" value={fatherId} />
-              <input type="hidden" name="motherId" value={motherId} />
-              <input type="hidden" name="partnerId" value={actualPartnerId} />
-              {#each siblingsIds as siblingId}
-                <input type="hidden" name="siblingsIds" value={siblingId} />
-              {/each}
-              {#each childrenIds as childId}
-                <input type="hidden" name="childrenIds" value={childId} />
-              {/each}
-              {#each previousPartnersIds as previousPartnerId}
-                <input type="hidden" name="previousPartnersIds" value={previousPartnerId} />
-              {/each}
-
-              <div class="step-actions">
+            </div>
+          {/if}
+          {#if suggestedChildrenList.length > 0}
+            <div class="suggested-children">
+              <span>¿Son también hijos/as?</span>
+              {#each suggestedChildrenList as suggestedChild (suggestedChild.id)}
                 <button
                   type="button"
-                  class="app-btn app-btn--ghost"
-                  aria-label={showSummary ? 'Ocultar resumen' : 'Ver resumen antes de guardar'}
-                  title={showSummary ? 'Ocultar resumen' : 'Ver resumen'}
-                  on:click={() => (showSummary = !showSummary)}
+                  class="suggested-chip app-suggested-chip"
+                  on:click={() => addChild(suggestedChild)}
                 >
-                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M12 5c4.8 0 8.8 2.7 10.4 7-1.6 4.3-5.6 7-10.4 7S3.2 16.3 1.6 12C3.2 7.7 7.2 5 12 5Zm0 2.2A4.8 4.8 0 1 0 12 16.8 4.8 4.8 0 0 0 12 7.2Zm0 2A2.8 2.8 0 1 1 12 14.8 2.8 2.8 0 0 1 12 9.2Z" />
-                  </svg>
-                  <span class="sr-only">
-                    {showSummary ? 'Ocultar resumen' : 'Ver resumen antes de guardar'}
-                  </span>
+                  + {suggestedChild.name}
+                  {suggestedChild.familyName}
                 </button>
-                <button
-                  type="submit"
-                  class="app-btn app-btn--primary"
-                  disabled={submitting || !step2Valid}
-                >
-                  {submitting ? 'Guardando...' : 'Guardar'}
-                </button>
+              {/each}
+            </div>
+          {/if}
+          <h3>Pareja actual</h3>
+          <div class="input-wrapper floating-input-wrapper autocomplete-wrapper">
+            <input
+              id="partnerAutocomplete"
+              class="modern-input"
+              type="text"
+              bind:value={actualPartnerSearch}
+              on:input={() => {
+                actualPartnerId = ''
+                showActualPartnerSuggestions = true
+              }}
+              on:focus={() => (showActualPartnerSuggestions = true)}
+              on:blur={() => {
+                setTimeout(() => (showActualPartnerSuggestions = false), 100)
+                reportMemberValidity(actualPartnerInputEl, actualPartnerSearch, actualPartnerId)
+              }}
+              autocomplete="off"
+              bind:this={actualPartnerInputEl}
+            />
+            {#if actualPartnerId}
+              <button
+                type="button"
+                class="relation-clear-btn"
+                aria-label="Quitar pareja seleccionada"
+                title="Quitar pareja"
+                on:click={clearActualPartner}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path
+                    d="M6.22 6.22a.75.75 0 0 1 1.06 0L12 10.94l4.72-4.72a.75.75 0 1 1 1.06 1.06L13.06 12l4.72 4.72a.75.75 0 1 1-1.06 1.06L12 13.06l-4.72 4.72a.75.75 0 1 1-1.06-1.06L10.94 12 6.22 7.28a.75.75 0 0 1 0-1.06Z"
+                  />
+                </svg>
+              </button>
+            {/if}
+            <label
+              for="partnerAutocomplete"
+              class:label-active={actualPartnerSearch && actualPartnerSearch.length > 0}
+              >Añadir pareja</label
+            >
+            <MemberAutocompleteSuggestions
+              show={showActualPartnerSuggestions}
+              items={filteredActualPartnerSuggestions}
+              activeIds={actualPartnerId ? [actualPartnerId] : []}
+              on:select={(event) => selectActualPartner(event.detail)}
+            />
+          </div>
+          <h3>Exparejas</h3>
+          <div class="input-wrapper floating-input-wrapper autocomplete-wrapper">
+            <input
+              id="previousPartnersAutocomplete"
+              class="modern-input"
+              type="text"
+              bind:value={previousPartnersSearch}
+              on:input={() => (showPreviousPartnersSuggestions = true)}
+              on:focus={() => (showPreviousPartnersSuggestions = true)}
+              on:blur={() => setTimeout(() => (showPreviousPartnersSuggestions = false), 100)}
+              autocomplete="off"
+              bind:this={previousPartnersInputEl}
+            />
+            <label
+              for="previousPartnersAutocomplete"
+              class:label-active={previousPartnersSearch && previousPartnersSearch.length > 0}
+              >Añadir expareja</label
+            >
+            <MemberAutocompleteSuggestions
+              show={showPreviousPartnersSuggestions}
+              items={filteredPreviousPartnerSuggestions}
+              activeIds={previousPartnersIds}
+              on:select={(event) => addPreviousPartner(event.detail)}
+            />
+          </div>
+          {#if previousPartnersIds.length > 0}
+            <div class="selected-list">
+              <div class="selected-list-head">
+                <b class="selected-list-title">Exparejas añadidas</b>
+                <span class="selected-list-count">{previousPartnersIds.length}</span>
               </div>
-            </section>
+              <div class="selected-chips">
+                {#each previousPartnersIds as previousPartnerId (previousPartnerId)}
+                  <button
+                    type="button"
+                    class="selected-chip"
+                    aria-label={`Quitar a ${getMemberName(previousPartnerId)} de exparejas`}
+                    title="Quitar expareja"
+                    on:click={() => removePreviousPartner(previousPartnerId)}
+                  >
+                    <span>{getMemberName(previousPartnerId)}</span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path
+                        d="M6.22 6.22a.75.75 0 0 1 1.06 0L12 10.94l4.72-4.72a.75.75 0 1 1 1.06 1.06L13.06 12l4.72 4.72a.75.75 0 1 1-1.06 1.06L12 13.06l-4.72 4.72a.75.75 0 1 1-1.06-1.06L10.94 12 6.22 7.28a.75.75 0 0 1 0-1.06Z"
+                      />
+                    </svg>
+                  </button>
+                {/each}
+              </div>
+            </div>
           {/if}
-          {#if error}
-            <div class="form-error">{error}</div>
+
+          {#if showSummary}
+            <div class="summary-panel" transition:fade={{ duration: 140 }}>
+              <h3>Resumen antes de guardar</h3>
+              <ul>
+                <li><b>Nombre:</b> {valueOrFallback(name)}</li>
+                <li><b>Apellidos:</b> {valueOrFallback(familyName)}</li>
+                <li><b>Fecha de nacimiento:</b> {valueOrFallback(birthDate)}</li>
+                <li><b>Padre:</b> {valueOrFallback(getMemberName(fatherId))}</li>
+                <li><b>Madre:</b> {valueOrFallback(getMemberName(motherId))}</li>
+                <li><b>Hermanos:</b> {listOrFallback(siblingsIds)}</li>
+                <li><b>Hijos:</b> {listOrFallback(childrenIds)}</li>
+                <li><b>Pareja:</b> {valueOrFallback(getMemberName(actualPartnerId))}</li>
+                <li><b>Exparejas:</b> {listOrFallback(previousPartnersIds)}</li>
+              </ul>
+            </div>
           {/if}
-        </form>
+
+          <input type="hidden" name="name" value={name} />
+          <input type="hidden" name="familyName" value={familyName} />
+          <input type="hidden" name="birthDate" value={birthDate} />
+          <input type="hidden" name="fatherId" value={fatherId} />
+          <input type="hidden" name="motherId" value={motherId} />
+          <input type="hidden" name="partnerId" value={actualPartnerId} />
+          {#each siblingsIds as siblingId}
+            <input type="hidden" name="siblingsIds" value={siblingId} />
+          {/each}
+          {#each childrenIds as childId}
+            <input type="hidden" name="childrenIds" value={childId} />
+          {/each}
+          {#each previousPartnersIds as previousPartnerId}
+            <input type="hidden" name="previousPartnersIds" value={previousPartnerId} />
+          {/each}
+
+          <div class="step-actions">
+            <button
+              type="button"
+              class="app-btn app-btn--ghost"
+              aria-label={showSummary ? 'Ocultar resumen' : 'Ver resumen antes de guardar'}
+              title={showSummary ? 'Ocultar resumen' : 'Ver resumen'}
+              on:click={() => (showSummary = !showSummary)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path
+                  d="M12 5c4.8 0 8.8 2.7 10.4 7-1.6 4.3-5.6 7-10.4 7S3.2 16.3 1.6 12C3.2 7.7 7.2 5 12 5Zm0 2.2A4.8 4.8 0 1 0 12 16.8 4.8 4.8 0 0 0 12 7.2Zm0 2A2.8 2.8 0 1 1 12 14.8 2.8 2.8 0 0 1 12 9.2Z"
+                />
+              </svg>
+              <span class="sr-only">
+                {showSummary ? 'Ocultar resumen' : 'Ver resumen antes de guardar'}
+              </span>
+            </button>
+            <button
+              type="submit"
+              class="app-btn app-btn--primary"
+              disabled={submitting || !step2Valid}
+            >
+              {submitting ? 'Guardando...' : 'Guardar'}
+            </button>
+          </div>
+        </section>
+      {/if}
+      {#if error}
+        <div class="form-error">{error}</div>
+      {/if}
+    </form>
   </div>
 </ModalShell>
 
 <style lang="scss">
   .add-member-modal {
-      h2 {
-        margin: 0;
-        text-wrap: balance;
+    --add-summary-bg: rgba(255, 255, 255, 0.5);
+    --add-summary-border: rgba(255, 235, 214, 0.72);
+    --add-selected-list-bg: rgba(247, 239, 229, 0.52);
+    --add-selected-list-divider: rgba(195, 160, 124, 0.14);
+    --add-selected-list-title: #73543f;
+    --add-selected-list-count-text: #85644d;
+    --add-selected-list-count-bg: rgba(236, 220, 201, 0.6);
+    --add-selected-list-highlight: #7e4724;
+    --add-step-icon-shadow: 3px 3px 8px rgba(149, 121, 95, 0.14),
+      -3px -3px 8px rgba(255, 255, 255, 0.6);
+    --add-step-icon-shadow-hover: 4px 4px 9px rgba(149, 121, 95, 0.16),
+      -4px -4px 9px rgba(255, 255, 255, 0.7);
+
+    h2 {
+      margin: 0;
+      text-wrap: balance;
+    }
+
+    .step-caption {
+      margin: 0;
+      font-size: var(--fs-xs);
+      color: var(--text-muted);
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+
+      .input-wrapper {
+        margin-bottom: 1.5rem;
       }
 
-      .step-caption {
-        margin: 0;
-        font-size: var(--fs-xs);
-        color: var(--text-muted);
+      .app-btn {
+        width: 100%;
+        min-height: 44px;
       }
 
-      form {
-        display: flex;
-        flex-direction: column;
-
-        .input-wrapper {
-          margin-bottom: 1.5rem;
-        }
+      .step-actions {
+        display: grid;
+        grid-template-columns: 52px minmax(0, 1fr);
+        gap: 0.75rem;
+        align-items: stretch;
 
         .app-btn {
           width: 100%;
-          min-height: 44px;
         }
 
-        .step-actions {
-          display: grid;
+        .app-btn:first-child {
+          min-width: 52px;
+          padding-inline: 0;
+
+          svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+          }
+        }
+
+        @media (min-width: 640px) {
           grid-template-columns: 52px minmax(0, 1fr);
-          gap: 0.75rem;
-          align-items: stretch;
+        }
+      }
 
-          .app-btn {
-            width: 100%;
-          }
+      .summary-panel {
+        margin: 0.75rem 0;
+        padding: 10px 12px;
+        border-radius: var(--radius-control);
+        background: var(--add-summary-bg);
+        border: 1px solid var(--add-summary-border);
 
-          .app-btn:first-child {
-            min-width: 52px;
-            padding-inline: 0;
-
-            svg {
-              width: 18px;
-              height: 18px;
-              fill: currentColor;
-            }
-          }
-
-          @media (min-width: 640px) {
-            grid-template-columns: 52px minmax(0, 1fr);
-          }
+        h3 {
+          margin: 0 0 0.45rem;
         }
 
-        .summary-panel {
-          margin: 0.75rem 0;
-          padding: 10px 12px;
-          border-radius: 10px;
-          background: rgba(255, 255, 255, 0.5);
-          border: 1px solid rgba(255, 235, 214, 0.72);
-
-          h3 {
-            margin: 0 0 0.45rem;
-          }
-
-          ul {
-            margin: 0;
-            padding-left: 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.2rem;
-            font-size: 0.88rem;
-            color: var(--text-main);
-          }
-        }
-
-        .selected-list {
-          margin: 0.45rem 0 1.05rem;
-          padding: 0.68rem 0.72rem 0.74rem;
-          border-radius: 13px;
-          border: none;
-          background: rgba(247, 239, 229, 0.52);
+        ul {
+          margin: 0;
+          padding-left: 1rem;
           display: flex;
           flex-direction: column;
-          gap: 0.48rem;
-
-          .selected-list-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.5rem;
-            padding-bottom: 0.38rem;
-            border-bottom: 1px solid rgba(195, 160, 124, 0.14);
-          }
-
-          .selected-list-title {
-            font-size: var(--fs-xs);
-            font-weight: 600;
-            color: #73543f;
-            letter-spacing: 0.01em;
-          }
-
-          .selected-list-count {
-            min-width: 1.6rem;
-            height: 1.28rem;
-            padding: 0 0.38rem;
-            border-radius: 999px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.69rem;
-            font-weight: 600;
-            color: #85644d;
-            background: rgba(236, 220, 201, 0.6);
-          }
-
-          b {
-            font-size: var(--fs-xs);
-            color: #7e4724;
-          }
-
-          span {
-            font-size: var(--fs-sm);
-            color: var(--text-main);
-          }
+          gap: 0.2rem;
+          font-size: 0.88rem;
+          color: var(--text-main);
         }
+      }
 
-        .suggested-children {
+      .selected-list {
+        margin: 0.45rem 0 1.05rem;
+        padding: 0.68rem 0.72rem 0.74rem;
+        border-radius: 13px;
+        border: none;
+        background: var(--add-selected-list-bg);
+        display: flex;
+        flex-direction: column;
+        gap: 0.48rem;
+
+        .selected-list-head {
           display: flex;
-          flex-wrap: wrap;
           align-items: center;
-          gap: 0.4rem;
-          margin-bottom: 1rem;
-          font-size: var(--fs-xs);
-          color: #8a4a22;
+          justify-content: space-between;
+          gap: 0.5rem;
+          padding-bottom: 0.38rem;
+          border-bottom: 1px solid var(--add-selected-list-divider);
         }
+
+        .selected-list-title {
+          font-size: var(--fs-xs);
+          font-weight: 600;
+          color: var(--add-selected-list-title);
+          letter-spacing: 0.01em;
+        }
+
+        .selected-list-count {
+          min-width: 1.6rem;
+          height: 1.28rem;
+          padding: 0 0.38rem;
+          border-radius: var(--radius-pill);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.69rem;
+          font-weight: 600;
+          color: var(--add-selected-list-count-text);
+          background: var(--add-selected-list-count-bg);
+        }
+
+        b {
+          font-size: var(--fs-xs);
+          color: var(--add-selected-list-highlight);
+        }
+
+        span {
+          font-size: var(--fs-sm);
+          color: var(--text-main);
+        }
+      }
+
+      .suggested-children {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.4rem;
+        margin-bottom: 1rem;
+        font-size: var(--fs-xs);
+        color: var(--text-warm-strong);
+      }
     }
 
-        .field-invalid :global(.modern-input) {
-          box-shadow:
-            var(--neu-shadow-inset),
-            0 0 0 2px rgba(188, 70, 70, 0.55);
-          background: #f8efec;
-        }
+    .field-invalid :global(.modern-input) {
+      box-shadow: var(--neu-shadow-inset), var(--focus-ring-error-strong);
+      background: var(--control-bg-error-soft);
+    }
 
-        .field-invalid :global(label) {
-          color: #9a3a3a;
-        }
+    .field-invalid :global(label) {
+      color: var(--feedback-error-strong-text);
+    }
 
-        .field-invalid-pulse-a :global(.modern-input) {
-          animation: field-invalid-pulse-a 440ms var(--motion-standard);
-        }
+    .field-invalid-pulse-a :global(.modern-input) {
+      animation: field-invalid-pulse-a 440ms var(--motion-standard);
+    }
 
-        .field-invalid-pulse-b :global(.modern-input) {
-          animation: field-invalid-pulse-b 440ms var(--motion-standard);
-        }
+    .field-invalid-pulse-b :global(.modern-input) {
+      animation: field-invalid-pulse-b 440ms var(--motion-standard);
+    }
   }
 
   .step-back-icon {
@@ -950,19 +961,17 @@
     min-height: 34px;
     padding: 0;
     border: none;
-    border-radius: 10px;
-    background: #efe7dc;
-    color: #1f1f1f;
+    border-radius: var(--radius-control);
+    background: var(--surface-warm-elevated);
+    color: var(--text-main-strong);
     display: grid;
     place-items: center;
     cursor: pointer;
-    box-shadow:
-      3px 3px 8px rgba(149, 121, 95, 0.14),
-      -3px -3px 8px rgba(255, 255, 255, 0.6);
+    box-shadow: var(--add-step-icon-shadow);
     transition:
-      background-color 0.2s var(--motion-standard),
-      box-shadow 0.2s var(--motion-standard),
-      color 0.2s var(--motion-standard);
+      background-color var(--dur-base) var(--motion-standard),
+      box-shadow var(--dur-base) var(--motion-standard),
+      color var(--dur-base) var(--motion-standard);
 
     svg {
       width: 16px;
@@ -971,13 +980,12 @@
     }
 
     &:hover {
-      box-shadow:
-        4px 4px 9px rgba(149, 121, 95, 0.16),
-        -4px -4px 9px rgba(255, 255, 255, 0.7);
+      box-shadow: var(--add-step-icon-shadow-hover);
     }
 
     &:focus-visible {
-      outline: 2px solid rgba(149, 121, 95, 0.52);
+      outline: 2px solid transparent;
+      box-shadow: var(--focus-ring-soft-strong);
       outline-offset: 2px;
     }
   }
@@ -990,9 +998,9 @@
 
   .selected-chip {
     border: none;
-    border-radius: 999px;
-    background: rgba(236, 221, 203, 0.7);
-    color: #6f4f39;
+    border-radius: var(--radius-pill);
+    background: var(--chip-warm-bg);
+    color: var(--text-warm-chip);
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
@@ -1000,11 +1008,11 @@
     cursor: pointer;
     font-size: var(--fs-xs);
     line-height: 1.25;
-    box-shadow: 0 1px 2px rgba(149, 121, 95, 0.09);
+    box-shadow: var(--shadow-soft-xs);
     transition:
-      transform 0.15s var(--motion-standard),
-      box-shadow 0.15s var(--motion-standard),
-      background-color 0.2s var(--motion-standard);
+      transform var(--dur-fast) var(--motion-standard),
+      box-shadow var(--dur-fast) var(--motion-standard),
+      background-color var(--dur-base) var(--motion-standard);
 
     svg {
       width: 10px;
@@ -1015,12 +1023,13 @@
 
     &:hover {
       transform: translateY(-0.5px);
-      background: rgba(230, 212, 192, 0.78);
-      box-shadow: 0 2px 5px rgba(149, 121, 95, 0.12);
+      background: var(--chip-warm-bg-hover);
+      box-shadow: var(--shadow-soft-sm);
     }
 
     &:focus-visible {
-      outline: 2px solid rgba(149, 121, 95, 0.52);
+      outline: 2px solid transparent;
+      box-shadow: var(--focus-ring-soft-strong);
       outline-offset: 2px;
     }
   }
@@ -1041,20 +1050,20 @@
     width: 1.3rem;
     height: 1.3rem;
     border: none;
-    border-radius: 999px;
-    background: rgba(236, 221, 203, 0.74);
-    color: #6f4f39;
+    border-radius: var(--radius-pill);
+    background: var(--chip-warm-bg-strong);
+    color: var(--text-warm-chip);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 0;
     cursor: pointer;
     z-index: 4;
-    box-shadow: 0 1px 2px rgba(149, 121, 95, 0.09);
+    box-shadow: var(--shadow-soft-xs);
     transition:
-      background-color 0.2s var(--motion-standard),
-      box-shadow 0.2s var(--motion-standard),
-      transform 0.2s var(--motion-standard);
+      background-color var(--dur-base) var(--motion-standard),
+      box-shadow var(--dur-base) var(--motion-standard),
+      transform var(--dur-base) var(--motion-standard);
 
     svg {
       width: 10px;
@@ -1064,50 +1073,38 @@
     }
 
     &:hover {
-      background: rgba(230, 212, 192, 0.8);
-      box-shadow: 0 2px 5px rgba(149, 121, 95, 0.12);
+      background: var(--chip-warm-bg-hover-strong);
+      box-shadow: var(--shadow-soft-sm);
     }
 
     &:focus-visible {
-      outline: 2px solid rgba(149, 121, 95, 0.52);
+      outline: 2px solid transparent;
+      box-shadow: var(--focus-ring-soft-strong);
       outline-offset: 2px;
     }
   }
 
-
   @keyframes field-invalid-pulse-a {
     0% {
-      box-shadow:
-        var(--neu-shadow-inset),
-        0 0 0 0 rgba(188, 70, 70, 0.28);
+      box-shadow: var(--neu-shadow-inset), var(--focus-ring-error-start);
     }
     45% {
-      box-shadow:
-        var(--neu-shadow-inset),
-        0 0 0 5px rgba(188, 70, 70, 0.2);
+      box-shadow: var(--neu-shadow-inset), var(--focus-ring-error-pulse);
     }
     100% {
-      box-shadow:
-        var(--neu-shadow-inset),
-        0 0 0 2px rgba(188, 70, 70, 0.55);
+      box-shadow: var(--neu-shadow-inset), var(--focus-ring-error-strong);
     }
   }
 
   @keyframes field-invalid-pulse-b {
     0% {
-      box-shadow:
-        var(--neu-shadow-inset),
-        0 0 0 0 rgba(188, 70, 70, 0.28);
+      box-shadow: var(--neu-shadow-inset), var(--focus-ring-error-start);
     }
     45% {
-      box-shadow:
-        var(--neu-shadow-inset),
-        0 0 0 5px rgba(188, 70, 70, 0.2);
+      box-shadow: var(--neu-shadow-inset), var(--focus-ring-error-pulse);
     }
     100% {
-      box-shadow:
-        var(--neu-shadow-inset),
-        0 0 0 2px rgba(188, 70, 70, 0.55);
+      box-shadow: var(--neu-shadow-inset), var(--focus-ring-error-strong);
     }
   }
   .sr-only {

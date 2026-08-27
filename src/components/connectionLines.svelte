@@ -227,7 +227,7 @@
     stroke-width: 2.8;
     stroke-linecap: round;
     stroke-linejoin: round;
-    filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.72));
+    filter: var(--tree-line-drop-shadow);
     pointer-events: none;
 
     &.couple-line,
@@ -236,7 +236,7 @@
     }
 
     &.single-parent-lines {
-      stroke: #7f5a43;
+      stroke: var(--tree-line-secondary);
     }
 
     &.previous-couple-family-lines {
@@ -247,7 +247,7 @@
     &.previous-couple-join {
       stroke-dasharray: 9 7;
       stroke-width: 2.2;
-      stroke: #b38261;
+      stroke: var(--tree-line-previous);
     }
   }
 </style>

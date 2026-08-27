@@ -41,7 +41,7 @@
     padding: 10px 8px;
     overflow: hidden;
     border: none;
-    border-radius: 14px;
+    border-radius: var(--radius-card);
     background: var(--neu-surface);
     box-shadow: var(--neu-shadow-out-soft);
     z-index: 1;
@@ -55,15 +55,17 @@
 
     &:hover {
       transform: translateY(-1px);
-      box-shadow: 7px 7px 14px rgba(154, 132, 109, 0.28), -7px -7px 14px rgba(255, 255, 255, 0.82);
+      box-shadow:
+        7px 7px 14px rgba(154, 132, 109, 0.28),
+        -7px -7px 14px rgba(255, 255, 255, 0.82);
     }
   }
 
   .picture-wrapper {
     width: 62px;
     height: 62px;
-    border-radius: 50%;
-    background: #f3ede5;
+    border-radius: var(--radius-round);
+    background: var(--surface-avatar);
     border: none;
     color: #735844;
     font-size: 1.02rem;
@@ -76,7 +78,7 @@
   }
 
   .name-wrapper {
-    border-radius: 9px;
+    border-radius: var(--radius-sm);
     overflow: hidden;
     width: 100%;
     display: flex;

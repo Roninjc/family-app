@@ -57,7 +57,7 @@
 
 <style lang="scss">
   .invite-row {
-    --invite-focus-ring-shadow: 0 0 0 2px rgba(156, 123, 95, 0.18);
+    --invite-focus-ring-shadow: var(--focus-ring-soft);
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
@@ -67,21 +67,19 @@
       min-height: 44px;
       padding: 0.52rem 0.76rem;
       border: none;
-      border-radius: 10px;
-      background: #f2ece4;
+      border-radius: var(--radius-control);
+      background: var(--control-bg);
       font-size: 0.95rem;
       color: var(--text-main);
       box-shadow: var(--neu-shadow-inset);
       transition:
         box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
-        background-color 0.2s var(--motion-standard);
+        background-color var(--dur-base) var(--motion-standard);
 
       &:focus {
         outline: none;
-        background: #f7f2ea;
-        box-shadow:
-          var(--neu-shadow-inset),
-          var(--invite-focus-ring-shadow);
+        background: var(--control-bg-focus);
+        box-shadow: var(--neu-shadow-inset), var(--invite-focus-ring-shadow);
       }
     }
 
@@ -96,33 +94,31 @@
     min-width: 170px;
     min-height: 44px;
     border: none;
-    border-radius: 10px;
-    background: #f2ece4;
+    border-radius: var(--radius-control);
+    background: var(--control-bg);
     color: var(--text-main);
     padding: 0.4rem 0.6rem;
     font-size: var(--fs-sm);
     box-shadow: var(--neu-shadow-inset);
     transition:
       box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
-      background-color 0.2s var(--motion-standard);
+      background-color var(--dur-base) var(--motion-standard);
 
     &:focus {
       outline: none;
-      background: #f7f2ea;
-      box-shadow:
-        var(--neu-shadow-inset),
-        var(--invite-focus-ring-shadow);
+      background: var(--control-bg-focus);
+      box-shadow: var(--neu-shadow-inset), var(--invite-focus-ring-shadow);
     }
   }
 
   .ok-note {
-    color: #16a31a;
+    color: var(--feedback-success-text);
     font-size: var(--fs-xs);
     margin: 0.5rem 0 0;
   }
 
   .error-note {
-    color: #dc2626;
+    color: var(--feedback-error-text);
     font-size: var(--fs-xs);
     margin: 0.5rem 0 0;
   }

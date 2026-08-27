@@ -28,7 +28,7 @@
   {open}
   ariaLabel="Cerrar confirmación"
   ariaLabelledby="users-save-title"
-  onClose={onClose}
+  {onClose}
   size="wide"
 >
   <div class="users-confirm-card" in:fade={{ duration: 140 }}>
@@ -73,7 +73,9 @@
         <input type="hidden" name="familyId" value={activeFamilyId} />
         <input type="hidden" name="changesJson" value={usersChangesJson} />
         <div class="users-confirm-actions modal-form-actions">
-          <button type="button" class="app-btn app-btn--secondary" on:click={onClose}>Cancelar</button>
+          <button type="button" class="app-btn app-btn--secondary" on:click={onClose}
+            >Cancelar</button
+          >
           <button type="submit" class="app-btn app-btn--primary">Confirmar y guardar</button>
         </div>
       </form>
@@ -91,7 +93,7 @@
     h2 {
       margin: 0;
       font-size: var(--fs-lg);
-      color: #4a3426;
+      color: var(--text-main);
     }
   }
 
@@ -120,7 +122,7 @@
 
       strong {
         font-size: var(--fs-sm);
-        color: #4a3426;
+        color: var(--text-main);
       }
 
       small {

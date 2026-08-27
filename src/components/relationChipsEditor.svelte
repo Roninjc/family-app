@@ -174,16 +174,16 @@
         gap: 0.3rem;
         min-height: 32px;
         padding: 5px 10px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.82);
+        border-radius: var(--radius-pill);
+        background: var(--chip-surface-bg);
+        border: 1px solid var(--chip-surface-border);
         font-size: 0.9rem;
         color: var(--text-main);
 
         &.empty {
           color: var(--text-soft);
           border-style: dashed;
-          background: rgba(255, 249, 241, 0.5);
+          background: var(--chip-surface-empty-bg);
         }
 
         form {
@@ -192,27 +192,27 @@
 
         .remove-chip {
           border: none;
-          background: #f0e8dd;
+          background: var(--neu-surface-soft);
           min-width: 24px;
           min-height: 24px;
           padding: 0;
           font-size: 1rem;
           line-height: 1;
-          color: #6b5a4b;
+          color: var(--text-soft);
           cursor: pointer;
-          border-radius: 999px;
+          border-radius: var(--radius-pill);
           box-shadow:
             2px 2px 5px rgba(149, 121, 95, 0.12),
             -2px -2px 5px rgba(255, 255, 255, 0.72);
 
           &:hover {
-            color: var(--danger);
-            background: #f5ede3;
+            color: var(--feedback-error-text);
+            background: var(--chip-warm-bg-hover);
           }
 
           &:disabled {
             opacity: 1;
-            color: #9aa3af;
+            color: var(--control-text-disabled);
             cursor: not-allowed;
           }
         }
@@ -230,9 +230,9 @@
       .suggested-chip {
         &:disabled {
           opacity: 1;
-          border-color: #aeb8c5;
-          background: #e3e8ef;
-          color: #5c6673;
+          border-color: var(--control-border-disabled);
+          background: var(--control-bg-disabled);
+          color: var(--control-text-disabled);
           cursor: not-allowed;
         }
       }
@@ -247,7 +247,7 @@
         min-height: 42px;
         padding: 0.45rem 0.75rem;
         border: 1px solid var(--field-border);
-        border-radius: 10px;
+        border-radius: var(--radius-control);
         background: var(--field-bg);
         font-size: var(--fs-sm);
         color: var(--text-main);
@@ -255,20 +255,20 @@
         &:focus {
           outline: none;
           border-color: var(--brand);
-          box-shadow: 0 0 0 3px rgba(156, 90, 45, 0.16);
-          background: #fff;
+          box-shadow: var(--focus-ring-soft);
+          background: var(--control-bg-focus);
         }
 
         &::placeholder {
-          color: #9f9f9f;
+          color: var(--text-soft);
         }
 
         &:disabled {
           opacity: 1;
           cursor: not-allowed;
-          background: #edf1f5;
-          color: #6b7280;
-          border-color: #cdd5df;
+          background: var(--control-bg-disabled);
+          color: var(--control-text-disabled);
+          border-color: var(--control-border-disabled);
           box-shadow: none;
         }
       }

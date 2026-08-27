@@ -70,7 +70,13 @@
             <input type="hidden" name="noteId" value={note.id} />
             <label>
               Título
-              <input class="modern-input" name="title" bind:value={titleDraft} maxlength="120" required />
+              <input
+                class="modern-input"
+                name="title"
+                bind:value={titleDraft}
+                maxlength="120"
+                required
+              />
             </label>
             <label>
               Tipo
@@ -81,7 +87,8 @@
             </label>
             <label>
               Contenido
-              <textarea class="modern-textarea" name="body" rows="3" bind:value={bodyDraft} required></textarea>
+              <textarea class="modern-textarea" name="body" rows="3" bind:value={bodyDraft} required
+              ></textarea>
             </label>
             <div class="note-actions">
               <button class="app-btn app-btn--primary" type="submit">Guardar</button>
@@ -134,15 +141,15 @@
       -4px -4px 9px rgba(255, 255, 255, 0.72);
     --notes-list-item-shadow: 3px 3px 7px rgba(154, 132, 109, 0.14),
       -3px -3px 7px rgba(255, 255, 255, 0.7);
-    border-radius: 14px;
+    border-radius: var(--radius-card);
     background: color-mix(in srgb, var(--neu-surface-soft) 88%, #ffffff 12%);
     border: none;
     box-shadow: var(--notes-card-shadow);
     transition:
-      transform 0.22s var(--motion-standard),
+      transform var(--dur-ui) var(--motion-standard),
       box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease);
     position: relative;
-    padding: 14px;
+    padding: var(--space-3);
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -152,34 +159,34 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 2px;
+    gap: var(--space-2);
+    margin-bottom: var(--space-0);
   }
 
   .notes-filter-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 8px;
+    gap: var(--space-1);
+    margin-bottom: var(--space-2);
   }
 
   .note-action-btn:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--brand) 86%, #fff 14%);
+    outline: 2px solid color-mix(in srgb, var(--brand) 88%, #fff 12%);
     outline-offset: 3px;
-    box-shadow: 0 0 0 5px rgba(223, 203, 182, 0.38);
+    box-shadow: var(--focus-ring-warm);
   }
 
   .note-form {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin-bottom: 10px;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
   }
 
   .note-form label {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--space-1);
     font-size: var(--fs-xs);
     color: var(--text-muted);
   }
@@ -188,9 +195,9 @@
   .modern-select,
   .modern-textarea {
     width: 100%;
-    border: 1px solid rgba(168, 132, 101, 0.32);
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid var(--field-border);
+    border-radius: var(--radius-control);
+    background: var(--field-bg);
     color: var(--text-main);
     font-family: inherit;
     font-size: var(--fs-sm);
@@ -199,61 +206,61 @@
   .modern-input,
   .modern-select {
     min-height: 40px;
-    padding: 0.42rem 0.58rem;
+    padding: var(--space-1) var(--space-2);
   }
 
   .modern-textarea {
-    padding: 0.52rem 0.58rem;
+    padding: var(--space-2) var(--space-2);
     resize: vertical;
   }
 
   .note-actions {
     display: flex;
-    gap: 6px;
-    margin-top: 8px;
+    gap: var(--space-1);
+    margin-top: var(--space-2);
     flex-wrap: wrap;
   }
 
   .note-action-btn {
     min-height: 34px;
     font-size: var(--fs-xs);
-    padding: 0.45rem 0.68rem;
+    padding: var(--space-2) var(--space-2);
   }
 
   .note-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 4px;
+    gap: var(--space-2);
+    margin-bottom: var(--space-1);
   }
 
   .note-type {
-    border-radius: 999px;
-    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    padding: var(--space-0) var(--space-2);
     font-size: var(--fs-2xs);
-    background: rgba(117, 108, 96, 0.16);
-    color: #5e4c3e;
+    background: var(--chip-warm-bg);
+    color: var(--text-warm-chip);
     white-space: nowrap;
   }
 
   .note-type.news {
-    background: rgba(161, 120, 80, 0.2);
-    color: #6f4a2e;
+    background: var(--chip-warm-bg-hover);
+    color: var(--text-warm-strong);
   }
 
   .note-ok,
   .note-error {
-    margin: 0 0 8px;
+    margin: 0 0 var(--space-2);
     font-size: var(--fs-xs);
   }
 
   .note-ok {
-    color: var(--ok);
+    color: var(--feedback-success-text);
   }
 
   .note-error {
-    color: var(--danger);
+    color: var(--feedback-error-text);
   }
 
   h4 {
@@ -265,19 +272,20 @@
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--space-2);
     margin: 0;
     padding: 0;
     min-height: 0;
   }
 
   li {
-    padding: 10px 11px;
-    border-radius: 10px;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-control);
     background: color-mix(in srgb, var(--neu-surface-soft) 90%, #ffffff 10%);
     border: none;
     box-shadow: var(--notes-list-item-shadow);
-    transition: box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease);
+    transition: box-shadow var(--neumo-shadow-transition-duration)
+      var(--neumo-shadow-transition-ease);
   }
 
   h5,
@@ -287,7 +295,7 @@
 
   h5 {
     font-size: var(--fs-sm);
-    margin-bottom: 4px;
+    margin-bottom: var(--space-1);
   }
 
   p {
@@ -296,7 +304,7 @@
   }
 
   .notes-empty {
-    margin: 8px 0 0;
+    margin: var(--space-2) 0 0;
     color: var(--text-muted);
     font-size: var(--fs-xs);
   }

@@ -73,7 +73,9 @@
             <form method="POST" action="?/regenerateInviteLink" use:enhance>
               <input type="hidden" name="familyId" value={activeFamilyId} />
               <input type="hidden" name="inviteId" value={invite.id} />
-              <button type="submit" class="app-btn app-btn--secondary small">Regenerar enlace</button>
+              <button type="submit" class="app-btn app-btn--secondary small"
+                >Regenerar enlace</button
+              >
             </form>
           {/if}
         {/if}
@@ -124,12 +126,12 @@
   }
 
   .status-ok {
-    color: #166534;
+    color: var(--feedback-success-soft-text);
     font-weight: 600;
   }
 
   .status-warn {
-    color: #9a3412;
+    color: var(--text-warning);
     font-weight: 600;
   }
 
@@ -140,19 +142,18 @@
   }
 
   .ok-note {
-    color: #16a31a;
+    color: var(--feedback-success-text);
     font-size: var(--fs-xs);
     margin: 0.5rem 0 0;
   }
 
   .error-note {
-    color: #dc2626;
+    color: var(--feedback-error-text);
     font-size: var(--fs-xs);
     margin: 0.5rem 0 0;
   }
 
   .empty-note {
-    margin: 0;
     font-size: var(--fs-sm);
     color: var(--text-muted);
     padding: 10px 12px;

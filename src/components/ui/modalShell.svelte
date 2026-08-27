@@ -48,9 +48,7 @@
   function observeModalContent(node: HTMLDivElement) {
     const handleMutation = () => updateScrollFades()
     const mutationObserver =
-      typeof MutationObserver !== 'undefined'
-        ? new MutationObserver(handleMutation)
-        : null
+      typeof MutationObserver !== 'undefined' ? new MutationObserver(handleMutation) : null
     mutationObserver?.observe(node, { childList: true, subtree: true, characterData: true })
 
     const resizeObserver =
@@ -142,7 +140,7 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     background-color: transparent;
     z-index: 1000;
     width: var(--modal-width);
@@ -155,11 +153,12 @@
     width: 34px;
     height: 34px;
     border: none;
-    border-radius: 10px;
+    border-radius: var(--radius-control);
     background: var(--app-glass-panel-bg-soft);
     backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
-    -webkit-backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
-    color: #1f1f1f;
+    -webkit-backdrop-filter: blur(var(--app-glass-panel-blur))
+      saturate(var(--app-glass-panel-saturate));
+    color: var(--text-main);
     display: grid;
     place-items: center;
     cursor: pointer;
@@ -167,9 +166,9 @@
     pointer-events: auto;
     box-shadow: var(--app-glass-panel-shadow-soft);
     transition:
-      background-color 0.2s var(--motion-standard),
-      box-shadow 0.2s var(--motion-standard),
-      color 0.2s var(--motion-standard);
+      background-color var(--dur-base) var(--motion-standard),
+      box-shadow var(--dur-base) var(--motion-standard),
+      color var(--dur-base) var(--motion-standard);
   }
 
   .app-modal-chrome-left {
@@ -206,7 +205,8 @@
     background: var(--app-modal-surface-bg);
     border: none;
     backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
-    -webkit-backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
+    -webkit-backdrop-filter: blur(var(--app-glass-panel-blur))
+      saturate(var(--app-glass-panel-saturate));
     box-shadow: var(--app-glass-panel-shadow);
   }
 
@@ -230,7 +230,12 @@
   }
 
   .app-modal-content--bottom-fade {
-    -webkit-mask-image: linear-gradient(to bottom, black 0, black calc(100% - 34px), transparent 100%);
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      black 0,
+      black calc(100% - 34px),
+      transparent 100%
+    );
     mask-image: linear-gradient(to bottom, black 0, black calc(100% - 34px), transparent 100%);
   }
 
@@ -256,7 +261,7 @@
     font-size: var(--fs-lg);
     line-height: var(--lh-tight);
     letter-spacing: 0.01em;
-    color: #4e392d;
+    color: var(--brand);
   }
 
   .app-modal-content :global(p) {
@@ -320,7 +325,12 @@
     }
 
     .app-modal-content--bottom-fade {
-      -webkit-mask-image: linear-gradient(to bottom, black 0, black calc(100% - 28px), transparent 100%);
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        black 0,
+        black calc(100% - 28px),
+        transparent 100%
+      );
       mask-image: linear-gradient(to bottom, black 0, black calc(100% - 28px), transparent 100%);
     }
 

@@ -15,7 +15,7 @@
   {open}
   ariaLabel="Cerrar ajustes de familia"
   ariaLabelledby="family-settings-title"
-  onClose={onClose}
+  {onClose}
   size="compact"
 >
   <div class="users-confirm-card family-settings-card" in:fade={{ duration: 140 }}>
@@ -60,7 +60,7 @@
     h2 {
       margin: 0;
       font-size: var(--fs-lg);
-      color: #4a3426;
+      color: var(--text-main);
     }
   }
 
@@ -88,14 +88,13 @@
     }
   }
 
-
   .ok-note {
-    color: #16a31a;
+    color: var(--feedback-success-text);
     font-size: var(--fs-xs);
   }
 
   .error-note {
-    color: #dc2626;
+    color: var(--feedback-error-text);
     font-size: var(--fs-xs);
   }
 </style>

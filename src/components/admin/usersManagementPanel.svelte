@@ -58,7 +58,8 @@
             <option value="">Sin vínculo</option>
             {#each availableMembersByProfileId[profile.id] ?? [] as member (member.id)}
               <option value={member.id}>
-                {member.name} {member.family_name}
+                {member.name}
+                {member.family_name}
               </option>
             {/each}
           </select>
@@ -107,7 +108,7 @@
 
   .users-list li {
     .user-name {
-      color: #4a3426;
+      color: var(--text-main);
       font-size: var(--fs-sm);
       font-weight: 700;
     }
@@ -147,7 +148,7 @@
     min-width: 170px;
     min-height: 44px;
     border: none;
-    border-radius: 10px;
+    border-radius: var(--radius-control);
     background: var(--field-bg);
     color: var(--text-main);
     padding: 0.4rem 0.6rem;
@@ -155,13 +156,13 @@
   }
 
   .ok-note {
-    color: #16a31a;
+    color: var(--feedback-success-text);
     font-size: var(--fs-xs);
     margin: 0.5rem 0 0;
   }
 
   .error-note {
-    color: #dc2626;
+    color: var(--feedback-error-text);
     font-size: var(--fs-xs);
     margin: 0.5rem 0 0;
   }

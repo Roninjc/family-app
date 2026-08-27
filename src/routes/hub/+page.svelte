@@ -279,88 +279,88 @@
     </section>
   {:else}
     <section class="families-zone reveal-fade-up reveal-delay-1" aria-label="Familias del usuario">
-    <div class="zone-title-row">
-      <h2>Tus familias</h2>
+      <div class="zone-title-row">
+        <h2>Tus familias</h2>
+        {#if data.families.length > 1}
+          <p class="scroll-hint" role="status">Desliza para cambiar de familia activa</p>
+        {/if}
+      </div>
+
+      <div class="carousel-shell" class:multi={data.families.length > 1}>
+        <div class="edge-glow edge-left" aria-hidden="true"></div>
+        <div
+          class="families-carousel"
+          bind:this={carousel}
+          on:scroll={detectCenteredFamily}
+          role="region"
+          aria-label="Carrusel de familias"
+        >
+          {#each data.families as family (family.id)}
+            <article
+              class="family-panel"
+              class:active={family.id === selectedFamily?.id}
+              use:trackCard={family.id}
+            >
+              <div class="family-content">
+                <div class="panel-header">
+                  <h3>{family.name}</h3>
+                </div>
+
+                <div class="family-center">
+                  <a
+                    class="family-preview-entry"
+                    href={family.treeHref}
+                    data-sveltekit-preload-data="tap"
+                    data-sveltekit-preload-code="eager"
+                    aria-label={`Entrar al nivel familiar de ${family.name}`}
+                  >
+                    <FamilyPreviewCard {family} />
+                  </a>
+
+                  <FamilyNotesCard
+                    {family}
+                    notes={filteredNotesByFamily[family.id] ?? []}
+                    filter={notesFilterByFamily[family.id] ?? 'all'}
+                    filterOptions={notesFilterOptions}
+                    status={notesStatusForFamily(family.id)}
+                    {editingId}
+                    bind:titleDraft
+                    bind:bodyDraft
+                    bind:typeDraft
+                    onFilterChange={(event) => onNotesFilterChange(family.id, event)}
+                    onEditStart={startEdit}
+                    onEditCancel={cancelEdit}
+                  />
+                </div>
+                <div class="loading-sheen" aria-hidden="true"></div>
+              </div>
+            </article>
+          {/each}
+        </div>
+        <div class="edge-glow edge-right" aria-hidden="true"></div>
+      </div>
+
       {#if data.families.length > 1}
-        <p class="scroll-hint" role="status">Desliza para cambiar de familia activa</p>
+        <div class="carousel-dots" role="tablist" aria-label="Indicador de familia activa">
+          {#each data.families as family, index (family.id)}
+            <button
+              type="button"
+              class="dot"
+              class:active={family.id === selectedFamily?.id}
+              role="tab"
+              aria-selected={family.id === selectedFamily?.id}
+              tabindex={family.id === selectedFamily?.id ? 0 : -1}
+              aria-label={`Ir a ${family.name}`}
+              on:click={() => {
+                goToFamilyAt(index)
+              }}
+              on:keydown={(event) => {
+                handleDotKeydown(event, index)
+              }}
+            ></button>
+          {/each}
+        </div>
       {/if}
-    </div>
-
-    <div class="carousel-shell" class:multi={data.families.length > 1}>
-      <div class="edge-glow edge-left" aria-hidden="true"></div>
-      <div
-        class="families-carousel"
-        bind:this={carousel}
-        on:scroll={detectCenteredFamily}
-        role="region"
-        aria-label="Carrusel de familias"
-      >
-        {#each data.families as family (family.id)}
-          <article
-            class="family-panel"
-            class:active={family.id === selectedFamily?.id}
-            use:trackCard={family.id}
-          >
-            <div class="family-content">
-              <div class="panel-header">
-                <h3>{family.name}</h3>
-              </div>
-
-              <div class="family-center">
-                <a
-                  class="family-preview-entry"
-                  href={family.treeHref}
-                  data-sveltekit-preload-data="tap"
-                  data-sveltekit-preload-code="eager"
-                  aria-label={`Entrar al nivel familiar de ${family.name}`}
-                >
-                  <FamilyPreviewCard {family} />
-                </a>
-
-                <FamilyNotesCard
-                  {family}
-                  notes={filteredNotesByFamily[family.id] ?? []}
-                  filter={notesFilterByFamily[family.id] ?? 'all'}
-                  filterOptions={notesFilterOptions}
-                  status={notesStatusForFamily(family.id)}
-                  {editingId}
-                  bind:titleDraft
-                  bind:bodyDraft
-                  bind:typeDraft
-                  onFilterChange={(event) => onNotesFilterChange(family.id, event)}
-                  onEditStart={startEdit}
-                  onEditCancel={cancelEdit}
-                />
-              </div>
-              <div class="loading-sheen" aria-hidden="true"></div>
-            </div>
-          </article>
-        {/each}
-      </div>
-      <div class="edge-glow edge-right" aria-hidden="true"></div>
-    </div>
-
-    {#if data.families.length > 1}
-      <div class="carousel-dots" role="tablist" aria-label="Indicador de familia activa">
-        {#each data.families as family, index (family.id)}
-          <button
-            type="button"
-            class="dot"
-            class:active={family.id === selectedFamily?.id}
-            role="tab"
-            aria-selected={family.id === selectedFamily?.id}
-            tabindex={family.id === selectedFamily?.id ? 0 : -1}
-            aria-label={`Ir a ${family.name}`}
-            on:click={() => {
-              goToFamilyAt(index)
-            }}
-            on:keydown={(event) => {
-              handleDotKeydown(event, index)
-            }}
-          ></button>
-        {/each}
-      </div>
-    {/if}
     </section>
   {/if}
 </main>
@@ -381,7 +381,7 @@
     gap: 16px;
     width: min(var(--page-content-max), 100%);
     margin-inline: auto;
-    border-radius: 18px;
+    border-radius: var(--radius-xl);
     padding: 0;
     background: transparent;
     box-shadow: none;
@@ -396,7 +396,7 @@
   }
 
   .personal-empty-card {
-    border-radius: 18px;
+    border-radius: var(--radius-xl);
     padding: 20px;
     display: flex;
     flex-direction: column;
@@ -421,7 +421,7 @@
     border: 1px solid rgba(201, 176, 141, 0.48);
     background: color-mix(in srgb, var(--brand-soft) 82%, rgba(255, 255, 255, 0.9));
     padding: 10px 12px;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     color: var(--text-main);
   }
 
@@ -452,7 +452,7 @@
 
   .carousel-shell {
     position: relative;
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     margin-inline: 0;
     padding: 6px;
     background: transparent;
@@ -474,7 +474,7 @@
     scroll-snap-align: center;
     min-height: 470px;
     container-type: inline-size;
-    border-radius: 14px;
+    border-radius: var(--radius-card);
   }
 
   .family-content {
@@ -499,7 +499,7 @@
 
   .family-preview-entry {
     display: block;
-    border-radius: 14px;
+    border-radius: var(--radius-card);
     text-decoration: none;
     color: inherit;
   }
@@ -521,7 +521,7 @@
   .family-preview-entry:focus-visible {
     outline: 2px solid color-mix(in srgb, var(--brand) 86%, #fff 14%);
     outline-offset: 3px;
-    border-radius: 14px;
+    border-radius: var(--radius-card);
   }
 
   .panel-header {
@@ -597,16 +597,16 @@
       2px 2px 5px rgba(149, 121, 95, 0.16),
       -2px -2px 5px rgba(255, 255, 255, 0.72);
     transition:
-      transform 0.22s var(--motion-standard),
-      background-color 0.22s var(--motion-standard),
-      box-shadow 0.22s var(--motion-standard);
+      transform var(--dur-ui) var(--motion-standard),
+      background-color var(--dur-ui) var(--motion-standard),
+      box-shadow var(--dur-ui) var(--motion-standard);
     cursor: pointer;
   }
 
   .dot:focus-visible {
     outline: 2px solid color-mix(in srgb, var(--brand) 84%, #fff 16%);
     outline-offset: 3px;
-    box-shadow: 0 0 0 4px rgba(198, 171, 139, 0.4);
+    box-shadow: var(--focus-ring-warm);
   }
 
   .dot.active {

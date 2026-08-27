@@ -15,7 +15,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    background: #e0e0e0;
+    background: var(--fab-surface-bg);
     transform: translateY(50%);
     pointer-events: auto;
   }

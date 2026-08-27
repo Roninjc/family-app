@@ -89,7 +89,9 @@
   $: familyBasePath = activeFamilyId ? `/family/${encodeURIComponent(activeFamilyId)}` : null
   $: familyTreeHref = familyBasePath ?? '/hub?state=no_family'
   $: familyHubHref = familyBasePath ? `${familyBasePath}/hub` : '/hub?state=no_family'
-  $: canEditActiveFamily = Boolean(isFamilyAdminLevel && activeFamily && activeFamily.role !== 'viewer')
+  $: canEditActiveFamily = Boolean(
+    isFamilyAdminLevel && activeFamily && activeFamily.role !== 'viewer'
+  )
   $: familySettingsHref = (() => {
     const url = new URL($page.url)
     url.searchParams.set('familySettings', '1')
@@ -146,7 +148,10 @@
     if (menu) menu.open = false
   }
 
-  function handleMenuToggle(activeMenu: HTMLDetailsElement | null, otherMenu: HTMLDetailsElement | null) {
+  function handleMenuToggle(
+    activeMenu: HTMLDetailsElement | null,
+    otherMenu: HTMLDetailsElement | null
+  ) {
     if (activeMenu?.open) closeDetails(otherMenu)
   }
 
@@ -200,9 +205,12 @@
           showBootOverlay = false
         }, NEUMO_OVERLAY_TOTAL_MS)
 
-        shadowActivationTimer = setTimeout(() => {
-          root.setAttribute(NEUMO_READY_ATTRIBUTE, NEUMO_READY_VALUE)
-        }, Math.max(0, NEUMO_OVERLAY_TOTAL_MS - NEUMO_SHADOW_ACTIVATION_OVERLAP_MS))
+        shadowActivationTimer = setTimeout(
+          () => {
+            root.setAttribute(NEUMO_READY_ATTRIBUTE, NEUMO_READY_VALUE)
+          },
+          Math.max(0, NEUMO_OVERLAY_TOTAL_MS - NEUMO_SHADOW_ACTIVATION_OVERLAP_MS)
+        )
       })
     })
 
@@ -212,7 +220,9 @@
     if (dev && 'serviceWorker' in navigator) {
       navigator.serviceWorker
         .getRegistrations()
-        .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+        .then((registrations) =>
+          Promise.all(registrations.map((registration) => registration.unregister()))
+        )
         .catch(() => {
           // Ignore SW cleanup failures in local development.
         })
@@ -291,11 +301,15 @@
   >
     <div
       class="app-boot-overlay__color"
-      style={`position:absolute;inset:0;background:var(--app-bg, #f1ece4);opacity:${bootOverlayFadingOut ? '0' : '1'};transition:opacity ${NEUMO_OVERLAY_COLOR_FADE_OUT_MS}ms ${NEUMO_OVERLAY_EASE};`}
+      style={`position:absolute;inset:0;background:var(--app-bg, #f1ece4);opacity:${
+        bootOverlayFadingOut ? '0' : '1'
+      };transition:opacity ${NEUMO_OVERLAY_COLOR_FADE_OUT_MS}ms ${NEUMO_OVERLAY_EASE};`}
     ></div>
     <div
       class="app-boot-overlay__blur"
-      style={`position:absolute;inset:0;background:rgba(241,236,228,0.26);opacity:${bootOverlayFadingOut ? '0' : '1'};backdrop-filter:blur(8px) saturate(0.94);-webkit-backdrop-filter:blur(8px) saturate(0.94);transition:opacity ${NEUMO_OVERLAY_BLUR_FADE_OUT_MS}ms ${NEUMO_OVERLAY_EASE} ${NEUMO_OVERLAY_BLUR_FADE_DELAY_MS}ms;`}
+      style={`position:absolute;inset:0;background:rgba(241,236,228,0.26);opacity:${
+        bootOverlayFadingOut ? '0' : '1'
+      };backdrop-filter:blur(8px) saturate(0.94);-webkit-backdrop-filter:blur(8px) saturate(0.94);transition:opacity ${NEUMO_OVERLAY_BLUR_FADE_OUT_MS}ms ${NEUMO_OVERLAY_EASE} ${NEUMO_OVERLAY_BLUR_FADE_DELAY_MS}ms;`}
     ></div>
   </div>
 {/if}
@@ -363,11 +377,7 @@
         <div class="header-main-pill">
           {#if headerTextVisible}
             <div class="header-main-copy">
-              <p
-                class="header-crumb"
-                in:fade={{ duration: 80 }}
-                out:fade={{ duration: 70 }}
-              >
+              <p class="header-crumb" in:fade={{ duration: 80 }} out:fade={{ duration: 70 }}>
                 {displayedHeaderCrumb}
               </p>
               <div
@@ -460,7 +470,7 @@
       <div class="modal-heading">
         <h2 id="header-compose-title">{composeModalTitle}</h2>
         <p class="modal-subtitle">
-        Se guardará en <strong>{activeFamilyName ?? 'la familia activa'}</strong>.
+          Se guardará en <strong>{activeFamilyName ?? 'la familia activa'}</strong>.
         </p>
       </div>
 
@@ -510,18 +520,25 @@
 
 <style lang="scss">
   :global(:root) {
+    /*
+      Token naming convention (layered):
+      1) Foundation literals: raw palette/effects (example: --neu-*, --glass-*)
+      2) Semantic tokens: intent-driven UI meaning (example: --text-*, --feedback-*)
+      3) Component aliases: localized composition hooks (example: --app-*, --header-*)
+      Rule of thumb: prefer semantic tokens in components, reserve literals for foundations.
+    */
+
+    /* Foundation: page surfaces, glass and neumorphism */
     --app-bg: radial-gradient(circle at 10% 14%, rgba(235, 223, 204, 0.34), transparent 34%),
       radial-gradient(circle at 86% 10%, rgba(226, 212, 194, 0.34), transparent 30%),
       radial-gradient(circle at 22% 78%, rgba(208, 216, 194, 0.24), transparent 36%), #f1ece4;
     --app-bg-deep: #f1ece4;
     --surface-soft: rgba(255, 255, 255, 0.34);
-    --surface-strong: rgba(255, 255, 255, 0.56);
     --glass-surface: rgba(250, 247, 243, 0.56);
-    --glass-surface-strong: rgba(255, 254, 251, 0.78);
     --glass-border: rgba(236, 226, 212, 0.9);
-    --glass-border-soft: rgba(219, 205, 188, 0.62);
     --glass-shadow: none;
-    --glass-shadow-active: 0 16px 34px rgba(79, 66, 53, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    --glass-shadow-active: 0 16px 34px rgba(79, 66, 53, 0.13),
+      inset 0 1px 0 rgba(255, 255, 255, 0.75);
     --app-glass-panel-bg: rgba(255, 255, 255, 0.05);
     --app-glass-panel-bg-soft: rgba(255, 255, 255, 0.035);
     --app-glass-panel-bg-strong: rgba(255, 255, 255, 0.07);
@@ -536,7 +553,8 @@
     --app-glass-panel-shadow: none;
     --app-glass-panel-shadow-active: var(--glass-shadow-active), var(--neu-shadow-out-active);
     --app-glass-panel-shadow-soft: none;
-    --app-glass-panel-shadow-soft-active: var(--glass-shadow-active), var(--neu-shadow-out-soft-active);
+    --app-glass-panel-shadow-soft-active: var(--glass-shadow-active),
+      var(--neu-shadow-out-soft-active);
     --app-glass-menu-item-hover-bg: rgba(230, 212, 192, 0.37);
     --app-glass-menu-item-hover-text: #6b4f38;
     --app-glass-menu-item-hover-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5),
@@ -598,32 +616,95 @@
     --app-bottom-nav-current-shadow: none;
     --app-bottom-nav-current-shadow-active: inset 3px 3px 7px rgba(154, 132, 109, 0.22),
       inset -3px -3px 7px rgba(255, 255, 255, 0.76);
+    /* Semantic: text, accents, controls and warm surfaces */
     --text-main: #2e2823;
     --text-muted: #544b43;
     --text-soft: #675c53;
     --brand: #806a54;
     --brand-soft: rgba(128, 106, 84, 0.14);
     --accent-sky: #89725f;
-    --accent-sage: #72815f;
     --accent-clay: #9b7158;
     --accent-plum: #716453;
-    --accent-sky-soft: rgba(137, 114, 95, 0.14);
-    --accent-sage-soft: rgba(114, 129, 95, 0.14);
-    --accent-clay-soft: rgba(155, 113, 88, 0.14);
-    --accent-plum-soft: rgba(113, 100, 83, 0.14);
-    --ok: #3f7965;
-    --danger: #b23333;
     --field-border: #cbbca9;
     --field-bg: #fcfaf7;
+    --control-bg: #f2ece4;
+    --control-bg-focus: #f7f2ea;
+    --control-bg-error-soft: #f8efec;
+    --control-bg-disabled: #edf1f5;
+    --control-text-disabled: #6b7280;
+    --control-border-disabled: #cdd5df;
+    --surface-warm-elevated: #efe7dc;
+    --surface-avatar: #f3ede5;
+    --text-main-strong: #1f1f1f;
+    --text-warm-strong: #8a4a22;
+    --text-warm-chip: #6f4f39;
+    --chip-warm-bg: rgba(236, 221, 203, 0.7);
+    --chip-warm-bg-strong: rgba(236, 221, 203, 0.74);
+    --chip-warm-bg-hover: rgba(230, 212, 192, 0.78);
+    --chip-warm-bg-hover-strong: rgba(230, 212, 192, 0.8);
+    /* Semantic: feedback states (success/warning/error) */
+    --text-success: #166534;
+    --text-success-strong: #16a31a;
+    --text-warning: #9a3412;
+    --text-error: #dc2626;
+    --text-error-strong: #b91c1c;
+    --feedback-success-text: var(--text-success-strong);
+    --feedback-success-soft-text: var(--text-success);
+    --feedback-error-text: var(--text-error);
+    --feedback-error-strong-text: var(--text-error-strong);
+    --text-on-accent: #ffffff;
+    --feedback-success-border: rgba(87, 154, 113, 0.3);
+    --feedback-error-border: rgba(204, 107, 107, 0.35);
+    --feedback-warning-bg: #fff3cd;
+    --feedback-warning-text: #5f4500;
+    --feedback-warning-border: #f6df96;
+    --feedback-warning-shadow: 0 10px 24px rgba(36, 23, 0, 0.13);
+
+    /* Component aliases: recurring interaction surfaces */
+    --fab-surface-bg: #e0e0e0;
+    --fab-icon-color: #333333;
+    --fab-shadow-rest: 6px 6px 12px #bebebe, -6px -6px 12px #ffffff;
+    --chip-surface-bg: rgba(255, 255, 255, 0.7);
+    --chip-surface-border: rgba(255, 255, 255, 0.82);
+    --chip-surface-empty-bg: rgba(255, 249, 241, 0.5);
+    --surface-corner-radius: 9px;
+
+    /* Semantic: focus rings and shadow helpers */
+    --focus-ring-soft: 0 0 0 2px rgba(156, 123, 95, 0.18);
+    --focus-ring-soft-strong: 0 0 0 2px rgba(149, 121, 95, 0.52);
+    --focus-ring-error: 0 0 0 2px rgba(220, 38, 38, 0.15);
+    --focus-ring-error-strong: 0 0 0 2px rgba(188, 70, 70, 0.55);
+    --focus-ring-error-pulse: 0 0 0 5px rgba(188, 70, 70, 0.2);
+    --focus-ring-error-start: 0 0 0 0 rgba(188, 70, 70, 0.28);
+    --focus-ring-warm: 0 0 0 4px rgba(198, 171, 139, 0.4);
+    --shadow-soft-xs: 0 1px 2px rgba(149, 121, 95, 0.09);
+    --shadow-soft-sm: 0 2px 5px rgba(149, 121, 95, 0.12);
+
+    /* Semantic: compact spacing core (7 sizes) */
+    --space-0: 2px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+
+    /* Semantic: radii, motion and typography scales */
     --radius-lg: 16px;
     --radius-md: 12px;
     --radius-pill: 999px;
+    --radius-sm: 8px;
+    --radius-control: 10px;
+    --radius-card: 14px;
+    --radius-xl: 18px;
+    --radius-round: 50%;
     --page-header-content-gap: 30px;
     --motion-standard: cubic-bezier(0.22, 1, 0.36, 1);
+    --dur-fast: 0.18s;
+    --dur-base: 0.2s;
+    --dur-ui: 0.22s;
+    --dur-slow: 0.24s;
     --neumo-shadow-transition-ease: cubic-bezier(0.16, 0.84, 0.26, 1.2);
-    --neumo-overlay-color-fade-duration: 0.28s;
-    --neumo-overlay-blur-fade-delay: 0.14s;
-    --neumo-overlay-blur-fade-duration: 0.52s;
     --neumo-overlay-blur-strength: 8px;
     --neumo-shadow-transition-duration: 0.42s;
     --fs-2xs: clamp(0.78rem, 0.74rem + 0.15vw, 0.84rem);
@@ -635,19 +716,17 @@
     --lh-tight: 1.2;
     --lh-copy: 1.5;
     --nav-dock-shadow: none;
-    --nav-dock-shadow-active: 0 14px 24px rgba(88, 71, 56, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.52);
-    --tree-node-surface: linear-gradient(
-      165deg,
-      rgba(255, 253, 250, 0.94),
-      rgba(242, 234, 223, 0.72)
-    );
-    --tree-node-border: rgba(187, 167, 147, 0.5);
+    --nav-dock-shadow-active: 0 14px 24px rgba(88, 71, 56, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.52);
+
+    /* Component aliases: family-tree rendering */
     --tree-node-shadow: none;
-    --tree-node-shadow-active: 0 14px 22px rgba(88, 69, 52, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.84);
+    --tree-node-shadow-active: 0 14px 22px rgba(88, 69, 52, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.84);
     --tree-line-main: #85705f;
-    --tree-line-soft: #a29182;
-    --tree-band-a: rgba(250, 245, 238, 0.2);
-    --tree-band-b: rgba(234, 225, 214, 0.12);
+    --tree-line-secondary: #7f5a43;
+    --tree-line-previous: #b38261;
+    --tree-line-drop-shadow: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.72));
     --page-shell-top-mobile: 24px;
     --page-shell-top-desktop: 30px;
     --page-shell-inline-mobile: 14px;
@@ -735,17 +814,17 @@
     background: var(--app-glass-local-bg, var(--app-glass-panel-bg));
     border: none;
     backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
-    -webkit-backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
+    -webkit-backdrop-filter: blur(var(--app-glass-panel-blur))
+      saturate(var(--app-glass-panel-saturate));
     box-shadow: var(--app-glass-local-shadow, var(--app-glass-panel-shadow));
     transition:
       box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
-      background-color 0.22s var(--motion-standard),
-        opacity 0.22s var(--motion-standard);
+      background-color var(--dur-ui) var(--motion-standard),
+      opacity var(--dur-ui) var(--motion-standard);
   }
 
   :global(.app-glass-surface-soft) {
     --app-glass-local-bg: var(--app-glass-panel-bg-soft);
-    --app-glass-local-border: var(--app-glass-panel-border-soft);
     --app-glass-local-shadow: var(--app-glass-panel-shadow-soft);
   }
 
@@ -772,7 +851,8 @@
     border: none;
     border-radius: var(--radius-lg);
     box-shadow: var(--neu-shadow-out);
-    transition: box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease);
+    transition: box-shadow var(--neumo-shadow-transition-duration)
+      var(--neumo-shadow-transition-ease);
   }
 
   :global(.app-btn) {
@@ -795,11 +875,11 @@
     cursor: pointer;
     box-shadow: var(--neu-shadow-out-soft);
     transition:
-      transform 0.22s var(--motion-standard),
+      transform var(--dur-ui) var(--motion-standard),
       box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
-      background-color 0.22s var(--motion-standard),
-      border-color 0.22s var(--motion-standard),
-      color 0.22s var(--motion-standard);
+      background-color var(--dur-ui) var(--motion-standard),
+      border-color var(--dur-ui) var(--motion-standard),
+      color var(--dur-ui) var(--motion-standard);
   }
 
   :global(.app-btn:hover:not(:disabled):not([aria-disabled='true'])) {
@@ -836,7 +916,7 @@
   }
 
   :global(.app-btn--ghost) {
-    background: #f2ece4;
+    background: var(--control-bg);
     color: var(--brand);
   }
 
@@ -893,17 +973,19 @@
   }
 
   :global(.app-card-soft) {
-    border-radius: 10px;
+    border-radius: var(--radius-control);
     background: rgba(255, 255, 255, 0.5);
     box-shadow: var(--app-card-soft-shadow);
-    transition: box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease);
+    transition: box-shadow var(--neumo-shadow-transition-duration)
+      var(--neumo-shadow-transition-ease);
   }
 
   :global(.app-card-soft-raised) {
-    border-radius: 10px;
+    border-radius: var(--radius-control);
     background: rgba(255, 255, 255, 0.52);
     box-shadow: var(--app-card-soft-raised-shadow);
-    transition: box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease);
+    transition: box-shadow var(--neumo-shadow-transition-duration)
+      var(--neumo-shadow-transition-ease);
   }
 
   :global(.app-chip) {
@@ -936,10 +1018,10 @@
     background: #f3eadf;
     box-shadow: var(--app-chip-interactive-shadow);
     transition:
-      transform 0.2s var(--motion-standard),
+      transform var(--dur-base) var(--motion-standard),
       box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
-      background-color 0.2s var(--motion-standard),
-      color 0.2s var(--motion-standard);
+      background-color var(--dur-base) var(--motion-standard),
+      color var(--dur-base) var(--motion-standard);
   }
 
   :global(.app-chip--interactive:hover) {
@@ -962,13 +1044,14 @@
   :global(.app-stat-item) {
     margin: 0;
     padding: 0.48rem 0.55rem;
-    border-radius: 10px;
+    border-radius: var(--radius-control);
     background: rgba(255, 255, 255, 0.48);
     box-shadow: var(--app-stat-item-shadow);
     display: flex;
     flex-direction: column;
     gap: 2px;
-    transition: box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease);
+    transition: box-shadow var(--neumo-shadow-transition-duration)
+      var(--neumo-shadow-transition-ease);
   }
 
   :global(.app-stat-item strong) {
@@ -992,11 +1075,12 @@
     list-style: none;
     max-height: 180px;
     overflow-y: auto;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     border: none;
     background: var(--app-glass-menu-bg);
     backdrop-filter: blur(var(--app-glass-menu-blur)) saturate(var(--app-glass-menu-saturate));
-    -webkit-backdrop-filter: blur(var(--app-glass-menu-blur)) saturate(var(--app-glass-menu-saturate));
+    -webkit-backdrop-filter: blur(var(--app-glass-menu-blur))
+      saturate(var(--app-glass-menu-saturate));
     will-change: backdrop-filter;
     box-shadow: var(--app-glass-panel-shadow-soft);
     z-index: 10;
@@ -1006,14 +1090,14 @@
     padding: 10px 16px;
     cursor: pointer;
     transition:
-      background-color 0.2s var(--motion-standard),
-      color 0.2s var(--motion-standard);
+      background-color var(--dur-base) var(--motion-standard),
+      color var(--dur-base) var(--motion-standard);
   }
 
   :global(.app-autocomplete-suggestions li:hover),
   :global(.app-autocomplete-suggestions li.active) {
     background: var(--app-glass-menu-item-hover-bg);
-    color: #8a4a22;
+    color: var(--text-warm-strong);
   }
 
   :global(.app-autocomplete-suggestions li button) {
@@ -1037,7 +1121,7 @@
     font-size: var(--fs-xs);
     color: #7e4520;
     cursor: pointer;
-    transition: background-color 0.2s var(--motion-standard);
+    transition: background-color var(--dur-base) var(--motion-standard);
   }
 
   :global(.app-suggested-chip:hover) {
@@ -1051,17 +1135,17 @@
     padding: 8px;
     border: none;
     border-radius: 12px;
-    background: #efe7dc;
-    color: #1f1f1f;
+    background: var(--surface-warm-elevated);
+    color: var(--text-main-strong);
     display: grid;
     place-items: center;
     cursor: pointer;
     box-shadow: var(--app-settings-trigger-shadow);
     transition:
-      transform 0.2s var(--motion-standard),
-      background-color 0.2s var(--motion-standard),
-      color 0.2s var(--motion-standard),
-        box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease);
+      transform var(--dur-base) var(--motion-standard),
+      background-color var(--dur-base) var(--motion-standard),
+      color var(--dur-base) var(--motion-standard),
+      box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease);
   }
 
   :global(.app-settings-trigger svg) {
@@ -1099,10 +1183,10 @@
     background: var(--neu-surface-soft);
     box-shadow: var(--neu-shadow-out-soft);
     transition:
-      transform 0.2s var(--motion-standard),
+      transform var(--dur-base) var(--motion-standard),
       box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
-      background-color 0.2s var(--motion-standard),
-      color 0.2s var(--motion-standard);
+      background-color var(--dur-base) var(--motion-standard),
+      color var(--dur-base) var(--motion-standard);
   }
 
   :global(.app-bottom-nav .app-bottom-nav-link:hover) {
@@ -1142,9 +1226,9 @@
     transition:
       box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
       filter var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
-      background-color 0.22s var(--motion-standard),
-      color 0.22s var(--motion-standard),
-      transform 0.22s var(--motion-standard);
+      background-color var(--dur-ui) var(--motion-standard),
+      color var(--dur-ui) var(--motion-standard),
+      transform var(--dur-ui) var(--motion-standard);
   }
 
   :global(html[data-neumo='boot'] .glass-panel),
@@ -1189,8 +1273,7 @@
     width: min(1040px, 100%);
     margin: 0 auto;
     padding: max(var(--page-shell-top-mobile), env(safe-area-inset-top))
-      var(--page-shell-inline-mobile)
-      max(20px, env(safe-area-inset-bottom));
+      var(--page-shell-inline-mobile) max(20px, env(safe-area-inset-bottom));
   }
 
   @media (min-width: 760px) {
@@ -1221,12 +1304,12 @@
     height: 40px;
     padding: 0.6rem 0.75rem 0.4rem;
     border: none;
-    border-radius: 10px;
-    background: #f2ece4;
+    border-radius: var(--radius-control);
+    background: var(--control-bg);
     font-size: var(--fs-md);
     transition:
-      border-color 0.2s,
-      box-shadow 0.2s;
+      border-color var(--dur-base),
+      box-shadow var(--dur-base);
     box-shadow: var(--neu-shadow-inset);
     color: var(--text-main);
   }
@@ -1246,10 +1329,8 @@
 
   :global(.floating-input-wrapper .modern-input:focus) {
     outline: none;
-    box-shadow:
-      var(--neu-shadow-inset),
-      0 0 0 2px rgba(156, 123, 95, 0.18);
-    background: #f7f2ea;
+    box-shadow: var(--neu-shadow-inset), var(--focus-ring-soft);
+    background: var(--control-bg-focus);
   }
 
   :global(.floating-input-wrapper .modern-input:focus),
@@ -1316,9 +1397,9 @@
 
   :global(.hover-lift) {
     transition:
-      transform 0.22s var(--motion-standard),
-      box-shadow 0.22s var(--motion-standard),
-      border-color 0.22s var(--motion-standard);
+      transform var(--dur-ui) var(--motion-standard),
+      box-shadow var(--dur-ui) var(--motion-standard),
+      border-color var(--dur-ui) var(--motion-standard);
   }
 
   :global(.hover-lift:hover) {
@@ -1339,18 +1420,18 @@
   }
 
   :global(.floating-input-wrapper .modern-input:user-invalid:not(:focus) + label.label-active) {
-    color: #dc2626;
+    color: var(--feedback-error-text);
   }
 
   :global(.floating-input-wrapper .modern-input:user-invalid:not(:focus)) {
-    border-color: #dc2626;
-    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15);
+    border-color: var(--feedback-error-text);
+    box-shadow: var(--focus-ring-error);
     background: #fff5f5;
   }
 
   :global(.modern-input:user-invalid:not(:focus)) {
-    border-color: #dc2626;
-    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15);
+    border-color: var(--feedback-error-text);
+    box-shadow: var(--focus-ring-error);
     background: #fff5f5;
   }
 
@@ -1454,17 +1535,28 @@
     z-index: 2000;
     max-width: min(92vw, 680px);
     padding: 10px 14px;
-    border-radius: 12px;
-    background: #fff3cd;
-    color: #5f4500;
-    border: 1px solid #f6df96;
-    box-shadow: 0 10px 24px rgba(36, 23, 0, 0.13);
+    border-radius: var(--radius-md);
+    background: var(--feedback-warning-bg);
+    color: var(--feedback-warning-text);
+    border: 1px solid var(--feedback-warning-border);
+    box-shadow: var(--feedback-warning-shadow);
     font-size: var(--fs-sm);
     line-height: 1.35;
     text-align: center;
   }
 
   .app-route-header {
+    --header-icon-shadow: 2px 2px 6px rgba(149, 121, 95, 0.14),
+      -2px -2px 6px rgba(255, 255, 255, 0.72);
+    --header-icon-shadow-hover: 3px 3px 7px rgba(149, 121, 95, 0.17),
+      -3px -3px 7px rgba(255, 255, 255, 0.74);
+    --header-icon-shadow-active: inset 2px 2px 5px rgba(149, 121, 95, 0.22),
+      inset -2px -2px 5px rgba(255, 255, 255, 0.74);
+    --header-menu-open-shadow: inset 3px 3px 7px rgba(154, 132, 109, 0.2),
+      inset -3px -3px 7px rgba(255, 255, 255, 0.75);
+    --header-menu-open-hover-shadow: inset 4px 4px 9px rgba(154, 132, 109, 0.24),
+      inset -4px -4px 9px rgba(255, 255, 255, 0.8);
+    --header-badge-shadow: 0 3px 7px rgba(122, 49, 30, 0.35);
     position: sticky;
     top: 0;
     z-index: 14;
@@ -1491,7 +1583,8 @@
     background: var(--app-glass-panel-bg);
     border: none;
     backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
-    -webkit-backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
+    -webkit-backdrop-filter: blur(var(--app-glass-panel-blur))
+      saturate(var(--app-glass-panel-saturate));
     box-shadow: var(--app-glass-panel-shadow);
     display: flex;
     flex-direction: column;
@@ -1514,7 +1607,7 @@
     font-size: clamp(1.08rem, 1.03rem + 0.45vw, 1.34rem);
     line-height: var(--lh-tight);
     letter-spacing: 0.01em;
-    color: #4e392d;
+    color: var(--text-main);
   }
 
   .header-title-row {
@@ -1534,36 +1627,30 @@
     left: calc(100% + 14px);
     top: 50%;
     transform: translateY(-50%);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     border: none;
     background: transparent;
-    color: #6a513f;
+    color: var(--text-soft);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     text-decoration: none;
-    box-shadow:
-      2px 2px 6px rgba(149, 121, 95, 0.14),
-      -2px -2px 6px rgba(255, 255, 255, 0.72);
+    box-shadow: var(--header-icon-shadow);
     transition:
-      color 0.18s var(--motion-standard),
-      background-color 0.18s var(--motion-standard),
-      box-shadow 0.18s var(--motion-standard);
+      color var(--dur-fast) var(--motion-standard),
+      background-color var(--dur-fast) var(--motion-standard),
+      box-shadow var(--dur-fast) var(--motion-standard);
   }
 
   .header-title-edit:hover {
-    color: #554032;
+    color: var(--text-main);
     background: transparent;
-    box-shadow:
-      3px 3px 7px rgba(149, 121, 95, 0.17),
-      -3px -3px 7px rgba(255, 255, 255, 0.74);
+    box-shadow: var(--header-icon-shadow-hover);
   }
 
   .header-title-edit:active {
     background: transparent;
-    box-shadow:
-      inset 2px 2px 5px rgba(149, 121, 95, 0.22),
-      inset -2px -2px 5px rgba(255, 255, 255, 0.74);
+    box-shadow: var(--header-icon-shadow-active);
   }
 
   .header-title-edit svg {
@@ -1584,24 +1671,25 @@
   .header-side-circle {
     width: 52px;
     height: 52px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     border: none;
     background: var(--app-glass-panel-bg-soft);
     border: none;
     backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
-    -webkit-backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
+    -webkit-backdrop-filter: blur(var(--app-glass-panel-blur))
+      saturate(var(--app-glass-panel-saturate));
     box-shadow: var(--app-glass-panel-shadow-soft);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #5f4a39;
+    color: var(--text-soft);
     text-decoration: none;
     position: relative;
     transition:
-      transform 0.2s var(--motion-standard),
-      box-shadow 0.2s var(--motion-standard),
-      background-color 0.2s var(--motion-standard),
-      color 0.2s var(--motion-standard);
+      transform var(--dur-base) var(--motion-standard),
+      box-shadow var(--dur-base) var(--motion-standard),
+      background-color var(--dur-base) var(--motion-standard),
+      color var(--dur-base) var(--motion-standard);
   }
 
   .header-side-circle:hover {
@@ -1614,18 +1702,16 @@
     height: 24px;
     fill: currentColor;
     display: block;
-    transition: transform 0.2s var(--motion-standard);
+    transition: transform var(--dur-base) var(--motion-standard);
   }
 
   .header-menu[open] {
-    color: #735741;
+    color: var(--text-warm-chip);
   }
 
   .header-menu[open] summary {
     background: var(--app-glass-panel-bg-strong);
-    box-shadow:
-      inset 3px 3px 7px rgba(154, 132, 109, 0.2),
-      inset -3px -3px 7px rgba(255, 255, 255, 0.75);
+    box-shadow: var(--header-menu-open-shadow);
   }
 
   .header-menu[open] summary svg {
@@ -1646,16 +1732,16 @@
     right: -2px;
     min-width: 19px;
     height: 19px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 0 5px;
     font-size: 0.67rem;
     font-weight: 700;
-    color: #fff;
-    background: #c25f45;
-    box-shadow: 0 3px 7px rgba(122, 49, 30, 0.35);
+    color: var(--text-on-accent);
+    background: var(--accent-clay);
+    box-shadow: var(--header-badge-shadow);
   }
 
   .header-menu {
@@ -1671,20 +1757,21 @@
     list-style: none;
     width: 100%;
     height: 100%;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     border: none;
     background: var(--app-glass-panel-bg-soft);
     backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
-    -webkit-backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
+    -webkit-backdrop-filter: blur(var(--app-glass-panel-blur))
+      saturate(var(--app-glass-panel-saturate));
     box-shadow: var(--app-glass-panel-shadow-soft);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition:
-      box-shadow 0.2s var(--motion-standard),
-      background-color 0.2s var(--motion-standard),
-      color 0.2s var(--motion-standard);
+      box-shadow var(--dur-base) var(--motion-standard),
+      background-color var(--dur-base) var(--motion-standard),
+      color var(--dur-base) var(--motion-standard);
   }
 
   .header-menu:hover summary {
@@ -1696,9 +1783,7 @@
   }
 
   .header-menu[open]:hover summary {
-    box-shadow:
-      inset 4px 4px 9px rgba(154, 132, 109, 0.24),
-      inset -4px -4px 9px rgba(255, 255, 255, 0.8);
+    box-shadow: var(--header-menu-open-hover-shadow);
   }
 
   .header-menu summary::-webkit-details-marker {
@@ -1711,11 +1796,12 @@
     left: 0;
     min-width: 190px;
     max-width: min(280px, calc(100vw - 24px));
-    border-radius: 14px;
+    border-radius: var(--radius-card);
     border: none;
     background: var(--app-glass-menu-bg);
     backdrop-filter: blur(var(--app-glass-menu-blur)) saturate(var(--app-glass-menu-saturate));
-    -webkit-backdrop-filter: blur(var(--app-glass-menu-blur)) saturate(var(--app-glass-menu-saturate));
+    -webkit-backdrop-filter: blur(var(--app-glass-menu-blur))
+      saturate(var(--app-glass-menu-saturate));
     will-change: backdrop-filter;
     box-shadow: var(--app-glass-panel-shadow);
     padding: 10px;
@@ -1725,7 +1811,7 @@
     z-index: 24;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.22s var(--motion-standard);
+    transition: opacity var(--dur-ui) var(--motion-standard);
   }
 
   .header-menu[open] .header-dropdown {
@@ -1742,7 +1828,7 @@
   .header-dropdown button {
     min-height: 42px;
     border: none;
-    border-radius: 10px;
+    border-radius: var(--radius-control);
     background: transparent;
     color: var(--text-main);
     text-decoration: none;
@@ -1818,16 +1904,16 @@
   .header-compose-form .modern-textarea {
     width: 100%;
     border: none;
-    border-radius: 10px;
-    background: #f2ece4;
+    border-radius: var(--radius-control);
+    background: var(--control-bg);
     color: var(--text-main);
     font-family: inherit;
     font-size: var(--fs-sm);
     padding: 0.56rem 0.7rem;
     box-shadow: var(--neu-shadow-inset);
     transition:
-      box-shadow 0.2s var(--motion-standard),
-      background-color 0.2s var(--motion-standard);
+      box-shadow var(--dur-base) var(--motion-standard),
+      background-color var(--dur-base) var(--motion-standard);
   }
 
   .header-compose-form .modern-textarea {
@@ -1840,10 +1926,8 @@
   .header-compose-form .modern-input:focus,
   .header-compose-form .modern-textarea:focus {
     outline: none;
-    background: #f7f2ea;
-    box-shadow:
-      var(--neu-shadow-inset),
-      0 0 0 2px rgba(156, 123, 95, 0.18);
+    background: var(--control-bg-focus);
+    box-shadow: var(--neu-shadow-inset), var(--focus-ring-soft);
   }
 
   .header-compose-form .floating-input-wrapper .modern-textarea + label {
@@ -1860,8 +1944,8 @@
     letter-spacing: 0.01em;
     background: #f4eee6;
     padding: 0 0.3rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(149, 121, 95, 0.12);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-soft-sm);
   }
 
   .header-compose-actions {

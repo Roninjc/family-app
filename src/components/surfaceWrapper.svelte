@@ -78,8 +78,8 @@
     box-shadow: var(--neu-shadow-out);
     backdrop-filter: none;
     transition:
-      box-shadow 0.25s var(--motion-standard),
-      transform 0.25s var(--motion-standard);
+      box-shadow var(--dur-slow) var(--motion-standard),
+      transform var(--dur-slow) var(--motion-standard);
   }
 
   .surface-effect {
@@ -104,7 +104,7 @@
   }
 
   .round-corners {
-    border-radius: 9px;
+    border-radius: var(--surface-corner-radius);
   }
 
   .rounded {

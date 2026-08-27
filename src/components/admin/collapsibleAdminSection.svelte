@@ -8,7 +8,7 @@
   export let onToggle: () => void = () => {}
 </script>
 
-<section class={`admin-section ${revealClass}`.trim()} class:open={open}>
+<section class={`admin-section ${revealClass}`.trim()} class:open>
   <button
     type="button"
     class="section-toggle"
@@ -20,7 +20,7 @@
     <span>{title}</span>
     <small>
       {subtitle}
-      <b class="toggle-state" aria-hidden="true" class:open={open}>
+      <b class="toggle-state" aria-hidden="true" class:open>
         <svg viewBox="0 0 20 20" focusable="false">
           <path d="m5.5 7.5 4.5 4.5 4.5-4.5" />
         </svg>
@@ -29,7 +29,7 @@
   </button>
 
   {#if open}
-    <div class="section-body" transition:slide={{ duration: 220 }}>
+    <div class="section-body" transition:slide={{ duration: 200 }}>
       <slot />
     </div>
   {/if}
@@ -48,12 +48,12 @@
     margin-bottom: 1.05rem;
     background: transparent;
     border: none;
-    border-radius: 15px;
+    border-radius: var(--radius-lg);
     overflow: clip;
     box-shadow: var(--admin-section-shadow-rest);
     transition:
       box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
-      background-color 0.22s var(--motion-standard);
+      background-color var(--dur-ui) var(--motion-standard);
 
     &.open {
       background: transparent;
@@ -65,22 +65,22 @@
       display: flex;
       justify-content: space-between;
       align-items: baseline;
-      gap: 10px;
+      gap: var(--space-2);
       border: none;
       background: transparent;
       color: var(--text-main);
-      padding: 12px;
+      padding: var(--space-3);
       text-align: left;
       cursor: pointer;
-      border-radius: 14px;
+      border-radius: var(--radius-card);
       box-shadow: none;
       transition:
-        background-color 0.22s var(--motion-standard),
-        transform 0.22s var(--motion-standard),
-        box-shadow 0.22s var(--motion-standard);
+        background-color var(--dur-ui) var(--motion-standard),
+        transform var(--dur-ui) var(--motion-standard),
+        box-shadow var(--dur-ui) var(--motion-standard);
 
       &[aria-expanded='false']:hover {
-        background: rgba(255, 255, 255, 0.3);
+        background: var(--surface-soft);
         transform: translateY(-1px);
         box-shadow: none;
       }
@@ -93,7 +93,7 @@
       small {
         display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: var(--space-2);
         font-size: var(--fs-2xs);
         color: var(--text-muted);
         font-weight: 600;
@@ -103,14 +103,14 @@
           place-items: center;
           width: 19px;
           height: 19px;
-          border-radius: 999px;
-          color: #6b4b31;
-          background: #eee4d8;
+          border-radius: var(--radius-pill);
+          color: var(--text-warm-chip);
+          background: var(--chip-warm-bg-strong);
           box-shadow: var(--admin-section-toggle-state-shadow);
           transition:
-            transform 0.22s var(--motion-standard),
+            transform var(--dur-ui) var(--motion-standard),
             box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
-            background-color 0.22s var(--motion-standard);
+            background-color var(--dur-ui) var(--motion-standard);
 
           svg {
             width: 12px;
@@ -125,7 +125,7 @@
 
           &.open {
             transform: rotate(180deg);
-            background: #e8dbcd;
+            background: var(--chip-warm-bg-hover-strong);
             box-shadow: var(--admin-section-toggle-state-open-shadow);
           }
         }
@@ -133,13 +133,13 @@
     }
 
     .section-body {
-      padding: 12px 12px 14px;
+      padding: var(--space-3) var(--space-3) var(--space-3);
     }
   }
 
   @media (min-width: 760px) {
     .admin-section {
-      border-radius: 16px;
+      border-radius: var(--radius-lg);
     }
   }
 </style>
