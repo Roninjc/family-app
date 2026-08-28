@@ -342,23 +342,25 @@
 
       {#if data.families.length > 1}
         <div class="carousel-dots" role="tablist" aria-label="Indicador de familia activa">
-          {#each data.families as family, index (family.id)}
-            <button
-              type="button"
-              class="dot"
-              class:active={family.id === selectedFamily?.id}
-              role="tab"
-              aria-selected={family.id === selectedFamily?.id}
-              tabindex={family.id === selectedFamily?.id ? 0 : -1}
-              aria-label={`Ir a ${family.name}`}
-              on:click={() => {
-                goToFamilyAt(index)
-              }}
-              on:keydown={(event) => {
-                handleDotKeydown(event, index)
-              }}
-            ></button>
-          {/each}
+          <div class="dots-track">
+            {#each data.families as family, index (family.id)}
+              <button
+                type="button"
+                class="dot"
+                class:active={family.id === selectedFamily?.id}
+                role="tab"
+                aria-selected={family.id === selectedFamily?.id}
+                tabindex={family.id === selectedFamily?.id ? 0 : -1}
+                aria-label={`Ir a ${family.name}`}
+                on:click={() => {
+                  goToFamilyAt(index)
+                }}
+                on:keydown={(event) => {
+                  handleDotKeydown(event, index)
+                }}
+              ></button>
+            {/each}
+          </div>
         </div>
       {/if}
     </section>
@@ -581,25 +583,35 @@
   }
 
   .carousel-dots {
+    --dots-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --dots-dur: 520ms;
     display: flex;
     justify-content: center;
-    gap: 7px;
     margin-top: 2px;
   }
 
+  .dots-track {
+    display: inline-flex;
+    align-items: center;
+    gap: clamp(5px, 0.9vw, 8px);
+    padding: 0;
+    background: transparent;
+    border: none;
+  }
+
   .dot {
-    width: 8px;
-    height: 8px;
+    width: 5px;
+    height: 5px;
     border-radius: 999px;
     border: none;
-    background: #d8cdbf;
-    box-shadow:
-      2px 2px 5px rgba(149, 121, 95, 0.16),
-      -2px -2px 5px rgba(255, 255, 255, 0.72);
+    background: rgba(128, 101, 79, 0.24);
+    opacity: 0.5;
     transition:
-      transform var(--dur-ui) var(--motion-standard),
-      background-color var(--dur-ui) var(--motion-standard),
-      box-shadow var(--dur-ui) var(--motion-standard);
+      width var(--dots-dur) var(--dots-ease),
+      transform var(--dots-dur) var(--dots-ease),
+      background-color var(--dots-dur) var(--dots-ease),
+      opacity var(--dots-dur) var(--dots-ease),
+      box-shadow var(--dots-dur) var(--dots-ease);
     cursor: pointer;
   }
 
@@ -610,11 +622,11 @@
   }
 
   .dot.active {
-    background: #bfa995;
-    transform: scale(1.25);
-    box-shadow:
-      inset 1px 1px 3px rgba(149, 121, 95, 0.24),
-      inset -1px -1px 3px rgba(255, 255, 255, 0.62);
+    width: 12px;
+    background: rgba(165, 120, 82, 0.72);
+    transform: scaleX(1);
+    box-shadow: 0 0 0 1px rgba(165, 120, 82, 0.14);
+    opacity: 0.95;
   }
 
   .loading-sheen {

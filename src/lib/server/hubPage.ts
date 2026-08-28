@@ -19,15 +19,27 @@ const isManagerRole = (role: Role) => role === 'admin' || role === 'editor'
 const notesForFamily = (familyName: string, membersCount: number) => [
   {
     id: 'n1',
-    title: `Resumen de ${familyName}`,
-    body: `${membersCount} miembros en esta rama. Puedes abrir su árbol para revisar relaciones.`,
+    title: `Resumen semanal de ${familyName}`,
+    body: `${membersCount} miembros en esta rama. Esta semana hubo nuevas conexiones familiares y recuerdos compartidos.`,
     noteType: 'news' as const
   },
   {
     id: 'n2',
-    title: 'Notas internas',
-    body: 'Comparte acuerdos, pendientes y recordatorios importantes para esta familia.',
-    noteType: 'note' as const
+    title: 'Próxima comida familiar',
+    body: 'El domingo nos vemos en casa de los abuelos a las 14:30. Traed fotos antiguas para el mural.',
+    noteType: 'news' as const
+  },
+  {
+    id: 'n3',
+    title: 'Cumple de Lucía',
+    body: 'El sábado celebramos el cumpleaños de Lucía en el parque. Confirmad asistencia cuando se active Eventos.',
+    noteType: 'news' as const
+  },
+  {
+    id: 'n4',
+    title: 'Receta de la abuela recuperada',
+    body: 'Hemos digitalizado la receta tradicional de puchero. La compartiremos en una nueva sección de recursos.',
+    noteType: 'news' as const
   }
 ]
 
