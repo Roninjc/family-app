@@ -54,4 +54,24 @@ jobs:
             set -e
             docker compose -f /home/jake/compose.yml pull family-app
             docker compose -f /home/jake/compose.yml up -d family-app
+
+            for attempt in $(seq 1 12); do
+              health=$(docker inspect --format '{{.State.Health.Status}}' family-app 2>/dev/null || true)
+              echo "family-app health: ${health:-not-found} (attempt ${attempt}/12)"
+              if [ "$health" = healthy ]; then
+                break
+              fi
+              if [ "$health" = unhealthy ]; then
+                docker logs --tail 200 family-app
+                exit 1
+              fi
+              sleep 5
+            done
+
+            if [ "$health" != healthy ]; then
+              echo 'family-app did not become healthy within 60 seconds'
+              docker logs --tail 200 family-app
+              exit 1
+            fi
+
             docker image prune -f || true
