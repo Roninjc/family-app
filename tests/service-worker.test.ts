@@ -13,6 +13,14 @@ describe('service worker update lifecycle', () => {
 
   it('does not persist the temporary recovery page', () => {
     expect(serviceWorkerSource).toContain("'cache-control': 'no-store'")
-    expect(serviceWorkerSource).toContain('setTimeout(()=>location.reload(),3000)')
+    expect(serviceWorkerSource).toContain('setTimeout(retry,3000)')
+  })
+
+  it('probes the origin and bypasses fallback after it recovers', () => {
+    expect(serviceWorkerSource).toContain('"x-pwa-recovery":"1"')
+    expect(serviceWorkerSource).toContain('url.searchParams.has(RECOVERY_PARAM)')
+    expect(serviceWorkerSource).toContain(
+      'event.respondWith(fetch(new Request(url, event.request)))'
+    )
   })
 })
