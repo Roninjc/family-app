@@ -117,7 +117,20 @@ const recoveryHtml = (details: RecoveryDetails) => {
       })
 
       if (response.status < 500) {
-        status.textContent = 'Servicio disponible. Abriendo Orikara...'
+        status.textContent = 'Servicio disponible. Restableciendo Orikara...'
+        try {
+          const registration = await navigator.serviceWorker?.getRegistration()
+          await registration?.unregister()
+          const cacheNames = await caches.keys()
+          await Promise.all(
+            cacheNames
+              .filter((cacheName) => cacheName.startsWith('family-app-'))
+              .map((cacheName) => caches.delete(cacheName))
+          )
+          record('worker-reset')
+        } catch (error) {
+          record('worker-reset-error', { error: String(error) })
+        }
         target.searchParams.set('${RECOVERY_PARAM}', Date.now().toString())
         location.replace(target)
         return

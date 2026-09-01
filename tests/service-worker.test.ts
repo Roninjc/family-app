@@ -30,10 +30,16 @@ describe('service worker update lifecycle', () => {
     expect(serviceWorkerSource).toContain("record('probe-response'")
     expect(serviceWorkerSource).toContain("record('probe-exception'")
     expect(serviceWorkerSource).toContain("record('worker-state'")
+    expect(serviceWorkerSource).toContain("record('worker-reset'")
     expect(serviceWorkerSource).toContain("'orikara:pwa-recovery-log'")
     expect(serviceWorkerSource).toContain('entries = entries.slice(-30)')
     expect(serviceWorkerSource).not.toContain('document.cookie')
     expect(serviceWorkerSource).not.toContain('authorization')
+  })
+
+  it('resets only the app worker and versioned app caches after the origin recovers', () => {
+    expect(serviceWorkerSource).toContain('await registration?.unregister()')
+    expect(serviceWorkerSource).toContain("cacheName.startsWith('family-app-')")
   })
 
   it('catches navigation preload failures', () => {
