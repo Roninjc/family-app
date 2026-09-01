@@ -13,7 +13,7 @@ const isStaticAsset = (path: string) => /\.(?:js|css|png|jpg|jpeg|svg|gif|webp|w
 const isServerError = (response: Response) => response.status >= 500
 
 const offlineHtml =
-  '<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sin conexion</title><body><main style="font-family:sans-serif;padding:1.2rem;line-height:1.45"><h1>Sin conexion</h1><p>No hay red disponible. Cuando vuelva la conexion, recarga para sincronizar datos.</p></main></body></html>'
+  '<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Reconectando</title><body><main style="font-family:sans-serif;padding:1.2rem;line-height:1.45"><h1>Reconectando</h1><p>No se ha podido cargar Orikara. Volveremos a intentarlo automaticamente.</p></main><script>setTimeout(()=>location.reload(),3000)</script></body></html>'
 
 const navigationFallback = async (request: Request) => {
   const cachedPage = await caches.match(request)
@@ -25,18 +25,14 @@ const navigationFallback = async (request: Request) => {
   return new Response(offlineHtml, {
     status: 503,
     headers: {
-      'content-type': 'text/html; charset=utf-8'
+      'content-type': 'text/html; charset=utf-8',
+      'cache-control': 'no-store'
     }
   })
 }
 
 self.addEventListener('install', (event: ExtendableEvent) => {
-  event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((cache) => cache.addAll(ASSETS))
-      .then(() => self.skipWaiting())
-  )
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)))
 })
 
 self.addEventListener('activate', (event: ExtendableEvent) => {
@@ -48,8 +44,6 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
       if (self.registration.navigationPreload) {
         await self.registration.navigationPreload.enable()
       }
-
-      await self.clients.claim()
     })()
   )
 })
