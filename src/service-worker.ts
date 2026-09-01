@@ -10,6 +10,7 @@ const CACHE = `family-app-${version}`
 const ASSETS = [...build, ...files]
 
 const isStaticAsset = (path: string) => /\.(?:js|css|png|jpg|jpeg|svg|gif|webp|woff2?)$/i.test(path)
+const isServerError = (response: Response) => response.status >= 500
 
 const offlineHtml =
   '<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sin conexion</title><body><main style="font-family:sans-serif;padding:1.2rem;line-height:1.45"><h1>Sin conexion</h1><p>No hay red disponible. Cuando vuelva la conexion, recarga para sincronizar datos.</p></main></body></html>'
@@ -38,7 +39,7 @@ self.addEventListener('install', (event: ExtendableEvent) => {
   )
 })
 
-    self.addEventListener('activate', (event: ExtendableEvent) => {
+self.addEventListener('activate', (event: ExtendableEvent) => {
   event.waitUntil(
     (async () => {
       const cacheKeys = await caches.keys()
@@ -77,6 +78,7 @@ self.addEventListener('fetch', (event: FetchEvent) => {
           }
 
           const network = await fetch(event.request)
+          if (isServerError(network)) return navigationFallback(event.request)
 
           if (network.ok && !network.headers.get('cache-control')?.includes('no-store')) {
             const cache = await caches.open(CACHE)
@@ -85,7 +87,7 @@ self.addEventListener('fetch', (event: FetchEvent) => {
 
           return network
         } catch {
-          if (preloaded) return preloaded
+          if (preloaded && !isServerError(preloaded)) return preloaded
           return navigationFallback(event.request)
         }
       })()
