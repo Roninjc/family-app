@@ -95,6 +95,8 @@ const recoveryHtml = (details: RecoveryDetails) => {
     attempts.textContent = String(++attempt)
     status.textContent = 'Comprobando el servicio...'
     record('probe-start', { attempt })
+    const abortController = new AbortController()
+    const requestTimeout = setTimeout(() => abortController.abort(), 5000)
 
     try {
       const target = new URL(location.href)
@@ -102,6 +104,7 @@ const recoveryHtml = (details: RecoveryDetails) => {
       const response = await fetch(target, {
         cache: 'no-store',
         credentials: 'same-origin',
+        signal: abortController.signal,
         headers: { 'x-pwa-recovery': '1' }
       })
       record('probe-response', {
@@ -140,6 +143,8 @@ const recoveryHtml = (details: RecoveryDetails) => {
     } catch (error) {
       record('probe-exception', { attempt, error: String(error) })
       status.textContent = 'No se ha podido conectar.'
+    } finally {
+      clearTimeout(requestTimeout)
     }
 
     retryTimer = setTimeout(retry, 3000)

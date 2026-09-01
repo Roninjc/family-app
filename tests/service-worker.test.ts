@@ -18,6 +18,8 @@ describe('service worker update lifecycle', () => {
 
   it('probes the origin and bypasses fallback after it recovers', () => {
     expect(serviceWorkerSource).toContain("'x-pwa-recovery': '1'")
+    expect(serviceWorkerSource).toContain('signal: abortController.signal')
+    expect(serviceWorkerSource).toContain('setTimeout(() => abortController.abort(), 5000)')
     expect(serviceWorkerSource).toContain('url.searchParams.has(RECOVERY_PARAM)')
     expect(serviceWorkerSource).toContain(
       'event.respondWith(fetch(new Request(url, event.request)))'
