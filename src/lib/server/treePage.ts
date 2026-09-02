@@ -59,7 +59,7 @@ export const loadTreePage = async (
     }
 
     const selectedGroup = groups.find((group) => group.id === selectedFamilyId)
-    if (!selectedGroup) return { familyData: { members: [] }, activeFamilyId: null }
+    if (!selectedGroup) return { familyData: { members: [] }, activeFamilyId: null, activeFamilyName: null }
 
     const selectedIds = new Set(selectedGroup.memberIds)
     const selectedMembers = mockRows.members.filter((member) => selectedIds.has(member.id))
@@ -70,7 +70,8 @@ export const loadTreePage = async (
 
     return {
       familyData: rowsToFamilyData(selectedMembers, selectedRelationships),
-      activeFamilyId: selectedGroup.id
+      activeFamilyId: selectedGroup.id,
+      activeFamilyName: selectedGroup.name
     }
   }
 
@@ -87,6 +88,8 @@ export const loadTreePage = async (
   if (!selectedFamilyId) {
     throw redirect(303, '/hub?state=no_family')
   }
+
+  const activeFamilyName = userFamilies.find((family) => family.id === selectedFamilyId)?.name ?? null
 
   const { data: membersData, error: membersError } = await supabase
     .from('members')
@@ -117,7 +120,8 @@ export const loadTreePage = async (
 
   return {
     familyData: rowsToFamilyData(membersData ?? [], selectedRelationships),
-    activeFamilyId: selectedFamilyId
+    activeFamilyId: selectedFamilyId,
+    activeFamilyName
   }
 }
 

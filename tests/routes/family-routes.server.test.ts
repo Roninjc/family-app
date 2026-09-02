@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { loadTreePage } from '../../src/lib/server/treePage'
 import { load as familyTreeLoad } from '../../src/routes/family/[familyId]/+page.server'
 import { load as familyHubLoad } from '../../src/routes/family/[familyId]/hub/+page.server'
 import { load as familyAdminLoad } from '../../src/routes/family/[familyId]/admin/+page.server'
@@ -133,5 +134,58 @@ describe('family route wrappers', () => {
       availableFamilies: [{ id: 'f1', name: 'Familia Castaño' }]
     })
     expect(cookieWrites).toContainEqual({ name: 'active_family_id', value: 'f1' })
+  })
+
+  it('returns the selected family name when loading the family tree', async () => {
+    const supabase = {
+      from: (table: string) => {
+        if (table === 'family_memberships') {
+          return {
+            select: () => ({
+              eq: async () => ({
+                data: [{ family_id: 'f1', role: 'viewer', member_id: 'm1', families: { id: 'f1', name: 'Familia Castaño' } }],
+                error: null
+              })
+            })
+          }
+        }
+
+        if (table === 'members') {
+          return {
+            select: () => ({
+              eq: () => ({
+                order: async () => ({
+                  data: [{ id: 'm1', name: 'Ana', family_name: 'Castaño', birth_date: null, photo_url: null }],
+                  error: null
+                })
+              })
+            })
+          }
+        }
+
+        if (table === 'relationships') {
+          return {
+            select: () => ({ data: [], error: null })
+          }
+        }
+
+        throw new Error(`Unexpected table: ${table}`)
+      }
+    }
+
+    const data = await loadTreePage({
+      locals: { user: { id: 'u1' }, supabase },
+      cookies: {
+        get: () => null,
+        set: () => {}
+      },
+      url: new URL('http://localhost/family/f1')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any, { requestedFamilyId: 'f1' })
+
+    expect(data).toMatchObject({
+      activeFamilyId: 'f1',
+      activeFamilyName: 'Familia Castaño'
+    })
   })
 })
