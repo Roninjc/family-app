@@ -58,6 +58,7 @@ describe('hub page carousel', () => {
     const secondDot = [...document.querySelectorAll('.dot')][1] as HTMLButtonElement
     secondDot.click()
     await tick()
+    await tick()
 
     expect(document.querySelector('.dot.active')?.getAttribute('aria-label')).toContain('Luna')
     expect(document.cookie).toContain('active_family_id=f2')
@@ -78,6 +79,7 @@ describe('hub page carousel', () => {
     const firstDot = [...document.querySelectorAll('.dot')][0] as HTMLButtonElement
     firstDot.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
     await tick()
+    await tick()
 
     expect(document.querySelector('.dot.active')?.getAttribute('aria-label')).toContain('Luna')
     let dots = [...document.querySelectorAll('.dot')] as HTMLButtonElement[]
@@ -87,16 +89,19 @@ describe('hub page carousel', () => {
     const secondDot = [...document.querySelectorAll('.dot')][1] as HTMLButtonElement
     secondDot.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
     await tick()
+    await tick()
 
     expect(document.querySelector('.dot.active')?.getAttribute('aria-label')).toContain('Castaño')
 
     const firstDotAgain = [...document.querySelectorAll('.dot')][0] as HTMLButtonElement
     firstDotAgain.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }))
     await tick()
+    await tick()
     expect(document.querySelector('.dot.active')?.getAttribute('aria-label')).toContain('Luna')
 
     const lastDot = [...document.querySelectorAll('.dot')][1] as HTMLButtonElement
     lastDot.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }))
+    await tick()
     await tick()
     expect(document.querySelector('.dot.active')?.getAttribute('aria-label')).toContain('Castaño')
 
@@ -105,46 +110,7 @@ describe('hub page carousel', () => {
     expect(dots[1].getAttribute('tabindex')).toBe('-1')
   })
 
-  it('shows note edit controls only when family allows note management', async () => {
-    const data = {
-      ...baseData,
-      families: [
-        {
-          ...baseData.families[0],
-          canManageNotes: true
-        },
-        {
-          ...baseData.families[1],
-          canManageNotes: false
-        }
-      ]
-    }
-
-    new HubPage({
-      target: document.body,
-      props: { data }
-    })
-
-    await tick()
-
-    const noteButtons = [
-      ...document.querySelectorAll('.family-panel.active .note-action-btn')
-    ] as HTMLButtonElement[]
-    expect(noteButtons.length).toBeGreaterThan(0)
-    expect(noteButtons.some((button) => button.textContent?.includes('Editar'))).toBe(true)
-
-    expect(document.querySelector('.family-panel.active .note-action-btn')?.textContent).toContain(
-      'Editar'
-    )
-
-    const secondDot = [...document.querySelectorAll('.dot')][1] as HTMLButtonElement
-    secondDot.click()
-    await tick()
-
-    expect(document.querySelector('.family-panel.active .note-action-btn')).toBeNull()
-  })
-
-  it('opens edit form and closes edit form on cancel', async () => {
+  it('renders one family story card per family without legacy note modules', async () => {
     new HubPage({
       target: document.body,
       props: { data: baseData }
@@ -152,70 +118,31 @@ describe('hub page carousel', () => {
 
     await tick()
 
-    const editButton = document.querySelector('.note-action-btn') as HTMLButtonElement
-    expect(editButton).toBeTruthy()
-    editButton.click()
-    await tick()
-
-    expect(document.querySelector('form[action="?/updateNote"]')).toBeTruthy()
-
-    const cancelButton = [...document.querySelectorAll('button')].find(
-      (button) => button.textContent?.trim() === 'Cancelar'
-    ) as HTMLButtonElement | undefined
-    expect(cancelButton).toBeTruthy()
-    cancelButton?.click()
-    await tick()
-
-    expect(document.querySelector('form[action="?/updateNote"]')).toBeNull()
+    expect(document.querySelectorAll('.family-story-card')).toHaveLength(2)
+    expect(document.querySelectorAll('.family-panel.active .family-story-card')).toHaveLength(1)
+    expect(document.querySelector('.family-panel.active .notes-card')).toBeNull()
+    expect(document.querySelector('.family-panel.active .note-action-btn')).toBeNull()
   })
 
-  it('shows note feedback messages only for the matching family panel', async () => {
+  it('keeps title centered and removes legacy scroll hint text', async () => {
     new HubPage({
       target: document.body,
-      props: {
-        data: baseData,
-        form: {
-          noteCreated: true,
-          noteUpdated: true,
-          noteDeleted: true,
-          noteError: 'Error de prueba',
-          familyId: 'f2'
-        }
-      }
+      props: { data: baseData }
     })
 
     await tick()
 
-    // Active panel is f1 at start: no feedback should be visible there
-    expect(document.querySelector('.family-panel.active .note-ok')).toBeNull()
-    expect(document.querySelector('.family-panel.active .note-error')).toBeNull()
-
-    const secondDot = [...document.querySelectorAll('.dot')][1] as HTMLButtonElement
-    secondDot.click()
-    await tick()
-
-    const statusMessages = [...document.querySelectorAll('.family-panel.active .note-ok')].map(
-      (node) => node.textContent?.trim()
-    )
-
-    expect(statusMessages).toContain('Nota creada.')
-    expect(statusMessages).toContain('Nota actualizada.')
-    expect(statusMessages).toContain('Nota eliminada.')
-    expect(document.querySelector('.family-panel.active .note-error')?.textContent).toContain(
-      'Error de prueba'
-    )
+    expect(document.querySelector('.families-shell h2')?.textContent?.trim()).toBe('Tus familias')
+    expect(document.querySelector('.scroll-hint')).toBeNull()
   })
 
-  it('renders notes filter controls with default state', async () => {
+  it('renders a dynamic preview copy, monogram seal and animated lineage for the active family', async () => {
     const data = {
       ...baseData,
       families: [
         {
           ...baseData.families[0],
-          notes: [
-            { id: 'n1', title: 'Nota 1', body: 'Texto 1', noteType: 'note' as const },
-            { id: 'n3', title: 'Noticia 1', body: 'Texto 3', noteType: 'news' as const }
-          ]
+          previewMembers: ['Ana', 'Beto', 'Clara']
         },
         ...baseData.families.slice(1)
       ]
@@ -228,24 +155,40 @@ describe('hub page carousel', () => {
 
     await tick()
 
-    expect(document.querySelectorAll('.family-panel.active .notes-card li')).toHaveLength(2)
+    const previewText = document.querySelector('.family-panel.active .family-preview-copy')
+      ?.textContent
+    expect(previewText).toContain('Ana, Beto y Clara sostienen el pulso')
+    expect(previewText).toContain('Familia Castaño')
 
-    const filterButtons = [
-      ...document.querySelectorAll<HTMLButtonElement>(
-        '.family-panel.active .notes-filter-row button'
-      )
-    ]
+    const seal = document.querySelector('.family-panel.active .family-seal span')
+    expect(seal?.textContent?.trim()).toBe('FC')
 
-    const allFilter = filterButtons.find((button) => button.textContent?.trim() === 'Todas')
-    const newsFilter = filterButtons.find((button) => button.textContent?.trim() === 'Noticias')
-    const notesFilter = filterButtons.find((button) => button.textContent?.trim() === 'Notas')
+    const lineageItems = document.querySelectorAll('.family-panel.active .lineage-track span')
+    expect(lineageItems.length).toBeGreaterThan(6)
+    expect([...lineageItems].some((chip) => chip.textContent?.includes('Ana'))).toBe(true)
+  })
 
-    expect(allFilter).toBeTruthy()
-    expect(newsFilter).toBeTruthy()
-    expect(notesFilter).toBeTruthy()
+  it('uses fallback preview text when a family has no preview members', async () => {
+    const data = {
+      ...baseData,
+      families: [
+        {
+          ...baseData.families[0],
+          previewMembers: []
+        },
+        ...baseData.families.slice(1)
+      ]
+    }
 
-    expect(allFilter?.getAttribute('aria-pressed')).toBe('true')
-    expect(newsFilter?.getAttribute('aria-pressed')).toBe('false')
-    expect(notesFilter?.getAttribute('aria-pressed')).toBe('false')
+    new HubPage({
+      target: document.body,
+      props: { data }
+    })
+
+    await tick()
+
+    const previewText = document.querySelector('.family-panel.active .family-preview-copy')
+      ?.textContent
+    expect(previewText).toContain('Entrad para descubrir la huella compartida de Familia Castaño')
   })
 })

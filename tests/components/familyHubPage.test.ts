@@ -50,7 +50,7 @@ describe('family hub page', () => {
     await tick()
 
     expect(document.querySelector('.family-hub-header')).toBeNull()
-    expect(document.querySelector('.news-header h2')?.textContent).toBe('Noticias')
+    expect(document.querySelector('.news-section h2')?.textContent).toBe('Noticias')
     expect(document.querySelector('.carousel-dots')).toBeNull()
     expect(document.querySelector('.families-carousel')).toBeNull()
   })

@@ -4,7 +4,6 @@
   import ModalShell from '../../../../components/ui/modalShell.svelte'
   import NewsCarouselSection from '../../../../components/hub/newsCarouselSection.svelte'
   import UpcomingFeatureCard from '../../../../components/hub/upcomingFeatureCard.svelte'
-  import type { HubFamilySummary } from '../../../../components/hub/types'
   import type { PageData } from './$types'
 
   type FamilyHubData = Pick<PageData, 'families' | 'activeFamilyId' | 'activeFamilyName'> & {

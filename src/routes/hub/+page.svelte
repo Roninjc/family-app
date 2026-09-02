@@ -1,15 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import FamilyNotesCard from '../../components/hub/familyNotesCard.svelte'
-  import FamilyPreviewCard from '../../components/hub/familyPreviewCard.svelte'
-  import type {
-    HubActionFormState,
-    HubFamilySummary,
-    HubNote,
-    HubNoteType,
-    HubNotesFilter,
-    HubNotesStatusState
-  } from '../../components/hub/types'
+  import SectionShell from '../../components/ui/sectionShell.svelte'
+  import CarouselFrame from '../../components/carousel/carouselFrame.svelte'
+  import CarouselCard from '../../components/carousel/carouselCard.svelte'
+  import type { HubActionFormState, HubFamilySummary } from '../../components/hub/types'
   import type { PageData } from './$types'
 
   type HubPageData = Omit<
@@ -34,40 +28,12 @@
   export let data: HubPageData
   export let params: Record<string, string> = {}
   $: routeParamsCount = Object.keys(params).length
+  $: form
 
-  let carousel: HTMLDivElement | null = null
-  const cards = new Map<string, HTMLElement>()
   let selectedFamilyId = data.activeFamilyId ?? data.families[0]?.id ?? null
   let syncedServerActiveFamilyId = data.activeFamilyId
   let selectedFamily: HubFamilySummary | undefined
-
-  let editingId: string | null = null
-  let titleDraft = ''
-  let bodyDraft = ''
-  let typeDraft: HubNoteType = 'note'
-  let notesFilterByFamily: Record<string, HubNotesFilter> = {}
-  let filteredNotesByFamily: Record<string, HubNote[]> = {}
   let isNavigating = false
-
-  const startEdit = (note: HubNote) => {
-    editingId = note.id
-    titleDraft = note.title
-    bodyDraft = note.body
-    typeDraft = note.noteType
-  }
-
-  const cancelEdit = () => {
-    editingId = null
-    titleDraft = ''
-    bodyDraft = ''
-    typeDraft = 'note'
-  }
-
-  const notesFilterOptions = [
-    { value: 'all', label: 'Todas' },
-    { value: 'news', label: 'Noticias' },
-    { value: 'note', label: 'Notas' }
-  ]
 
   $: if (data.activeFamilyId !== syncedServerActiveFamilyId) {
     syncedServerActiveFamilyId = data.activeFamilyId
@@ -77,46 +43,50 @@
   $: selectedFamily =
     data.families.find((family) => family.id === selectedFamilyId) ?? data.families[0]
   $: hasFamilies = data.families.length > 0
+  $: selectedFamilyIndex = data.families.findIndex((family) => family.id === selectedFamilyId)
 
-  $: {
-    const filters = notesFilterByFamily
-    filteredNotesByFamily = Object.fromEntries(
-      data.families.map((family) => {
-        const filter = filters[family.id] ?? 'all'
-        const filtered =
-          filter === 'all' ? family.notes : family.notes.filter((note) => note.noteType === filter)
-        return [family.id, filtered]
-      })
-    )
-  }
+  const familyPreviewText = (family: HubFamilySummary) => {
+    const names = family.previewMembers.filter(Boolean)
 
-  const setNotesFilter = (familyId: string, filter: HubNotesFilter) => {
-    if ((notesFilterByFamily[familyId] ?? 'all') === filter) return
-
-    notesFilterByFamily = {
-      ...notesFilterByFamily,
-      [familyId]: filter
+    if (names.length >= 3) {
+      return `${names[0]}, ${names[1]} y ${names[2]} sostienen el pulso de ${family.name}.`
     }
-  }
 
-  const onNotesFilterChange = (familyId: string, event: CustomEvent<string>) => {
-    const value = event.detail
-    if (value === 'all' || value === 'news' || value === 'note') {
-      setNotesFilter(familyId, value)
+    if (names.length === 2) {
+      return `${names[0]} y ${names[1]} mantienen vivo el latido de ${family.name}.`
     }
-  }
 
-  const notesStatusForFamily = (familyId: string): HubNotesStatusState => {
-    if (!form) return {}
-    if (form.familyId && form.familyId !== familyId) return {}
-
-    return {
-      created: form.noteCreated,
-      updated: form.noteUpdated,
-      deleted: form.noteDeleted,
-      errorMessage: form.noteError
+    if (names.length === 1) {
+      return `${names[0]} abre el siguiente capitulo de ${family.name}.`
     }
+
+    return `Entrad para descubrir la huella compartida de ${family.name}.`
   }
+
+  const familyMonogram = (name: string) => {
+    const words = name
+      .split(' ')
+      .map((token) => token.trim())
+      .filter(Boolean)
+
+    if (words.length === 0) return 'FH'
+
+    if (words.length === 1) {
+      return words[0].slice(0, 2).toUpperCase()
+    }
+
+    return `${words[0][0] ?? ''}${words[1][0] ?? ''}`.toUpperCase()
+  }
+
+  const lineageNames = (family: HubFamilySummary) => {
+    const source = family.previewMembers.filter(Boolean)
+    const base = source.length > 0 ? source : [family.name, 'Origen', 'Memoria']
+    return [...base, ...base, ...base]
+  }
+
+  const familyFromItem = (item: unknown) => item as HubFamilySummary
+  const familyIdFromItem = (item: unknown) => (item as HubFamilySummary).id
+  const familyNameFromItem = (item: unknown) => (item as HubFamilySummary).name
 
   const clearLoadingSoon = () => {
     if (typeof window === 'undefined') {
@@ -129,121 +99,35 @@
     })
   }
 
-  const setCardRef = (familyId: string, element: HTMLElement | null) => {
-    if (!element) {
-      cards.delete(familyId)
-      return
-    }
-    cards.set(familyId, element)
-  }
-
-  const trackCard = (node: HTMLElement, familyId: string) => {
-    setCardRef(familyId, node)
-    return {
-      destroy() {
-        setCardRef(familyId, null)
-      }
-    }
-  }
-
   const persistActiveFamily = (familyId: string) => {
     document.cookie = `active_family_id=${encodeURIComponent(
       familyId
     )}; path=/; max-age=15552000; samesite=lax`
   }
-
-  const selectFamily = (familyId: string, scroll = true) => {
+  const selectFamily = (familyId: string) => {
     if (selectedFamilyId === familyId) return
-    isNavigating = true
     selectedFamilyId = familyId
     persistActiveFamily(familyId)
-
-    if (scroll) {
-      const card = cards.get(familyId)
-      if (card && typeof card.scrollIntoView === 'function') {
-        card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
-      }
-    }
-
-    clearLoadingSoon()
   }
 
-  const detectCenteredFamily = () => {
-    if (!carousel) return
-
-    const trackRect = carousel.getBoundingClientRect()
-    const trackCenter = trackRect.left + trackRect.width / 2
-    let closestId: string | null = null
-    let minDistance = Number.POSITIVE_INFINITY
-
-    for (const family of data.families) {
-      const card = cards.get(family.id)
-      if (!card) continue
-      const rect = card.getBoundingClientRect()
-      const center = rect.left + rect.width / 2
-      const distance = Math.abs(center - trackCenter)
-
-      if (distance < minDistance) {
-        minDistance = distance
-        closestId = family.id
-      }
-    }
-
-    if (closestId && closestId !== selectedFamilyId) {
-      selectedFamilyId = closestId
-      persistActiveFamily(closestId)
-    }
-  }
-
-  const goToFamilyAt = (index: number) => {
-    const family = data.families[index]
+  const handleFamilyActiveIndexChange = (
+    nextIndex: number,
+    _item: unknown,
+    reason: 'mount' | 'scroll' | 'dot' | 'keyboard'
+  ) => {
+    const family = data.families[nextIndex]
     if (!family) return
+
+    if (reason === 'dot' || reason === 'keyboard') {
+      isNavigating = true
+      clearLoadingSoon()
+    }
+
     selectFamily(family.id)
-  }
-
-  const focusDotAt = (index: number) => {
-    const dots = Array.from(document.querySelectorAll<HTMLButtonElement>('.carousel-dots .dot'))
-    dots[index]?.focus()
-  }
-
-  const handleDotKeydown = (event: KeyboardEvent, index: number) => {
-    if (event.key === 'ArrowRight') {
-      event.preventDefault()
-      const nextIndex = (index + 1) % data.families.length
-      goToFamilyAt(nextIndex)
-      focusDotAt(nextIndex)
-      return
-    }
-
-    if (event.key === 'ArrowLeft') {
-      event.preventDefault()
-      const prevIndex = (index - 1 + data.families.length) % data.families.length
-      goToFamilyAt(prevIndex)
-      focusDotAt(prevIndex)
-      return
-    }
-
-    if (event.key === 'Home') {
-      event.preventDefault()
-      goToFamilyAt(0)
-      focusDotAt(0)
-      return
-    }
-
-    if (event.key === 'End') {
-      event.preventDefault()
-      const lastIndex = data.families.length - 1
-      goToFamilyAt(lastIndex)
-      focusDotAt(lastIndex)
-    }
   }
 
   onMount(() => {
     if (selectedFamily?.id) {
-      const selectedCard = cards.get(selectedFamily.id)
-      if (selectedCard && typeof selectedCard.scrollIntoView === 'function') {
-        selectedCard.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' })
-      }
       persistActiveFamily(selectedFamily.id)
     }
   })
@@ -279,90 +163,53 @@
     </section>
   {:else}
     <section class="families-zone reveal-fade-up reveal-delay-1" aria-label="Familias del usuario">
-      <div class="zone-title-row">
-        <h2>Tus familias</h2>
-        {#if data.families.length > 1}
-          <p class="scroll-hint" role="status">Desliza para cambiar de familia activa</p>
-        {/if}
-      </div>
-
-      <div class="carousel-shell" class:multi={data.families.length > 1}>
-        <div class="edge-glow edge-left" aria-hidden="true"></div>
-        <div
-          class="families-carousel"
-          bind:this={carousel}
-          on:scroll={detectCenteredFamily}
-          role="region"
-          aria-label="Carrusel de familias"
+      <SectionShell title="Tus familias" className="families-shell">
+        <CarouselFrame
+          items={data.families}
+          initialActiveIndex={Math.max(selectedFamilyIndex, 0)}
+          getItemKey={familyIdFromItem}
+          getDotAriaLabel={(item) => `Ir a ${familyNameFromItem(item)}`}
+          onActiveIndexChange={handleFamilyActiveIndexChange}
+          cardBasis="var(--family-card-basis)"
+          cardOverlap="var(--family-card-overlap)"
+          edgeFadeColor="var(--section-shell-bg)"
+          shellClass="families-carousel-shell"
+          trackClass="families-carousel"
+          itemClass="family-panel"
+          ariaLabel="Carrusel de familias"
+          dotsAriaLabel="Indicador de familia activa"
+          let:item
         >
-          {#each data.families as family (family.id)}
-            <article
-              class="family-panel"
-              class:active={family.id === selectedFamily?.id}
-              use:trackCard={family.id}
-            >
-              <div class="family-content">
-                <div class="panel-header">
-                  <h3>{family.name}</h3>
-                </div>
+          <CarouselCard
+            as="a"
+            href={familyFromItem(item).treeHref}
+            aspectRatio="4 / 5"
+            className="family-story-card"
+            ariaLabel={`Entrar al nivel familiar de ${familyFromItem(item).name}`}
+            data-sveltekit-preload-data="tap"
+            data-sveltekit-preload-code="eager"
+          >
+            <div class="panel-header">
+              <h3>{familyFromItem(item).name}</h3>
+            </div>
 
-                <div class="family-center">
-                  <a
-                    class="family-preview-entry"
-                    href={family.treeHref}
-                    data-sveltekit-preload-data="tap"
-                    data-sveltekit-preload-code="eager"
-                    aria-label={`Entrar al nivel familiar de ${family.name}`}
-                  >
-                    <FamilyPreviewCard {family} />
-                  </a>
+            <div class="family-seal" aria-hidden="true">
+              <span>{familyMonogram(familyFromItem(item).name)}</span>
+            </div>
 
-                  <FamilyNotesCard
-                    {family}
-                    notes={filteredNotesByFamily[family.id] ?? []}
-                    filter={notesFilterByFamily[family.id] ?? 'all'}
-                    filterOptions={notesFilterOptions}
-                    status={notesStatusForFamily(family.id)}
-                    {editingId}
-                    bind:titleDraft
-                    bind:bodyDraft
-                    bind:typeDraft
-                    onFilterChange={(event) => onNotesFilterChange(family.id, event)}
-                    onEditStart={startEdit}
-                    onEditCancel={cancelEdit}
-                  />
-                </div>
-                <div class="loading-sheen" aria-hidden="true"></div>
+            <p class="family-preview-copy">{familyPreviewText(familyFromItem(item))}</p>
+
+            <div class="family-lineage" aria-hidden="true">
+              <div class="lineage-track">
+                {#each lineageNames(familyFromItem(item)) as name, index (`${familyIdFromItem(item)}-lineage-${index}`)}
+                  <span>{name}</span>
+                {/each}
               </div>
-            </article>
-          {/each}
-        </div>
-        <div class="edge-glow edge-right" aria-hidden="true"></div>
-      </div>
-
-      {#if data.families.length > 1}
-        <div class="carousel-dots" role="tablist" aria-label="Indicador de familia activa">
-          <div class="dots-track">
-            {#each data.families as family, index (family.id)}
-              <button
-                type="button"
-                class="dot"
-                class:active={family.id === selectedFamily?.id}
-                role="tab"
-                aria-selected={family.id === selectedFamily?.id}
-                tabindex={family.id === selectedFamily?.id ? 0 : -1}
-                aria-label={`Ir a ${family.name}`}
-                on:click={() => {
-                  goToFamilyAt(index)
-                }}
-                on:keydown={(event) => {
-                  handleDotKeydown(event, index)
-                }}
-              ></button>
-            {/each}
-          </div>
-        </div>
-      {/if}
+            </div>
+            <div class="loading-sheen" aria-hidden="true"></div>
+          </CarouselCard>
+        </CarouselFrame>
+      </SectionShell>
     </section>
   {/if}
 </main>
@@ -375,18 +222,6 @@
     gap: 0;
     min-height: 100vh;
     padding-bottom: max(114px, env(safe-area-inset-bottom));
-  }
-
-  .families-zone {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    width: min(var(--page-content-max), 100%);
-    margin-inline: auto;
-    border-radius: var(--radius-xl);
-    padding: 0;
-    background: transparent;
-    box-shadow: none;
   }
 
   .personal-empty {
@@ -433,97 +268,36 @@
     margin-top: 4px;
   }
 
-  .zone-title-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 8px;
-    padding: 4px 2px 0;
+  .families-zone {
+    --family-card-basis: clamp(240px, 58vw, 380px);
+    --family-card-overlap: clamp(20px, 6vw, 48px);
+    width: min(var(--page-content-max), 100%);
+    margin-inline: auto;
   }
 
-  h2 {
-    margin: 0;
-    font-size: var(--fs-lg);
-  }
-
-  .scroll-hint {
-    margin: 0;
-    color: var(--text-muted);
-    font-size: var(--fs-xs);
-  }
-
-  .carousel-shell {
-    position: relative;
-    border-radius: var(--radius-lg);
-    margin-inline: 0;
-    padding: 6px;
-    background: transparent;
-    box-shadow: var(--neu-shadow-inset);
-  }
-
-  .families-carousel {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(100%, 100%);
-    gap: 12px;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
-    padding: 2px;
-  }
-
-  .family-panel {
-    scroll-snap-align: center;
-    min-height: 470px;
-    container-type: inline-size;
-    border-radius: var(--radius-card);
-  }
-
-  .family-content {
-    position: relative;
+  :global(.families-shell) {
+    max-height: clamp(520px, 74dvh, 780px);
     overflow: hidden;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    padding: 26px 24px 20px;
-    border-radius: inherit;
-    background: transparent;
-    box-shadow: none;
   }
 
-  .family-center {
+  :global(.family-story-card) {
     display: grid;
-    gap: 24px;
-    flex: 1;
-    min-height: 0;
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    gap: var(--space-4);
+    min-block-size: clamp(300px, 68vw, 500px);
+    max-block-size: min(70dvh, 560px);
+    padding: clamp(var(--space-4), 3.6vw, var(--space-6));
   }
 
-  .family-preview-entry {
-    display: block;
-    border-radius: var(--radius-card);
-    text-decoration: none;
-    color: inherit;
-  }
-
-  .family-preview-entry :global(.preview-card) {
-    transition:
-      box-shadow 0.24s var(--motion-standard),
-      background-color 0.24s var(--motion-standard),
-      filter 0.24s var(--motion-standard);
-  }
-
-  .family-preview-entry:hover :global(.preview-card),
-  .family-preview-entry:focus-visible :global(.preview-card) {
+  :global(.family-story-card):hover,
+  :global(.family-story-card):focus-visible {
+    transform: translateY(-1px) scale(1.01);
     box-shadow: var(--neu-shadow-hover-strong);
-    background: color-mix(in srgb, var(--neu-surface-soft) 82%, #ffffff 18%);
-    filter: saturate(1.04);
   }
 
-  .family-preview-entry:focus-visible {
+  :global(.family-story-card):focus-visible {
     outline: 2px solid color-mix(in srgb, var(--brand) 86%, #fff 14%);
     outline-offset: 3px;
-    border-radius: var(--radius-card);
   }
 
   .panel-header {
@@ -544,89 +318,70 @@
     color: #4e392d;
   }
 
-  .family-panel.active :global(.preview-card),
-  .family-panel.active :global(.notes-card) {
-    box-shadow:
-      5px 5px 10px rgba(154, 132, 109, 0.18),
-      -5px -5px 10px rgba(255, 255, 255, 0.74);
-  }
-
-  .family-panel.active .family-preview-entry:hover :global(.preview-card),
-  .family-panel.active .family-preview-entry:focus-visible :global(.preview-card) {
-    box-shadow: var(--neu-shadow-hover-strong);
-    background: color-mix(in srgb, var(--neu-surface-soft) 82%, #ffffff 18%);
-    filter: saturate(1.04);
-  }
-
-  .edge-glow {
-    display: none;
-  }
-
-  .carousel-shell.multi .edge-glow {
-    display: block;
-    position: absolute;
-    top: 0;
-    bottom: 8px;
-    width: 24px;
-    pointer-events: none;
-    z-index: 3;
-  }
-
-  .edge-left {
-    left: 0;
-    background: linear-gradient(90deg, rgba(239, 232, 222, 0.9), transparent);
-  }
-
-  .edge-right {
-    right: 0;
-    background: linear-gradient(270deg, rgba(239, 232, 222, 0.9), transparent);
-  }
-
-  .carousel-dots {
-    --dots-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
-    --dots-dur: 520ms;
+  .family-seal {
     display: flex;
     justify-content: center;
-    margin-top: 2px;
+    align-items: center;
   }
 
-  .dots-track {
+  .family-seal span {
+    inline-size: clamp(46px, 11vw, 58px);
+    block-size: clamp(46px, 11vw, 58px);
+    border-radius: var(--radius-round);
     display: inline-flex;
     align-items: center;
-    gap: clamp(5px, 0.9vw, 8px);
-    padding: 0;
-    background: transparent;
-    border: none;
+    justify-content: center;
+    font-size: clamp(0.8rem, 0.74rem + 0.18vw, 0.92rem);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #6a4f3b;
+    background: color-mix(in srgb, #fff 82%, rgba(210, 183, 156, 0.55));
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.5),
+      3px 4px 9px rgba(128, 97, 71, 0.18);
   }
 
-  .dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 999px;
-    border: none;
-    background: rgba(128, 101, 79, 0.24);
-    opacity: 0.5;
-    transition:
-      width var(--dots-dur) var(--dots-ease),
-      transform var(--dots-dur) var(--dots-ease),
-      background-color var(--dots-dur) var(--dots-ease),
-      opacity var(--dots-dur) var(--dots-ease),
-      box-shadow var(--dots-dur) var(--dots-ease);
-    cursor: pointer;
+  .family-preview-copy {
+    margin: 0;
+    text-align: center;
+    color: #6b5443;
+    font-size: clamp(0.86rem, 0.82rem + 0.18vw, 0.96rem);
+    line-height: 1.5;
   }
 
-  .dot:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--brand) 84%, #fff 16%);
-    outline-offset: 3px;
-    box-shadow: var(--focus-ring-warm);
+  .family-lineage {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 0;
+    padding-block: var(--space-2);
+    overflow: hidden;
+    mask-image: linear-gradient(to right, transparent, #000 14%, #000 86%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 14%, #000 86%, transparent);
   }
 
-  .dot.active {
-    width: 12px;
-    background: rgba(165, 120, 82, 0.72);
-    transform: scaleX(1);
-    box-shadow: 0 0 0 1px rgba(165, 120, 82, 0.14);
-    opacity: 0.95;
+  .lineage-track {
+    width: max-content;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    animation: lineage-flow 20s linear infinite;
+  }
+
+  .lineage-track span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: max-content;
+    border-radius: var(--radius-sm);
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--fs-xs);
+    color: #6c5340;
+    letter-spacing: 0.01em;
+    background: color-mix(in srgb, rgba(255, 255, 255, 0.85) 70%, rgba(219, 197, 173, 0.7));
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.24),
+      2px 2px 6px rgba(126, 91, 62, 0.12);
   }
 
   .loading-sheen {
@@ -649,7 +404,7 @@
     animation: loading-sweep 1.2s var(--motion-standard) infinite;
   }
 
-  .is-loading .family-content > :not(.loading-sheen) {
+  .is-loading :global(.family-story-card > :not(.loading-sheen)) {
     opacity: 0.72;
   }
 
@@ -663,29 +418,26 @@
     }
   }
 
-  @media (min-width: 980px) {
-    .families-carousel {
-      grid-auto-columns: minmax(76%, 76%);
-      padding-inline: 60px;
+  @keyframes lineage-flow {
+    from {
+      transform: translateX(0);
     }
-
-    .family-panel {
-      min-height: 400px;
+    to {
+      transform: translateX(-50%);
     }
   }
 
-  @supports (container-type: inline-size) {
-    @container (min-width: 760px) {
-      .family-center {
-        grid-template-columns: minmax(220px, 0.95fr) minmax(0, 1.35fr);
-        align-items: stretch;
-      }
+  @media (min-width: 980px) {
+    .families-zone {
+      --family-card-basis: min(44vw, 420px);
     }
+  }
 
-    @container (max-width: 520px) {
-      .panel-header {
-        justify-content: center;
-      }
+  @media (prefers-reduced-motion: reduce) {
+    :global(.family-story-card),
+    .lineage-track {
+      transition: none;
+      animation: none;
     }
   }
 </style>
