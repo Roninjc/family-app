@@ -52,7 +52,9 @@ describe('hub load', () => {
         if (table === 'profiles') {
           return {
             select: () => ({
-              eq: () => ({ single: async () => ({ data: { display_name: 'Jesús', role: 'editor' } }) })
+              eq: () => ({
+                single: async () => ({ data: { display_name: 'Jesús', role: 'editor' } })
+              })
             })
           }
         }
@@ -114,9 +116,9 @@ describe('hub load', () => {
     expect(data.activeFamilyName).toContain('Luna')
     expect(data.families[0].treeHref).toContain('/family/f1')
     expect(
-      data.families.find((family: { id: string }) => family.id === 'f2')?.notes.map(
-        (note: { title: string }) => note.title
-      )
+      data.families
+        .find((family: { id: string }) => family.id === 'f2')
+        ?.notes.map((note: { title: string }) => note.title)
     ).toEqual(['Aviso nuevo', 'Aviso antiguo', 'Nota antigua'])
     expect(cookieWrites).toContainEqual({ name: 'active_family_id', value: 'f2' })
   })
@@ -198,7 +200,9 @@ describe('hub load', () => {
         if (table === 'profiles') {
           return {
             select: () => ({
-              eq: () => ({ single: async () => ({ data: { display_name: '   ', role: 'viewer' } }) })
+              eq: () => ({
+                single: async () => ({ data: { display_name: '   ', role: 'viewer' } })
+              })
             })
           }
         }
@@ -256,7 +260,9 @@ describe('hub notes actions', () => {
           return {
             select: () => ({
               eq: async () => ({
-                data: [{ family_id: 'f2', role: 'editor', families: { id: 'f2', name: 'Familia Luna' } }],
+                data: [
+                  { family_id: 'f2', role: 'editor', families: { id: 'f2', name: 'Familia Luna' } }
+                ],
                 error: null
               })
             })
@@ -278,7 +284,12 @@ describe('hub notes actions', () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await (actions.createNote as any)({
-      request: makeRequest({ familyId: 'f2', title: 'Nueva nota', body: 'Texto', noteType: 'news' }),
+      request: makeRequest({
+        familyId: 'f2',
+        title: 'Nueva nota',
+        body: 'Texto',
+        noteType: 'news'
+      }),
       locals: { supabase, user: { id: 'u1' } },
       cookies: { get: () => 'f2', set: () => {} }
     })
@@ -325,7 +336,13 @@ describe('hub notes actions', () => {
           return {
             select: () => ({
               eq: async () => ({
-                data: [{ family_id: 'f1', role: 'editor', families: { id: 'f1', name: 'Familia Castaño' } }],
+                data: [
+                  {
+                    family_id: 'f1',
+                    role: 'editor',
+                    families: { id: 'f1', name: 'Familia Castaño' }
+                  }
+                ],
                 error: null
               })
             })
@@ -381,7 +398,13 @@ describe('hub notes actions', () => {
           return {
             select: () => ({
               eq: async () => ({
-                data: [{ family_id: 'f1', role: 'editor', families: { id: 'f1', name: 'Familia Castaño' } }],
+                data: [
+                  {
+                    family_id: 'f1',
+                    role: 'editor',
+                    families: { id: 'f1', name: 'Familia Castaño' }
+                  }
+                ],
                 error: null
               })
             })

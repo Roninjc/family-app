@@ -199,13 +199,29 @@
     const walkerYOffset = -2.4
 
     const armLeftEnd =
-      gaitFrame === 1 ? { x: -9.0, y: 9.4 } : gaitFrame === 2 ? { x: -11.2, y: 5.3 } : { x: -10.2, y: 7.6 }
+      gaitFrame === 1
+        ? { x: -9.0, y: 9.4 }
+        : gaitFrame === 2
+          ? { x: -11.2, y: 5.3 }
+          : { x: -10.2, y: 7.6 }
     const armRightEnd =
-      gaitFrame === 1 ? { x: 11.2, y: 4.9 } : gaitFrame === 2 ? { x: 9.0, y: 9.2 } : { x: 10.2, y: 7.2 }
+      gaitFrame === 1
+        ? { x: 11.2, y: 4.9 }
+        : gaitFrame === 2
+          ? { x: 9.0, y: 9.2 }
+          : { x: 10.2, y: 7.2 }
     const legLeftEnd =
-      gaitFrame === 1 ? { x: -7.4, y: 25.9 } : gaitFrame === 2 ? { x: -3.6, y: 30.4 } : { x: -4.8, y: 28.8 }
+      gaitFrame === 1
+        ? { x: -7.4, y: 25.9 }
+        : gaitFrame === 2
+          ? { x: -3.6, y: 30.4 }
+          : { x: -4.8, y: 28.8 }
     const legRightEnd =
-      gaitFrame === 1 ? { x: 6.9, y: 31.2 } : gaitFrame === 2 ? { x: 2.9, y: 26.9 } : { x: 6.2, y: 29.6 }
+      gaitFrame === 1
+        ? { x: 6.9, y: 31.2 }
+        : gaitFrame === 2
+          ? { x: 2.9, y: 26.9 }
+          : { x: 6.2, y: 29.6 }
 
     ctx.fillStyle = shadow
     ctx.beginPath()
@@ -274,8 +290,18 @@
   }
 
   const buildEmergencyAtlasSprite = (linked: 0 | 1, gaitFrame: GaitFrame) => {
-      const legLeftEnd = gaitFrame === 1 ? { x: -6.5, y: 26.1 } : gaitFrame === 2 ? { x: -3.1, y: 30.1 } : { x: -4.2, y: 31 }
-      const legRightEnd = gaitFrame === 1 ? { x: 6.3, y: 31.3 } : gaitFrame === 2 ? { x: 2.5, y: 27.2 } : { x: 5.6, y: 32 }
+    const legLeftEnd =
+      gaitFrame === 1
+        ? { x: -6.5, y: 26.1 }
+        : gaitFrame === 2
+          ? { x: -3.1, y: 30.1 }
+          : { x: -4.2, y: 31 }
+    const legRightEnd =
+      gaitFrame === 1
+        ? { x: 6.3, y: 31.3 }
+        : gaitFrame === 2
+          ? { x: 2.5, y: 27.2 }
+          : { x: 5.6, y: 32 }
 
     const size = 64
     const atlas = document.createElement('canvas')
@@ -597,7 +623,10 @@
 
     if (pixiApp) {
       pixiApp.renderer.resolution = dpr
-      pixiApp.renderer.resize(Math.max(1, Math.round(drawWidth)), Math.max(1, Math.round(drawHeight)))
+      pixiApp.renderer.resize(
+        Math.max(1, Math.round(drawWidth)),
+        Math.max(1, Math.round(drawHeight))
+      )
       renderPixi()
     }
 
@@ -680,7 +709,6 @@
     const nowTs = performance.now()
     const drawCostMs = nowTs - drawStart
     updateQualityFromTelemetry(drawCostMs, nowTs - totalStartTs, nowTs)
-
   }
 
   const startFallbackLoop = (config: CrowdInitConfig) => {
@@ -752,7 +780,11 @@
           return
         }
 
-        const { changedIndices, positions: changedPositions, depthOrder: nextDepthOrder } = message.frame
+        const {
+          changedIndices,
+          positions: changedPositions,
+          depthOrder: nextDepthOrder
+        } = message.frame
 
         for (let i = 0; i < changedIndices.length; i += 1) {
           const avatarIndex = changedIndices[i]
@@ -852,7 +884,10 @@
         if (!entry) return
 
         fallbackVisible = entry.isIntersecting
-        worker?.postMessage({ type: 'visibility', visible: entry.isIntersecting } satisfies CrowdWorkerInMessage)
+        worker?.postMessage({
+          type: 'visibility',
+          visible: entry.isIntersecting
+        } satisfies CrowdWorkerInMessage)
         if (entry.isIntersecting) {
           requestDraw()
         }
@@ -898,7 +933,12 @@
   })
 </script>
 
-<div class="family-crowd-canvas" bind:this={wrapperEl} role="img" aria-label={`${membersCount} miembros en la familia`}>
+<div
+  class="family-crowd-canvas"
+  bind:this={wrapperEl}
+  role="img"
+  aria-label={`${membersCount} miembros en la familia`}
+>
   {#if showCenterCount}
     <div class="crowd-floor-count" aria-hidden="true">
       <span class="crowd-floor-count__value">{membersCount}</span>
@@ -928,7 +968,11 @@
     width: min(66vw, 410px);
     aspect-ratio: 1;
     border-radius: 999px;
-    background: radial-gradient(circle at 34% 26%, rgba(255, 253, 250, 0.98), rgba(236, 225, 211, 0.8));
+    background: radial-gradient(
+      circle at 34% 26%,
+      rgba(255, 253, 250, 0.98),
+      rgba(236, 225, 211, 0.8)
+    );
     box-shadow:
       10px 10px 26px rgba(140, 109, 83, 0.18),
       -10px -10px 26px rgba(255, 255, 255, 0.82),

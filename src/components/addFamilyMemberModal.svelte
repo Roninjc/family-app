@@ -22,7 +22,6 @@
   let showSummary = false
   let error = ''
   let submitting = false
-  let step1Valid = false
   let step2Valid = false
   let step1ValidationAttempted = false
   let step1InvalidPulseToggle = false
@@ -44,7 +43,6 @@
     )
   }
 
-  $: step1Valid = Boolean(validateStep1())
   $: step2Valid = Boolean(validateStep2())
 
   function nextStep() {

@@ -7,6 +7,8 @@
     AdminInviteFilter,
     AdminInviteSummary,
     AdminMemberOption,
+    AdminPageData,
+    AdminPageForm,
     AdminUserDraft,
     AdminUserProfile
   } from '../../components/admin/types'
@@ -18,31 +20,6 @@
   import CrowdCanvas from '../../components/admin/crowdCanvas.svelte'
   import UsersManagementPanel from '../../components/admin/usersManagementPanel.svelte'
   import UsersConfirmModal from '../../components/admin/usersConfirmModal.svelte'
-
-  type AdminPageData = {
-    families: AdminFamilySummary[]
-    activeFamily: AdminFamilySummary | null
-    canManageInvites: boolean
-    profiles: Array<AdminUserProfile & { member_id: string | null; created_at: string }>
-    invites: AdminInviteSummary[]
-    members: AdminMemberOption[]
-    currentUserId?: string | null
-    manager?: { id?: string | null } | null
-  }
-
-  type AdminPageForm = {
-    invitedGeneral?: boolean
-    inviteSuccess?: string
-    inviteLink?: string
-    inviteError?: string
-    invitedMember?: string
-    revokeSuccess?: string
-    usersSaved?: number
-    usersError?: string
-    familySettingsSuccess?: string
-    familySettingsFamilyId?: string
-    familySettingsError?: string
-  }
 
   export let data: AdminPageData
   export let form: AdminPageForm | null | undefined
@@ -418,7 +395,7 @@
           <div class="family-crowd-stage">
             <CrowdCanvas
               membersCount={familyMembersCount}
-              unlinkedMembersCount={unlinkedMembersCount}
+              {unlinkedMembersCount}
               seedKey={`${activeFamilyId}:${familyMembersCount}:${unlinkedMembersCount}`}
               debug={crowdDebug}
               renderer={crowdRenderer}

@@ -63,7 +63,7 @@ const recalcPublishInterval = () => {
     loadPressure = Math.max(0, loadPressure - 1)
   }
 
-  let interval = baseInterval + loadPressure * 16.67
+  const interval = baseInterval + loadPressure * 16.67
 
   publishIntervalMs = clamp(interval, 16.67, 120)
 }

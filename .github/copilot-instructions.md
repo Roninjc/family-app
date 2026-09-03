@@ -22,17 +22,20 @@ Use Yarn (the repo is Yarn-based and has `yarn.lock`).
 This is a SvelteKit + Supabase family tree app with invite-only auth and role-gated editing.
 
 1. **Auth and request context**
+
    - `src/hooks.server.ts` creates a per-request Supabase SSR client.
    - `locals.safeGetSession()` validates auth via `supabase.auth.getUser()`.
    - Unauthenticated users are redirected to `/login` (except `/login` and `/auth/*`), unless mock mode is enabled.
    - `src/routes/+layout.server.ts` loads `profile`, available families, and persists active family selection via cookie.
 
 2. **Data loading and write paths**
+
    - Main page server load (`src/routes/+page.server.ts`) fetches members + relationships and converts rows using `rowsToFamilyData()` (`src/lib/server/familyAdapter.ts`).
    - Mutations are SvelteKit form actions in `+page.server.ts` (`addMember`, `updateMember`, `deleteMember`, `addRelation`, `removeRelation`).
    - New-member insertion uses RPC `add_member_with_relations`; permissions are ultimately enforced by Supabase RLS.
 
 3. **Tree engine and rendering**
+
    - `src/stores/tree.ts` builds an adjacency-list graph and computes:
      - generation levels
      - couple/children groups

@@ -47,3 +47,28 @@ export type AdminFamilySummary = {
   role: AdminRole | string
   metrics: AdminFamilyMetrics
 }
+
+export type AdminPageData = {
+  families: AdminFamilySummary[]
+  activeFamily: AdminFamilySummary | null
+  canManageInvites: boolean
+  profiles: Array<AdminUserProfile & { member_id: string | null; created_at: string }>
+  invites: AdminInviteSummary[]
+  members: AdminMemberOption[]
+  currentUserId?: string | null
+  manager?: { id?: string | null } | null
+}
+
+export type AdminPageForm = {
+  invitedGeneral?: boolean
+  inviteSuccess?: string
+  inviteLink?: string
+  inviteError?: string
+  invitedMember?: string
+  revokeSuccess?: string
+  usersSaved?: number
+  usersError?: string
+  familySettingsSuccess?: string
+  familySettingsFamilyId?: string
+  familySettingsError?: string
+}

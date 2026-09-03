@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { FamilyData } from '$lib/types/familyTypes'
   import { onMount } from 'svelte'
   import { page } from '$app/stores'
   import { initTreeData, renderRoots, stack, treeVersion, visitedMembers } from '../stores/tree'
@@ -7,7 +8,7 @@
   import AddFamilyMemberModal from '../components/addFamilyMemberModal.svelte'
   import EditMemberModal from '../components/editMemberModal.svelte'
 
-  export let data: any
+  export let data: { familyData?: FamilyData }
   export let params: Record<string, string> = {}
   $: routeParamsCount = Object.keys(params).length
 
@@ -126,7 +127,8 @@
     color: var(--text-muted);
     background: linear-gradient(160deg, rgba(255, 252, 247, 0.72), rgba(255, 241, 224, 0.46));
     box-shadow: var(--empty-tree-shadow);
-    transition: box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease);
+    transition: box-shadow var(--neumo-shadow-transition-duration)
+      var(--neumo-shadow-transition-ease);
 
     .empty-title,
     .empty-subtitle {

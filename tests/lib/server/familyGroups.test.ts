@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { buildFamilyGroups, resolveActiveFamilyId, toRowsFromFamilyData } from '../../../src/lib/server/familyGroups'
+import {
+  buildFamilyGroups,
+  resolveActiveFamilyId,
+  toRowsFromFamilyData
+} from '../../../src/lib/server/familyGroups'
 import type { FamilyData } from '$lib/types/familyTypes'
 
 describe('buildFamilyGroups', () => {

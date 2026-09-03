@@ -17,7 +17,7 @@ describe('family route wrappers', () => {
         ...baseEvent,
         params: { familyId: 'f1' },
         url: new URL('http://localhost/family/f1')
-      } as any)
+      } as unknown as Parameters<typeof familyTreeLoad>[0])
     ).rejects.toMatchObject({
       status: 303,
       location: '/login'
@@ -31,7 +31,7 @@ describe('family route wrappers', () => {
         ...baseEvent,
         params: { familyId: 'f1' },
         url: new URL('http://localhost/family/f1/hub')
-      } as any)
+      } as unknown as Parameters<typeof familyHubLoad>[0])
     ).rejects.toMatchObject({
       status: 303,
       location: '/login'
@@ -45,7 +45,7 @@ describe('family route wrappers', () => {
         ...baseEvent,
         params: { familyId: 'f1' },
         url: new URL('http://localhost/family/f1/admin')
-      } as any)
+      } as unknown as Parameters<typeof familyAdminLoad>[0])
     ).rejects.toMatchObject({
       status: 303,
       location: '/login'
@@ -143,7 +143,14 @@ describe('family route wrappers', () => {
           return {
             select: () => ({
               eq: async () => ({
-                data: [{ family_id: 'f1', role: 'viewer', member_id: 'm1', families: { id: 'f1', name: 'Familia Castaño' } }],
+                data: [
+                  {
+                    family_id: 'f1',
+                    role: 'viewer',
+                    member_id: 'm1',
+                    families: { id: 'f1', name: 'Familia Castaño' }
+                  }
+                ],
                 error: null
               })
             })
@@ -155,7 +162,15 @@ describe('family route wrappers', () => {
             select: () => ({
               eq: () => ({
                 order: async () => ({
-                  data: [{ id: 'm1', name: 'Ana', family_name: 'Castaño', birth_date: null, photo_url: null }],
+                  data: [
+                    {
+                      id: 'm1',
+                      name: 'Ana',
+                      family_name: 'Castaño',
+                      birth_date: null,
+                      photo_url: null
+                    }
+                  ],
                   error: null
                 })
               })
@@ -173,15 +188,18 @@ describe('family route wrappers', () => {
       }
     }
 
-    const data = await loadTreePage({
-      locals: { user: { id: 'u1' }, supabase },
-      cookies: {
-        get: () => null,
-        set: () => {}
-      },
-      url: new URL('http://localhost/family/f1')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any, { requestedFamilyId: 'f1' })
+    const data = await loadTreePage(
+      {
+        locals: { user: { id: 'u1' }, supabase },
+        cookies: {
+          get: () => null,
+          set: () => {}
+        },
+        url: new URL('http://localhost/family/f1')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
+      { requestedFamilyId: 'f1' }
+    )
 
     expect(data).toMatchObject({
       activeFamilyId: 'f1',

@@ -126,7 +126,11 @@ export class CrowdPhysicsEngine {
       Math.min(maxSpriteSize, 17.6 - Math.sqrt(this.count) * 1.16 - denseFactor * 0.08)
     )
     const spriteSize = baseSpriteSize * SPRITE_SIZE_BOOST
-    const edgeInset = Math.max(spriteSize * 0.9, this.radius * (this.coarsePointer ? 0.125 : 0.088), 7)
+    const edgeInset = Math.max(
+      spriteSize * 0.9,
+      this.radius * (this.coarsePointer ? 0.125 : 0.088),
+      7
+    )
     const maxRadius = Math.max(10, this.radius - edgeInset)
     const minDistance = Math.max(3.1, spriteSize * (0.56 + denseFactor * 0.05))
     const motionScale = clamp(this.radius / 150, 0.72, 1.08)
@@ -259,7 +263,10 @@ export class CrowdPhysicsEngine {
 
             for (const j of neighbor) {
               if (j <= i) continue
-              if (this.collisionStride > 1 && (i + j + this.collisionPhase) % this.collisionStride !== 0) {
+              if (
+                this.collisionStride > 1 &&
+                (i + j + this.collisionPhase) % this.collisionStride !== 0
+              ) {
                 continue
               }
 
@@ -268,8 +275,8 @@ export class CrowdPhysicsEngine {
               const dy = avatar.y - other.y
               const distSq = dx * dx + dy * dy
               if (distSq <= 0.000001) {
-                const escapeAngle = (i * 0.73 + j * 1.31 + this.collisionPhase * 0.53) %
-                  (Math.PI * 2)
+                const escapeAngle =
+                  (i * 0.73 + j * 1.31 + this.collisionPhase * 0.53) % (Math.PI * 2)
                 const nx = Math.cos(escapeAngle)
                 const ny = Math.sin(escapeAngle)
                 avatar.x += nx * 0.08
@@ -321,7 +328,7 @@ export class CrowdPhysicsEngine {
                   const tx = tangentX / tangentLen
                   const ty = tangentY / tangentLen
                   const jt = clamp(
-                    (-(rvx * tx + rvy * ty)) / invMassSum,
+                    -(rvx * tx + rvy * ty) / invMassSum,
                     -impulseMag * COLLISION_TANGENTIAL_FRICTION,
                     impulseMag * COLLISION_TANGENTIAL_FRICTION
                   )

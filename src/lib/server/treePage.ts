@@ -59,7 +59,8 @@ export const loadTreePage = async (
     }
 
     const selectedGroup = groups.find((group) => group.id === selectedFamilyId)
-    if (!selectedGroup) return { familyData: { members: [] }, activeFamilyId: null, activeFamilyName: null }
+    if (!selectedGroup)
+      return { familyData: { members: [] }, activeFamilyId: null, activeFamilyName: null }
 
     const selectedIds = new Set(selectedGroup.memberIds)
     const selectedMembers = mockRows.members.filter((member) => selectedIds.has(member.id))
@@ -89,7 +90,8 @@ export const loadTreePage = async (
     throw redirect(303, '/hub?state=no_family')
   }
 
-  const activeFamilyName = userFamilies.find((family) => family.id === selectedFamilyId)?.name ?? null
+  const activeFamilyName =
+    userFamilies.find((family) => family.id === selectedFamilyId)?.name ?? null
 
   const { data: membersData, error: membersError } = await supabase
     .from('members')
@@ -152,7 +154,8 @@ export const createTreeActions = (options?: { forcedFamilyId?: string | null }) 
     const childrenIds = form.getAll('childrenIds').map(String).filter(Boolean)
     const previousPartnersIds = form.getAll('previousPartnersIds').map(String).filter(Boolean)
     const fallbackFamilyId = String(form.get('familyId') ?? '').trim()
-    const familyId = options?.forcedFamilyId ?? cookies.get(ACTIVE_FAMILY_COOKIE) ?? (fallbackFamilyId || null)
+    const familyId =
+      options?.forcedFamilyId ?? cookies.get(ACTIVE_FAMILY_COOKIE) ?? (fallbackFamilyId || null)
 
     if (!name) return fail(400, { addError: 'El nombre es obligatorio.' })
     if (!familyId) {

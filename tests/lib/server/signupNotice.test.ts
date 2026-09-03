@@ -63,7 +63,9 @@ describe('withSignupNotice', () => {
 
     const supabase = {
       auth: {
-        getUser: async () => ({ data: { user: { id: 'user-2', created_at: now, last_sign_in_at: now } } })
+        getUser: async () => ({
+          data: { user: { id: 'user-2', created_at: now, last_sign_in_at: now } }
+        })
       },
       from: (table: string) => {
         if (table === 'profiles') {
@@ -100,7 +102,9 @@ describe('withSignupNotice', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const next = await withSignupNotice(supabase as any, '/hub')
 
-    expect(next).toBe('/hub?signup_notice=invitation_accepted&signup_role=editor&signup_family=Familia%20Norte')
+    expect(next).toBe(
+      '/hub?signup_notice=invitation_accepted&signup_role=editor&signup_family=Familia%20Norte'
+    )
   })
 
   it('keeps warning notice and appends role context when member binding was already claimed', async () => {
@@ -109,7 +113,9 @@ describe('withSignupNotice', () => {
 
     const supabase = {
       auth: {
-        getUser: async () => ({ data: { user: { id: 'user-3', created_at: now, last_sign_in_at: now } } })
+        getUser: async () => ({
+          data: { user: { id: 'user-3', created_at: now, last_sign_in_at: now } }
+        })
       },
       from: (table: string) => {
         if (table === 'profiles') {

@@ -345,7 +345,9 @@ describe('root route canonical redirect', () => {
         return {
           select: () => ({
             eq: async () => ({
-              data: [{ family_id: 'f2', role: 'editor', families: { id: 'f2', name: 'Familia 2' } }],
+              data: [
+                { family_id: 'f2', role: 'editor', families: { id: 'f2', name: 'Familia 2' } }
+              ],
               error: null
             })
           })

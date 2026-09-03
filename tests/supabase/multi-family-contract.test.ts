@@ -6,7 +6,9 @@ describe('multi-family migration SQL contract', () => {
     expect(migrationSql).toContain('create table if not exists public.families')
     expect(migrationSql).toContain('create table if not exists public.family_memberships')
     expect(migrationSql).toContain('create table if not exists public.family_notes')
-    expect(migrationSql).toContain('add column if not exists family_id uuid references public.families')
+    expect(migrationSql).toContain(
+      'add column if not exists family_id uuid references public.families'
+    )
   })
 
   it('adds default family bootstrap and profile membership trigger', () => {
@@ -18,12 +20,16 @@ describe('multi-family migration SQL contract', () => {
   it('enforces family-scoped RLS and relationship integrity', () => {
     expect(migrationSql).toContain('create policy "members can read own families members"')
     expect(migrationSql).toContain('create policy "members can read own families relationships"')
-    expect(migrationSql).toContain('create or replace function public.enforce_relationship_same_family()')
+    expect(migrationSql).toContain(
+      'create or replace function public.enforce_relationship_same_family()'
+    )
     expect(migrationSql).toContain('create trigger enforce_relationship_same_family')
   })
 
   it('updates RPC add_member_with_relations to write family_id', () => {
-    expect(migrationSql).toContain("target_family_id := coalesce(")
-    expect(migrationSql).toContain('insert into public.members (name, family_name, birth_date, created_by, family_id)')
+    expect(migrationSql).toContain('target_family_id := coalesce(')
+    expect(migrationSql).toContain(
+      'insert into public.members (name, family_name, birth_date, created_by, family_id)'
+    )
   })
 })

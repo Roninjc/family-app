@@ -136,7 +136,8 @@
     background: var(--app-glass-panel-bg-soft);
     border: 1px solid var(--app-glass-panel-border-soft);
     backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
-    -webkit-backdrop-filter: blur(var(--app-glass-panel-blur)) saturate(var(--app-glass-panel-saturate));
+    -webkit-backdrop-filter: blur(var(--app-glass-panel-blur))
+      saturate(var(--app-glass-panel-saturate));
     box-shadow: var(--app-glass-panel-shadow);
     transition:
       box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),

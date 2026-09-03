@@ -105,7 +105,8 @@ export const loadHubPage = async (
   options?: { requestedFamilyId?: string | null; noFamilyRouteState?: boolean }
 ) => {
   const requestedFamilyId = options?.requestedFamilyId ?? url.searchParams.get('family')
-  const noFamilyRouteState = options?.noFamilyRouteState ?? (url.searchParams.get('state') === 'no_family')
+  const noFamilyRouteState =
+    options?.noFamilyRouteState ?? url.searchParams.get('state') === 'no_family'
 
   if (isMockFamilyMode()) {
     const rows = toRowsFromFamilyData(mockFamilyData)
@@ -236,12 +237,16 @@ export const loadHubPage = async (
   }
 
   const activeMembership = userFamilies.find((family) => family.id === activeFamilyId)
-  const linkedMemberId = activeMembership?.memberId ?? userFamilies.find((family) => family.memberId)?.memberId
+  const linkedMemberId =
+    activeMembership?.memberId ?? userFamilies.find((family) => family.memberId)?.memberId
   const linkedMemberName = linkedMemberId ? memberNameById.get(linkedMemberId)?.trim() : ''
 
   return {
     displayName:
-      profileRes.data?.display_name?.trim() || linkedMemberName || user.email?.split('@')[0] || 'Familiar',
+      profileRes.data?.display_name?.trim() ||
+      linkedMemberName ||
+      user.email?.split('@')[0] ||
+      'Familiar',
     role,
     families,
     activeFamilyId,

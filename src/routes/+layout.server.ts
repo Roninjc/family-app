@@ -47,7 +47,9 @@ export const load: LayoutServerLoad = async ({ locals: { user, supabase }, cooki
     let linkedMemberName = ''
 
     if (!profileDisplayName) {
-      const linkedMemberIds = [...new Set(availableFamilies.map((family) => family.memberId).filter(Boolean))]
+      const linkedMemberIds = [
+        ...new Set(availableFamilies.map((family) => family.memberId).filter(Boolean))
+      ]
 
       if (linkedMemberIds.length > 0) {
         const { data: linkedMembers } = await supabase
@@ -55,10 +57,14 @@ export const load: LayoutServerLoad = async ({ locals: { user, supabase }, cooki
           .select('id, name')
           .in('id', linkedMemberIds)
 
-        const linkedMemberNameById = new Map((linkedMembers ?? []).map((member) => [member.id, member.name]))
+        const linkedMemberNameById = new Map(
+          (linkedMembers ?? []).map((member) => [member.id, member.name])
+        )
         const activeMembership = availableFamilies.find((family) => family.id === activeFamilyId)
         const preferredMemberId = activeMembership?.memberId ?? linkedMemberIds[0] ?? null
-        linkedMemberName = preferredMemberId ? linkedMemberNameById.get(preferredMemberId)?.trim() ?? '' : ''
+        linkedMemberName = preferredMemberId
+          ? linkedMemberNameById.get(preferredMemberId)?.trim() ?? ''
+          : ''
       }
     }
 

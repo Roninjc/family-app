@@ -121,7 +121,10 @@
       <a class="app-btn app-btn--primary" href="/hub">Ir al hub personal</a>
     </section>
   {:else}
-    <section class="family-hub-main reveal-fade-up reveal-delay-1" aria-label="Secciones del hub familiar">
+    <section
+      class="family-hub-main reveal-fade-up reveal-delay-1"
+      aria-label="Secciones del hub familiar"
+    >
       <NewsCarouselSection
         familyName={activeFamily.name}
         news={newsItems}
@@ -156,7 +159,12 @@
   {/if}
 </main>
 
-<ModalShell open={showNewsCenter} onClose={closeNewsCenter} ariaLabel="Cerrar centro de noticias" size="wide">
+<ModalShell
+  open={showNewsCenter}
+  onClose={closeNewsCenter}
+  ariaLabel="Cerrar centro de noticias"
+  size="wide"
+>
   <section class="news-center" aria-label="Centro de noticias">
     <header class="news-center-header">
       <div>
@@ -214,7 +222,11 @@
           </button>
         </div>
       {:else}
-        <ul class="news-center-list" aria-label="Listado de noticias" transition:fade={{ duration: 160 }}>
+        <ul
+          class="news-center-list"
+          aria-label="Listado de noticias"
+          transition:fade={{ duration: 160 }}
+        >
           {#each newsItems as item (item.id)}
             <li>
               <button
@@ -243,10 +255,20 @@
         <p>{selectedNews.body}</p>
 
         <div class="news-detail-actions">
-          <button class="app-btn app-btn--ghost" type="button" on:click={showPreviousNews} disabled={!hasPreviousNews}>
+          <button
+            class="app-btn app-btn--ghost"
+            type="button"
+            on:click={showPreviousNews}
+            disabled={!hasPreviousNews}
+          >
             Anterior
           </button>
-          <button class="app-btn app-btn--ghost" type="button" on:click={showNextNews} disabled={!hasNextNews}>
+          <button
+            class="app-btn app-btn--ghost"
+            type="button"
+            on:click={showNextNews}
+            disabled={!hasNextNews}
+          >
             Siguiente
           </button>
         </div>

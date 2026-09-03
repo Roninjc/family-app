@@ -16,95 +16,117 @@
 ## Refactor applied
 
 1. Added reusable modal primitive:
+
    - `src/components/ui/modalShell.svelte`
    - Handles: open/close, backdrop click, `Escape`, role/aria attributes, shared shell sizing.
    - Size variants: `compact`, `default`, `wide`.
 
 2. Added reusable icon primitive:
+
    - `src/components/icons/gearIcon.svelte`
    - Replaces duplicated inline SVG paths.
 
 3. Extracted Admin modal components:
+
    - `src/components/admin/usersConfirmModal.svelte`
    - `src/components/admin/familySettingsModal.svelte`
    - Both use `ModalShell` internally.
 
 4. Migrated tree modals to `ModalShell`:
+
    - `addFamilyMemberModal`
    - `editMemberModal`
 
 5. Added reusable page header primitive:
+
    - `src/components/ui/pageHeader.svelte`
    - Migrated Admin, Hub, and Profile page headers.
 
 6. Added reusable chip toggle primitive:
+
    - `src/components/ui/chipToggleGroup.svelte`
    - Migrated filters in Admin (invites) and Hub (notes).
 
 7. Added shared global visual primitives in layout:
+
    - chips, stat tiles/grids, soft cards, autocomplete suggestion lists, page header shell/content classes.
 
 8. Unified gear trigger icon usage:
+
    - Tree member edit modal uses `GearIcon`.
    - Admin family settings trigger uses `GearIcon`.
 
 9. Extracted reusable member autocomplete suggestions:
+
    - `src/components/ui/memberAutocompleteSuggestions.svelte`
    - Migrated repeated suggestions in `addFamilyMemberModal` and `relationChipsEditor`.
 
 10. Split Hub family panel internals into reusable feature components:
-   - `src/components/hub/familyPreviewCard.svelte`
-   - `src/components/hub/familyNotesCard.svelte`
-   - `src/routes/hub/+page.svelte` now orchestrates state and delegates section rendering.
+
+- `src/components/hub/familyPreviewCard.svelte`
+- `src/components/hub/familyNotesCard.svelte`
+- `src/routes/hub/+page.svelte` now orchestrates state and delegates section rendering.
 
 11. Split Admin family scope carousel into a dedicated component:
-   - `src/components/admin/familyScopeCarousel.svelte`
-   - `src/routes/admin/+page.svelte` keeps ownership of family switch state and handlers.
+
+- `src/components/admin/familyScopeCarousel.svelte`
+- `src/routes/admin/+page.svelte` keeps ownership of family switch state and handlers.
 
 12. Split Admin management sections into dedicated panels:
-   - `src/components/admin/usersManagementPanel.svelte`
-   - `src/components/admin/issuedInvitesPanel.svelte`
-   - `src/routes/admin/+page.svelte` keeps business logic and delegates section rendering.
+
+- `src/components/admin/usersManagementPanel.svelte`
+- `src/components/admin/issuedInvitesPanel.svelte`
+- `src/routes/admin/+page.svelte` keeps business logic and delegates section rendering.
 
 13. Split Admin invite creation forms into dedicated panels:
-   - `src/components/admin/generalInvitePanel.svelte`
-   - `src/components/admin/memberInvitePanel.svelte`
-   - `src/routes/admin/+page.svelte` keeps section toggling and transient copy-feedback state.
+
+- `src/components/admin/generalInvitePanel.svelte`
+- `src/components/admin/memberInvitePanel.svelte`
+- `src/routes/admin/+page.svelte` keeps section toggling and transient copy-feedback state.
 
 14. Unified Admin section chrome into a shared collapsible container:
-   - `src/components/admin/collapsibleAdminSection.svelte`
-   - Used by general invite, member invite, issued invites, and users sections.
+
+- `src/components/admin/collapsibleAdminSection.svelte`
+- Used by general invite, member invite, issued invites, and users sections.
 
 15. Centralized Admin panel contracts in shared type module:
-   - `src/components/admin/types.ts`
-   - Reused by family carousel and extracted invite/users panels.
+
+- `src/components/admin/types.ts`
+- Reused by family carousel and extracted invite/users panels.
 
 16. Typed Admin route state explicitly:
-   - `src/routes/admin/+page.svelte` now types `data`/`form` using `PageData` and `ActionData` from `./$types`.
-   - Internal helpers now consume shared Admin contracts instead of ad-hoc inline object shapes.
+
+- `src/routes/admin/+page.svelte` now types `data`/`form` using `PageData` and `ActionData` from `./$types`.
+- Internal helpers now consume shared Admin contracts instead of ad-hoc inline object shapes.
 
 17. Typed Hub route and extracted panels with shared contracts:
-   - `src/components/hub/types.ts` centralizes Hub notes/family/form contracts.
-   - `src/routes/hub/+page.svelte` now uses explicit typed `data` (as `Pick<PageData, ...>`) and typed action-form state.
-   - `src/components/hub/familyNotesCard.svelte` and `src/components/hub/familyPreviewCard.svelte` reuse shared Hub contracts.
+
+- `src/components/hub/types.ts` centralizes Hub notes/family/form contracts.
+- `src/routes/hub/+page.svelte` now uses explicit typed `data` (as `Pick<PageData, ...>`) and typed action-form state.
+- `src/components/hub/familyNotesCard.svelte` and `src/components/hub/familyPreviewCard.svelte` reuse shared Hub contracts.
 
 18. Standardized Admin panel component APIs:
-   - Callbacks use concise `on<Action>` names (`onCopyLink`, `onFilterChange`, `onRoleChange`, `onMemberChange`, `onOpenConfirm`).
-   - Status props now follow consistent message/count naming (`successMessage`, `errorMessage`, `changesCount`, `successCount`).
+
+- Callbacks use concise `on<Action>` names (`onCopyLink`, `onFilterChange`, `onRoleChange`, `onMemberChange`, `onOpenConfirm`).
+- Status props now follow consistent message/count naming (`successMessage`, `errorMessage`, `changesCount`, `successCount`).
 
 19. Aligned Hub panel API naming with Admin conventions:
-   - `src/components/hub/familyNotesCard.svelte` now uses normalized names for callbacks/state props (`onCreateToggle`, `onEditStart`, `onEditCancel`, `filter`, `filterOptions`, `creatingFamilyId`, `editingId`, `titleDraft`, `bodyDraft`, `typeDraft`).
-   - `src/routes/hub/+page.svelte` wiring updated to match the normalized API.
+
+- `src/components/hub/familyNotesCard.svelte` now uses normalized names for callbacks/state props (`onCreateToggle`, `onEditStart`, `onEditCancel`, `filter`, `filterOptions`, `creatingFamilyId`, `editingId`, `titleDraft`, `bodyDraft`, `typeDraft`).
+- `src/routes/hub/+page.svelte` wiring updated to match the normalized API.
 
 20. Standardized Hub status feedback contract:
-   - `src/components/hub/familyNotesCard.svelte` now receives explicit status props (`created`, `updated`, `deleted`, `errorMessage`) instead of coupling to the raw action `form` payload.
-   - `src/routes/hub/+page.svelte` maps action form data to per-family status via a dedicated helper.
+
+- `src/components/hub/familyNotesCard.svelte` now receives explicit status props (`created`, `updated`, `deleted`, `errorMessage`) instead of coupling to the raw action `form` payload.
+- `src/routes/hub/+page.svelte` maps action form data to per-family status via a dedicated helper.
 
 21. Aligned Hub page internal state/handlers with panel vocabulary:
-   - `src/routes/hub/+page.svelte` now uses matching local names (`creatingFamilyId`, `editingId`, `titleDraft`, `bodyDraft`, `typeDraft`, `startEdit`, `cancelEdit`, `toggleCreateComposer`) to reduce adapter indirection.
+
+- `src/routes/hub/+page.svelte` now uses matching local names (`creatingFamilyId`, `editingId`, `titleDraft`, `bodyDraft`, `typeDraft`, `startEdit`, `cancelEdit`, `toggleCreateComposer`) to reduce adapter indirection.
 
 22. Harmonized filter-empty UX copy across Admin/Hub:
-   - Hub notes empty-filter message now matches Admin wording (`No hay resultados para este filtro.`).
+
+- Hub notes empty-filter message now matches Admin wording (`No hay resultados para este filtro.`).
 
 ## Current reusable primitives
 

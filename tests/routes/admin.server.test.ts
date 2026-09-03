@@ -31,7 +31,9 @@ describe('admin canonical redirect', () => {
         return {
           select: () => ({
             eq: async () => ({
-              data: [{ family_id: 'f2', role: 'admin', families: { id: 'f2', name: 'Familia Luna' } }],
+              data: [
+                { family_id: 'f2', role: 'admin', families: { id: 'f2', name: 'Familia Luna' } }
+              ],
               error: null
             })
           })
@@ -104,7 +106,9 @@ describe('admin setRole family scope', () => {
               if (columns.includes('families!inner')) {
                 return {
                   eq: async () => ({
-                    data: [{ family_id: 'f2', role: 'admin', families: { id: 'f2', name: 'Luna' } }],
+                    data: [
+                      { family_id: 'f2', role: 'admin', families: { id: 'f2', name: 'Luna' } }
+                    ],
                     error: null
                   })
                 }
@@ -164,7 +168,9 @@ describe('admin setRole family scope', () => {
               if (columns.includes('families!inner')) {
                 return {
                   eq: async () => ({
-                    data: [{ family_id: 'f2', role: 'admin', families: { id: 'f2', name: 'Luna' } }],
+                    data: [
+                      { family_id: 'f2', role: 'admin', families: { id: 'f2', name: 'Luna' } }
+                    ],
                     error: null
                   })
                 }
@@ -214,7 +220,9 @@ describe('admin setMemberLink family scope', () => {
               if (columns.includes('families!inner')) {
                 return {
                   eq: async () => ({
-                    data: [{ family_id: 'f2', role: 'admin', families: { id: 'f2', name: 'Luna' } }],
+                    data: [
+                      { family_id: 'f2', role: 'admin', families: { id: 'f2', name: 'Luna' } }
+                    ],
                     error: null
                   })
                 }
@@ -286,7 +294,9 @@ describe('admin setMemberLink family scope', () => {
               if (columns.includes('families!inner')) {
                 return {
                   eq: async () => ({
-                    data: [{ family_id: 'f2', role: 'viewer', families: { id: 'f2', name: 'Luna' } }],
+                    data: [
+                      { family_id: 'f2', role: 'viewer', families: { id: 'f2', name: 'Luna' } }
+                    ],
                     error: null
                   })
                 }
@@ -355,7 +365,9 @@ describe('admin setMemberLink family scope', () => {
               if (columns.includes('families!inner')) {
                 return {
                   eq: async () => ({
-                    data: [{ family_id: 'f2', role: 'viewer', families: { id: 'f2', name: 'Luna' } }],
+                    data: [
+                      { family_id: 'f2', role: 'viewer', families: { id: 'f2', name: 'Luna' } }
+                    ],
                     error: null
                   })
                 }
@@ -381,7 +393,9 @@ describe('admin setMemberLink family scope', () => {
     })
 
     expect(result.status).toBe(403)
-    expect(result.data.linkError).toBe('En modo solo lectura solo puedes editar tu propia vinculación.')
+    expect(result.data.linkError).toBe(
+      'En modo solo lectura solo puedes editar tu propia vinculación.'
+    )
   })
 })
 
@@ -401,7 +415,9 @@ describe('admin setRole permissions', () => {
               if (columns.includes('families!inner')) {
                 return {
                   eq: async () => ({
-                    data: [{ family_id: 'f1', role: 'editor', families: { id: 'f1', name: 'Castaño' } }],
+                    data: [
+                      { family_id: 'f1', role: 'editor', families: { id: 'f1', name: 'Castaño' } }
+                    ],
                     error: null
                   })
                 }
@@ -435,13 +451,18 @@ describe('admin setRole permissions', () => {
     })
 
     expect(result.status).toBe(403)
-    expect(result.data.roleError).toBe('Un editor no puede asignar ni modificar roles de administrador.')
+    expect(result.data.roleError).toBe(
+      'Un editor no puede asignar ni modificar roles de administrador.'
+    )
   })
 })
 
 describe('admin saveUsers action', () => {
   it('applies bulk role/link updates for admin', async () => {
-    const updates: Array<{ row: Record<string, unknown>; filters: Array<{ column: string; value: string }> }> = []
+    const updates: Array<{
+      row: Record<string, unknown>
+      filters: Array<{ column: string; value: string }>
+    }> = []
 
     const supabase = {
       from: (table: string) => {
@@ -457,7 +478,9 @@ describe('admin saveUsers action', () => {
               if (columns.includes('families!inner')) {
                 return {
                   eq: async () => ({
-                    data: [{ family_id: 'f1', role: 'admin', families: { id: 'f1', name: 'Castaño' } }],
+                    data: [
+                      { family_id: 'f1', role: 'admin', families: { id: 'f1', name: 'Castaño' } }
+                    ],
                     error: null
                   })
                 }
@@ -536,7 +559,9 @@ describe('admin saveUsers action', () => {
               if (columns.includes('families!inner')) {
                 return {
                   eq: async () => ({
-                    data: [{ family_id: 'f1', role: 'viewer', families: { id: 'f1', name: 'Castaño' } }],
+                    data: [
+                      { family_id: 'f1', role: 'viewer', families: { id: 'f1', name: 'Castaño' } }
+                    ],
                     error: null
                   })
                 }
@@ -581,7 +606,9 @@ describe('admin saveUsers action', () => {
     })
 
     expect(result.status).toBe(403)
-    expect(result.data.usersError).toBe('En modo solo lectura solo puedes editar tu propia vinculación.')
+    expect(result.data.usersError).toBe(
+      'En modo solo lectura solo puedes editar tu propia vinculación.'
+    )
   })
 })
 
@@ -601,7 +628,9 @@ describe('admin invite actions family sync', () => {
               if (columns.includes('families!inner')) {
                 return {
                   eq: async () => ({
-                    data: [{ family_id: 'f1', role: 'admin', families: { id: 'f1', name: 'Castaño' } }],
+                    data: [
+                      { family_id: 'f1', role: 'admin', families: { id: 'f1', name: 'Castaño' } }
+                    ],
                     error: null
                   })
                 }
@@ -652,7 +681,9 @@ describe('admin revoke invitation', () => {
               if (columns.includes('families!inner')) {
                 return {
                   eq: async () => ({
-                    data: [{ family_id: 'f1', role: 'admin', families: { id: 'f1', name: 'Castaño' } }],
+                    data: [
+                      { family_id: 'f1', role: 'admin', families: { id: 'f1', name: 'Castaño' } }
+                    ],
                     error: null
                   })
                 }
@@ -719,7 +750,9 @@ describe('admin revoke invitation', () => {
               if (columns.includes('families!inner')) {
                 return {
                   eq: async () => ({
-                    data: [{ family_id: 'f1', role: 'admin', families: { id: 'f1', name: 'Castaño' } }],
+                    data: [
+                      { family_id: 'f1', role: 'admin', families: { id: 'f1', name: 'Castaño' } }
+                    ],
                     error: null
                   })
                 }
@@ -785,7 +818,9 @@ describe('admin regenerate invite link', () => {
               if (columns.includes('families!inner')) {
                 return {
                   eq: async () => ({
-                    data: [{ family_id: 'f1', role: 'admin', families: { id: 'f1', name: 'Castaño' } }],
+                    data: [
+                      { family_id: 'f1', role: 'admin', families: { id: 'f1', name: 'Castaño' } }
+                    ],
                     error: null
                   })
                 }
@@ -873,7 +908,9 @@ describe('admin regenerate invite link', () => {
               if (columns.includes('families!inner')) {
                 return {
                   eq: async () => ({
-                    data: [{ family_id: 'f1', role: 'admin', families: { id: 'f1', name: 'Castaño' } }],
+                    data: [
+                      { family_id: 'f1', role: 'admin', families: { id: 'f1', name: 'Castaño' } }
+                    ],
                     error: null
                   })
                 }

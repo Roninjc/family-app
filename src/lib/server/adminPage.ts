@@ -6,9 +6,13 @@ import {
   resolveAndPersistActiveFamily
 } from '$lib/server/activeFamily'
 import { mockFamilyData } from '$lib/data/mockFamily'
-import { buildFamilyGroups, resolveActiveFamilyId, toRowsFromFamilyData } from '$lib/server/familyGroups'
+import {
+  buildFamilyGroups,
+  resolveActiveFamilyId,
+  toRowsFromFamilyData
+} from '$lib/server/familyGroups'
 import { isMockFamilyMode } from '$lib/server/mockMode'
-import type { Cookies } from '@sveltejs/kit'
+import type { Cookies, RequestEvent } from '@sveltejs/kit'
 
 const VALID_ROLES: Role[] = ['admin', 'editor', 'viewer']
 
@@ -216,10 +220,9 @@ export const loadAdminPage = async (
       ]
     }
 
-    const profiles = buildMockProfilesForFamily(
-      managerContext.activeFamily.id,
-      [...activeMemberIds]
-    )
+    const profiles = buildMockProfilesForFamily(managerContext.activeFamily.id, [
+      ...activeMemberIds
+    ])
 
     const linkedCount = profiles.filter((profile) => profile.member_id).length
     const managersCount = profiles.filter(
@@ -257,7 +260,8 @@ export const loadAdminPage = async (
       activeFamily: managerContext.activeFamily,
       canManageInvites: managerContext.activeFamily.role !== 'viewer',
       canManageRoles:
-        managerContext.activeFamily.role === 'admin' || managerContext.activeFamily.role === 'editor',
+        managerContext.activeFamily.role === 'admin' ||
+        managerContext.activeFamily.role === 'editor',
       profiles,
       invites: [],
       members,
@@ -276,36 +280,40 @@ export const loadAdminPage = async (
     .eq('family_id', managerContext.activeFamily.id)
     .order('created_at', { ascending: true })
 
-  const [membershipsRes, invitesRes, allMembersRes, allMembershipsRes, allInvitesRes] = await Promise.all([
-    locals.supabase
-      .from('family_memberships')
-      .select('profile_id, role, member_id, profiles!inner(id, email, display_name, created_at)')
-      .eq('family_id', managerContext.activeFamily.id),
-    locals.supabase
-      .from('invitations')
-      .select('*')
-      .eq('family_id', managerContext.activeFamily.id)
-      .order('created_at', { ascending: false }),
-    familyIds.length > 0
-      ? locals.supabase.from('members').select('id, family_id').in('family_id', familyIds)
-      : Promise.resolve({ data: [], error: null }),
-    familyIds.length > 0
-      ? locals.supabase
-          .from('family_memberships')
-          .select('family_id, profile_id, role, member_id')
-          .in('family_id', familyIds)
-      : Promise.resolve({ data: [], error: null }),
-    familyIds.length > 0
-      ? locals.supabase
-          .from('invitations')
-          .select('family_id, revoked_at, expires_at, uses_count, max_uses')
-          .in('family_id', familyIds)
-      : Promise.resolve({ data: [], error: null })
-  ])
+  const [membershipsRes, invitesRes, allMembersRes, allMembershipsRes, allInvitesRes] =
+    await Promise.all([
+      locals.supabase
+        .from('family_memberships')
+        .select('profile_id, role, member_id, profiles!inner(id, email, display_name, created_at)')
+        .eq('family_id', managerContext.activeFamily.id),
+      locals.supabase
+        .from('invitations')
+        .select('*')
+        .eq('family_id', managerContext.activeFamily.id)
+        .order('created_at', { ascending: false }),
+      familyIds.length > 0
+        ? locals.supabase.from('members').select('id, family_id').in('family_id', familyIds)
+        : Promise.resolve({ data: [], error: null }),
+      familyIds.length > 0
+        ? locals.supabase
+            .from('family_memberships')
+            .select('family_id, profile_id, role, member_id')
+            .in('family_id', familyIds)
+        : Promise.resolve({ data: [], error: null }),
+      familyIds.length > 0
+        ? locals.supabase
+            .from('invitations')
+            .select('family_id, revoked_at, expires_at, uses_count, max_uses')
+            .in('family_id', familyIds)
+        : Promise.resolve({ data: [], error: null })
+    ])
 
   const membersCountByFamily = new Map<string, number>()
   for (const member of allMembersRes.data ?? []) {
-    membersCountByFamily.set(member.family_id, (membersCountByFamily.get(member.family_id) ?? 0) + 1)
+    membersCountByFamily.set(
+      member.family_id,
+      (membersCountByFamily.get(member.family_id) ?? 0) + 1
+    )
   }
 
   const usersCountByFamily = new Map<string, number>()
@@ -384,7 +392,8 @@ export const loadAdminPage = async (
     activeFamilyName: managerContext.activeFamily.name,
     activeFamily: managerContext.activeFamily,
     canManageInvites: managerContext.activeFamily.role !== 'viewer',
-    canManageRoles: managerContext.activeFamily.role === 'admin' || managerContext.activeFamily.role === 'editor',
+    canManageRoles:
+      managerContext.activeFamily.role === 'admin' || managerContext.activeFamily.role === 'editor',
     profiles,
     invites: invitesRes.data ?? [],
     members: membersRes.data ?? []
@@ -392,7 +401,7 @@ export const loadAdminPage = async (
 }
 
 export const createAdminActions = (options?: { forcedFamilyId?: string | null }) => ({
-  updateFamilySettings: async ({ request, locals, cookies }: any) => {
+  updateFamilySettings: async ({ request, locals, cookies }: RequestEvent) => {
     if (isMockFamilyMode()) {
       return fail(400, { familySettingsError: MOCK_FAMILY_SETTINGS_ERROR })
     }
@@ -422,7 +431,9 @@ export const createAdminActions = (options?: { forcedFamilyId?: string | null })
     }
 
     if (familyName.length > 80) {
-      return fail(400, { familySettingsError: 'El nombre de la familia no puede superar 80 caracteres.' })
+      return fail(400, {
+        familySettingsError: 'El nombre de la familia no puede superar 80 caracteres.'
+      })
     }
 
     const { error } = await locals.supabase
@@ -440,7 +451,7 @@ export const createAdminActions = (options?: { forcedFamilyId?: string | null })
     }
   },
 
-  inviteGeneral: async ({ request, locals, url, cookies }: any) => {
+  inviteGeneral: async ({ request, locals, url, cookies }: RequestEvent) => {
     if (isMockFamilyMode()) {
       return fail(400, { inviteError: MOCK_INVITE_ERROR })
     }
@@ -494,7 +505,9 @@ export const createAdminActions = (options?: { forcedFamilyId?: string | null })
     const token = data?.[0]?.token
 
     if (!token) {
-      return fail(500, { inviteError: 'No pudimos generar el enlace de invitación. Inténtalo de nuevo.' })
+      return fail(500, {
+        inviteError: 'No pudimos generar el enlace de invitación. Inténtalo de nuevo.'
+      })
     }
 
     return {
@@ -504,7 +517,7 @@ export const createAdminActions = (options?: { forcedFamilyId?: string | null })
     }
   },
 
-  inviteMember: async ({ request, locals, cookies }: any) => {
+  inviteMember: async ({ request, locals, cookies }: RequestEvent) => {
     if (isMockFamilyMode()) {
       return fail(400, { inviteError: MOCK_INVITE_ERROR })
     }
@@ -567,12 +580,13 @@ export const createAdminActions = (options?: { forcedFamilyId?: string | null })
       invitation_max_uses: 1
     })
 
-    if (error) return fail(400, { inviteError: error.message, familyId: managerContext.activeFamily.id })
+    if (error)
+      return fail(400, { inviteError: error.message, familyId: managerContext.activeFamily.id })
 
     return { invitedMember: email, familyId: managerContext.activeFamily.id }
   },
 
-  revokeInvite: async ({ request, locals, cookies }: any) => {
+  revokeInvite: async ({ request, locals, cookies }: RequestEvent) => {
     if (isMockFamilyMode()) {
       return fail(400, { inviteError: MOCK_INVITE_ERROR })
     }
@@ -598,7 +612,8 @@ export const createAdminActions = (options?: { forcedFamilyId?: string | null })
 
     const inviteId = String(form.get('inviteId') ?? '').trim()
 
-    if (!inviteId) return fail(400, { inviteError: 'No se recibió la invitación que quieres gestionar.' })
+    if (!inviteId)
+      return fail(400, { inviteError: 'No se recibió la invitación que quieres gestionar.' })
 
     const { data: invite } = await locals.supabase
       .from('invitations')
@@ -634,7 +649,7 @@ export const createAdminActions = (options?: { forcedFamilyId?: string | null })
     }
   },
 
-  regenerateInviteLink: async ({ request, locals, url, cookies }: any) => {
+  regenerateInviteLink: async ({ request, locals, url, cookies }: RequestEvent) => {
     if (isMockFamilyMode()) {
       return fail(400, { inviteError: MOCK_INVITE_ERROR })
     }
@@ -659,7 +674,8 @@ export const createAdminActions = (options?: { forcedFamilyId?: string | null })
     }
 
     const inviteId = String(form.get('inviteId') ?? '').trim()
-    if (!inviteId) return fail(400, { inviteError: 'No se recibió la invitación que quieres gestionar.' })
+    if (!inviteId)
+      return fail(400, { inviteError: 'No se recibió la invitación que quieres gestionar.' })
 
     const { data: invite } = await locals.supabase
       .from('invitations')
@@ -695,7 +711,9 @@ export const createAdminActions = (options?: { forcedFamilyId?: string | null })
 
     const token = data?.[0]?.token
     if (!token) {
-      return fail(500, { inviteError: 'No pudimos generar el enlace de invitación. Inténtalo de nuevo.' })
+      return fail(500, {
+        inviteError: 'No pudimos generar el enlace de invitación. Inténtalo de nuevo.'
+      })
     }
 
     const { error: revokeError } = await locals.supabase
@@ -715,7 +733,7 @@ export const createAdminActions = (options?: { forcedFamilyId?: string | null })
     }
   },
 
-  saveUsers: async ({ request, locals, cookies }: any) => {
+  saveUsers: async ({ request, locals, cookies }: RequestEvent) => {
     if (isMockFamilyMode()) {
       return fail(400, {
         usersError:
@@ -744,7 +762,9 @@ export const createAdminActions = (options?: { forcedFamilyId?: string | null })
     try {
       parsedChanges = JSON.parse(rawChanges || '[]')
     } catch {
-      return fail(400, { usersError: 'No pudimos leer los cambios. Recarga la página e inténtalo de nuevo.' })
+      return fail(400, {
+        usersError: 'No pudimos leer los cambios. Recarga la página e inténtalo de nuevo.'
+      })
     }
 
     if (!Array.isArray(parsedChanges)) {
@@ -793,14 +813,23 @@ export const createAdminActions = (options?: { forcedFamilyId?: string | null })
       string,
       { profile_id: string; role: Role; member_id: string | null }
     >(
-      (membershipsInFamily ?? []).map((membership: { profile_id: string; role: Role; member_id: string | null }) => [membership.profile_id, membership])
+      (membershipsInFamily ?? []).map(
+        (membership: { profile_id: string; role: Role; member_id: string | null }) => [
+          membership.profile_id,
+          membership
+        ]
+      )
     )
 
     if (membershipByProfile.size !== uniqueProfileIds.length) {
-      return fail(404, { usersError: 'Alguno de los usuarios ya no pertenece a la familia activa.' })
+      return fail(404, {
+        usersError: 'Alguno de los usuarios ya no pertenece a la familia activa.'
+      })
     }
 
-    const targetMemberIds = [...new Set(changes.map((change) => change.memberId).filter(Boolean))] as string[]
+    const targetMemberIds = [
+      ...new Set(changes.map((change) => change.memberId).filter(Boolean))
+    ] as string[]
     if (targetMemberIds.length > 0) {
       const { data: membersInFamily, error: membersError } = await locals.supabase
         .from('members')
@@ -814,7 +843,9 @@ export const createAdminActions = (options?: { forcedFamilyId?: string | null })
 
       const validIds = new Set((membersInFamily ?? []).map((member: { id: string }) => member.id))
       if (validIds.size !== targetMemberIds.length) {
-        return fail(400, { usersError: 'Hay miembros seleccionados que no pertenecen a la familia activa.' })
+        return fail(400, {
+          usersError: 'Hay miembros seleccionados que no pertenecen a la familia activa.'
+        })
       }
     }
 
@@ -841,7 +872,11 @@ export const createAdminActions = (options?: { forcedFamilyId?: string | null })
           }
         }
 
-        if (change.profileId === locals.user?.id && change.role !== 'admin' && actorRole === 'admin') {
+        if (
+          change.profileId === locals.user?.id &&
+          change.role !== 'admin' &&
+          actorRole === 'admin'
+        ) {
           return fail(400, { usersError: 'No puedes quitarte tu propio rol de administrador.' })
         }
       }
@@ -862,7 +897,9 @@ export const createAdminActions = (options?: { forcedFamilyId?: string | null })
 
       if (error) {
         if (error.code === '23505') {
-          return fail(400, { usersError: 'Uno de los miembros ya está vinculado a otra cuenta en esta familia.' })
+          return fail(400, {
+            usersError: 'Uno de los miembros ya está vinculado a otra cuenta en esta familia.'
+          })
         }
         if (error.code === '23503') {
           return fail(400, { usersError: 'Hay referencias a miembros no válidos.' })
@@ -879,7 +916,7 @@ export const createAdminActions = (options?: { forcedFamilyId?: string | null })
     }
   },
 
-  setMemberLink: async ({ request, locals, cookies }: any) => {
+  setMemberLink: async ({ request, locals, cookies }: RequestEvent) => {
     if (isMockFamilyMode()) {
       return fail(400, {
         linkError:
@@ -945,7 +982,9 @@ export const createAdminActions = (options?: { forcedFamilyId?: string | null })
 
     if (error) {
       if (error.code === '23505') {
-        return fail(400, { linkError: 'Ese miembro ya está vinculado a otra cuenta en esta familia.' })
+        return fail(400, {
+          linkError: 'Ese miembro ya está vinculado a otra cuenta en esta familia.'
+        })
       }
       if (error.code === '23503') {
         return fail(400, { linkError: 'El miembro seleccionado no existe.' })
@@ -956,10 +995,11 @@ export const createAdminActions = (options?: { forcedFamilyId?: string | null })
     return { linkUpdated: profileId, familyId: managerContext.activeFamily.id }
   },
 
-  setRole: async ({ request, locals, cookies }: any) => {
+  setRole: async ({ request, locals, cookies }: RequestEvent) => {
     if (isMockFamilyMode()) {
       return fail(400, {
-        roleError: 'Estás en modo mock. Los roles no se guardan. Usa el modo normal para persistir cambios.'
+        roleError:
+          'Estás en modo mock. Los roles no se guardan. Usa el modo normal para persistir cambios.'
       })
     }
 

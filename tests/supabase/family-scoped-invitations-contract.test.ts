@@ -3,7 +3,9 @@ import migrationSql from '../../supabase/migrations/20260808103000_family_scoped
 
 describe('family-scoped invitations SQL contract', () => {
   it('adds family_id to invitations and makes it required', () => {
-    expect(migrationSql).toContain('add column if not exists family_id uuid references public.families')
+    expect(migrationSql).toContain(
+      'add column if not exists family_id uuid references public.families'
+    )
     expect(migrationSql).toContain('alter column family_id set not null')
   })
 
@@ -15,8 +17,12 @@ describe('family-scoped invitations SQL contract', () => {
   })
 
   it('assigns signup membership to invitation family on account creation', () => {
-    expect(migrationSql).toContain('insert into public.family_memberships (family_id, profile_id, role)')
-    expect(migrationSql).toContain('values (invite_token.family_id, new.id, invite_token.role_on_signup)')
+    expect(migrationSql).toContain(
+      'insert into public.family_memberships (family_id, profile_id, role)'
+    )
+    expect(migrationSql).toContain(
+      'values (invite_token.family_id, new.id, invite_token.role_on_signup)'
+    )
     expect(migrationSql).toContain('values (signup_family_id, new.id, signup_role)')
   })
 })

@@ -17,7 +17,9 @@ describe('layout load displayName', () => {
         if (table === 'profiles') {
           return {
             select: () => ({
-              eq: () => ({ single: async () => ({ data: { display_name: 'Pepe', role: 'viewer' } }) })
+              eq: () => ({
+                single: async () => ({ data: { display_name: 'Pepe', role: 'viewer' } })
+              })
             })
           }
         }
@@ -71,7 +73,9 @@ describe('layout load displayName', () => {
         if (table === 'profiles') {
           return {
             select: () => ({
-              eq: () => ({ single: async () => ({ data: { display_name: '   ', role: 'viewer' } }) })
+              eq: () => ({
+                single: async () => ({ data: { display_name: '   ', role: 'viewer' } })
+              })
             })
           }
         }

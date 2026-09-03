@@ -19,7 +19,9 @@
     {/each}
   </ul>
 
-  <button class="app-btn app-btn--ghost" type="button" disabled aria-disabled="true">{ctaLabel}</button>
+  <button class="app-btn app-btn--ghost" type="button" disabled aria-disabled="true"
+    >{ctaLabel}</button
+  >
 </article>
 
 <style lang="scss">
@@ -31,8 +33,7 @@
     border-radius: var(--radius-xl);
     max-height: min(74dvh, 760px);
     overflow: auto;
-    background:
-      radial-gradient(circle at 8% 8%, rgba(255, 255, 255, 0.62), transparent 45%),
+    background: radial-gradient(circle at 8% 8%, rgba(255, 255, 255, 0.62), transparent 45%),
       linear-gradient(145deg, rgba(246, 239, 229, 0.88), rgba(236, 226, 212, 0.92));
   }
 

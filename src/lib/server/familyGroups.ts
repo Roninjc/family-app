@@ -126,18 +126,22 @@ export const toRowsFromFamilyData = (familyData: FamilyData) => {
     }
 
     for (const partnerId of member.partner) {
-      const [memberA, memberB] = member.id < partnerId ? [member.id, partnerId] : [partnerId, member.id]
+      const [memberA, memberB] =
+        member.id < partnerId ? [member.id, partnerId] : [partnerId, member.id]
       addRelationship({ member_a: memberA, member_b: memberB, type: 'partner' })
     }
 
     for (const previousPartnerId of member.previousPartners) {
       const [memberA, memberB] =
-        member.id < previousPartnerId ? [member.id, previousPartnerId] : [previousPartnerId, member.id]
+        member.id < previousPartnerId
+          ? [member.id, previousPartnerId]
+          : [previousPartnerId, member.id]
       addRelationship({ member_a: memberA, member_b: memberB, type: 'previous_partner' })
     }
 
     for (const siblingId of member.siblings) {
-      const [memberA, memberB] = member.id < siblingId ? [member.id, siblingId] : [siblingId, member.id]
+      const [memberA, memberB] =
+        member.id < siblingId ? [member.id, siblingId] : [siblingId, member.id]
       addRelationship({ member_a: memberA, member_b: memberB, type: 'sibling' })
     }
   }
