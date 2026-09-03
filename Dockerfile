@@ -24,5 +24,5 @@ COPY --from=builder /app/node_modules node_modules/
 COPY package.json ./
 
 EXPOSE 3000
-HEALTHCHECK --interval=5s --timeout=3s --start-period=15s --retries=6 CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || 3000) + '/login').then(response => process.exit(response.status < 500 ? 0 : 1)).catch(() => process.exit(1))"
+HEALTHCHECK --interval=2s --timeout=2s --start-period=2s --retries=3 CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || 3000) + '/login').then(response => process.exit(response.status < 500 ? 0 : 1)).catch(() => process.exit(1))"
 CMD ["node", "build"]

@@ -62,9 +62,9 @@ jobs:
               exit 1
             fi
 
-            for attempt in $(seq 1 12); do
+            for attempt in $(seq 1 15); do
               health=$(docker inspect --format '{{.State.Health.Status}}' "$container_id" 2>/dev/null || true)
-              echo "family-app health: ${health:-not-found} (attempt ${attempt}/12)"
+              echo "family-app health: ${health:-not-found} (attempt ${attempt}/15)"
               if [ "$health" = healthy ]; then
                 break
               fi
@@ -72,11 +72,11 @@ jobs:
                 docker logs --tail 200 "$container_id"
                 exit 1
               fi
-              sleep 5
+              sleep 2
             done
 
             if [ "$health" != healthy ]; then
-              echo 'family-app did not become healthy within 60 seconds'
+              echo 'family-app did not become healthy within 30 seconds'
               docker logs --tail 200 "$container_id"
               exit 1
             fi

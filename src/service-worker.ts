@@ -147,7 +147,8 @@ const recoveryHtml = (details: RecoveryDetails) => {
       clearTimeout(requestTimeout)
     }
 
-    retryTimer = setTimeout(retry, 3000)
+    const nextInterval = attempt <= 5 ? 1200 : 3000
+    retryTimer = setTimeout(retry, nextInterval)
   }
 
   document.getElementById('copy').addEventListener('click', async () => {
@@ -168,6 +169,31 @@ const recoveryHtml = (details: RecoveryDetails) => {
 </script>
 </body>
 </html>`
+}
+
+const fetchWithRetry = async (
+  request: Request,
+  retries = 2,
+  delayMs = 600
+): Promise<Response> => {
+  let lastError: unknown
+  let lastResponse: Response | undefined
+
+  for (let i = 0; i <= retries; i++) {
+    if (i > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs * i))
+    }
+    try {
+      const response = await fetch(request.clone())
+      if (!isServerError(response)) return response
+      lastResponse = response
+    } catch (err) {
+      lastError = err
+    }
+  }
+
+  if (lastResponse) return lastResponse
+  throw lastError ?? new Error('Network request failed')
 }
 
 const navigationFallback = async (request: Request, details: RecoveryDetails) => {
@@ -234,7 +260,7 @@ self.addEventListener('fetch', (event: FetchEvent) => {
             }
           }
 
-          const network = await fetch(event.request)
+          const network = await fetchWithRetry(event.request)
           if (isServerError(network)) {
             return navigationFallback(event.request, {
               source: 'network-server-error',

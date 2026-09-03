@@ -13,7 +13,7 @@ describe('service worker update lifecycle', () => {
 
   it('does not persist the temporary recovery page', () => {
     expect(serviceWorkerSource).toContain("'cache-control': 'no-store'")
-    expect(serviceWorkerSource).toContain('setTimeout(retry, 3000)')
+    expect(serviceWorkerSource).toContain('setTimeout(retry,')
   })
 
   it('probes the origin and bypasses fallback after it recovers', () => {
@@ -54,5 +54,10 @@ describe('service worker update lifecycle', () => {
 
     expect(tryBlock).toBeGreaterThan(navigationHandler)
     expect(preloadAwait).toBeGreaterThan(tryBlock)
+  })
+
+  it('retries navigation network requests before falling back to recovery screen', () => {
+    expect(serviceWorkerSource).toContain('fetchWithRetry')
+    expect(serviceWorkerSource).toContain('fetchWithRetry(event.request)')
   })
 })
