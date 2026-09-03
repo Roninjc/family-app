@@ -34,6 +34,7 @@ const recoveryHtml = (details: RecoveryDetails) => {
   <h1>Reconectando</h1>
   <p id="status">Comprobando el servicio...</p>
   <p>Intentos: <strong id="attempts">0</strong></p>
+  <p><button id="reset-session" type="button" style="padding:.5rem 1rem;background:#d32f2f;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600">Restablecer aplicación y limpiar sesión</button></p>
   <details open>
     <summary>Diagnostico tecnico</summary>
     <pre id="diagnostics" style="white-space:pre-wrap;font-size:.75rem"></pre>
@@ -90,6 +91,28 @@ const recoveryHtml = (details: RecoveryDetails) => {
     }
   }
 
+  const clearSessionAndReset = async (targetPath = '/login') => {
+    try {
+      document.cookie.split(';').forEach((cookie) => {
+        const eqPos = cookie.indexOf('=')
+        const name = eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim()
+        if (name) {
+          document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/'
+          document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=' + location.hostname
+        }
+      })
+      const registration = await navigator.serviceWorker?.getRegistration()
+      await registration?.unregister()
+      const cacheNames = await caches.keys()
+      await Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)))
+      try { localStorage.clear() } catch {}
+      record('session-cleared', { targetPath })
+    } catch (error) {
+      record('session-clear-error', { error: String(error) })
+    }
+    location.replace(targetPath)
+  }
+
   const retry = async () => {
     clearTimeout(retryTimer)
     attempts.textContent = String(++attempt)
@@ -139,6 +162,33 @@ const recoveryHtml = (details: RecoveryDetails) => {
         return
       }
 
+      if (response.status >= 500) {
+        try {
+          const cleanTarget = new URL(target)
+          cleanTarget.searchParams.delete('${RECOVERY_PARAM}')
+          const unauthRes = await fetch(cleanTarget, {
+            cache: 'no-store',
+            credentials: 'omit',
+            signal: abortController.signal,
+            headers: { 'x-pwa-recovery': 'clean' }
+          })
+          record('probe-unauth-response', {
+            attempt,
+            status: unauthRes.status,
+            statusText: unauthRes.statusText,
+            responsePath: pathOf(unauthRes.url)
+          })
+
+          if (unauthRes.status < 500) {
+            status.textContent = 'Servidor activo. Restableciendo credenciales de sesión...'
+            await clearSessionAndReset('/login')
+            return
+          }
+        } catch (unauthErr) {
+          record('probe-unauth-error', { attempt, error: String(unauthErr) })
+        }
+      }
+
       status.textContent = 'El servicio responde con un error ' + response.status + '.'
     } catch (error) {
       record('probe-exception', { attempt, error: String(error) })
@@ -150,6 +200,10 @@ const recoveryHtml = (details: RecoveryDetails) => {
     const nextInterval = attempt <= 5 ? 1200 : 3000
     retryTimer = setTimeout(retry, nextInterval)
   }
+
+  document.getElementById('reset-session')?.addEventListener('click', () => {
+    clearSessionAndReset('/login')
+  })
 
   document.getElementById('copy').addEventListener('click', async () => {
     try {
@@ -171,11 +225,7 @@ const recoveryHtml = (details: RecoveryDetails) => {
 </html>`
 }
 
-const fetchWithRetry = async (
-  request: Request,
-  retries = 2,
-  delayMs = 600
-): Promise<Response> => {
+const fetchWithRetry = async (request: Request, retries = 2, delayMs = 600): Promise<Response> => {
   let lastError: unknown
   let lastResponse: Response | undefined
 

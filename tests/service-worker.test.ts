@@ -35,8 +35,14 @@ describe('service worker update lifecycle', () => {
     expect(serviceWorkerSource).toContain("record('worker-reset'")
     expect(serviceWorkerSource).toContain("'orikara:pwa-recovery-log'")
     expect(serviceWorkerSource).toContain('entries = entries.slice(-30)')
-    expect(serviceWorkerSource).not.toContain('document.cookie')
+    expect(serviceWorkerSource).not.toContain("record('cookie")
     expect(serviceWorkerSource).not.toContain('authorization')
+  })
+
+  it('supports clean session probing and manual session reset on persistent 502', () => {
+    expect(serviceWorkerSource).toContain("credentials: 'omit'")
+    expect(serviceWorkerSource).toContain('clearSessionAndReset')
+    expect(serviceWorkerSource).toContain('reset-session')
   })
 
   it('resets only the app worker and versioned app caches after the origin recovers', () => {

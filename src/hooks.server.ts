@@ -8,11 +8,21 @@ import type { Session } from '@supabase/supabase-js'
 const supabase: Handle = async ({ event, resolve }) => {
   event.locals.supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
     cookies: {
-      getAll: () => event.cookies.getAll(),
+      getAll: () => {
+        try {
+          return event.cookies.getAll()
+        } catch {
+          return []
+        }
+      },
       setAll: (cookiesToSet) => {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          event.cookies.set(name, value, { ...options, path: '/' })
-        })
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            event.cookies.set(name, value, { ...options, path: '/' })
+          })
+        } catch {
+          // Ignore cookie mutations if headers have already been sent or context is read-only
+        }
       }
     }
   })

@@ -2,6 +2,11 @@
 # The image is built and pushed to GHCR by .github/workflows/deploy.yml;
 # the server only pulls it. The app sits behind the existing nginx reverse
 # proxy, which terminates TLS.
+#
+# Recommended nginx location config for this service (prevents 502 Bad Gateway on large Supabase cookies):
+#   proxy_buffer_size 128k;
+#   proxy_buffers 4 256k;
+#   proxy_busy_buffers_size 256k;
 services:
   family-app:
     image: ghcr.io/roninjc/family-app:latest
