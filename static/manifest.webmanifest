@@ -3,7 +3,7 @@
   "short_name": "Orikara",
   "description": "Arbol familiar privado para gestionar miembros y relaciones.",
   "lang": "es",
-  "start_url": "/hub",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#e3ded8",
