@@ -88,7 +88,26 @@ describe('dashboard load', () => {
         if (table === 'invitations') {
           return {
             select: () => ({
-              is: async () => ({ data: [{ id: 'i1', expires_at: null, revoked_at: null }] })
+              in: () => ({
+                is: () => ({
+                  order: async () => ({
+                    data: [
+                      {
+                        id: 'i1',
+                        family_id: 'f1',
+                        type: 'general',
+                        email: null,
+                        role_on_signup: 'viewer',
+                        expires_at: null,
+                        revoked_at: null,
+                        uses_count: 0,
+                        max_uses: null,
+                        created_at: '2026-08-01T00:00:00.000Z'
+                      }
+                    ]
+                  })
+                })
+              })
             })
           }
         }

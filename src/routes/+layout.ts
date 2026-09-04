@@ -24,7 +24,6 @@ export const load: LayoutLoad = async ({ data, depends, fetch }) => {
     displayName: data.displayName,
     activeFamilyId: data.activeFamilyId,
     availableFamilies: data.availableFamilies,
-    pendingInvitations: data.pendingInvitations,
-    showPendingInvitations: data.showPendingInvitations
+    notifications: data.notifications
   }
 }

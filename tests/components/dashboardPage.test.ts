@@ -29,9 +29,7 @@ const baseData = {
     }
   ],
   activeFamilyId: 'f1',
-  activeFamilyName: 'Familia Castaño',
-  pendingInvitations: 0,
-  showPendingInvitations: false
+  activeFamilyName: 'Familia Castaño'
 }
 
 beforeEach(() => {

@@ -3,20 +3,14 @@
   import SectionShell from '../../components/ui/sectionShell.svelte'
   import CarouselFrame from '../../components/carousel/carouselFrame.svelte'
   import FamilyStoryCard from '../../components/carousel/familyStoryCard.svelte'
-  import type { DashboardActionFormState, DashboardFamilySummary } from '../../components/feed/types'
+  import type {
+    DashboardActionFormState,
+    DashboardFamilySummary
+  } from '../../components/feed/types'
   import type { PageData } from './$types'
 
   type DashboardPageData = Omit<
-    Pick<
-      PageData,
-      | 'displayName'
-      | 'role'
-      | 'families'
-      | 'activeFamilyId'
-      | 'activeFamilyName'
-      | 'pendingInvitations'
-      | 'showPendingInvitations'
-    >,
+    Pick<PageData, 'displayName' | 'role' | 'families' | 'activeFamilyId' | 'activeFamilyName'>,
     'families'
   > & {
     families: DashboardFamilySummary[]
@@ -212,5 +206,4 @@
       --family-card-basis: min(44vw, 420px);
     }
   }
-
 </style>

@@ -9,6 +9,8 @@
   import { showAddMemberModal } from '../stores/modals'
   import BottomNav from '../components/bottomNav.svelte'
   import ModalShell from '../components/ui/modalShell.svelte'
+  import HeaderMenu from '../components/ui/headerMenu.svelte'
+  import type { AppNotification } from '$lib/types/notifications'
 
   export let data
   export let params: Record<string, string> = {}
@@ -16,6 +18,7 @@
   let showTopFade = false
   let profileMenu: HTMLDetailsElement | null = null
   let quickActionMenu: HTMLDetailsElement | null = null
+  let notificationMenu: HTMLDetailsElement | null = null
   let showComposeModal = false
   let composeType: 'note' | 'news' = 'note'
   let composeTitle = ''
@@ -74,12 +77,9 @@
     ($page.data.activeFamilyName as string | undefined) ?? activeFamily?.name ?? null
   $: displayName =
     ($page.data.displayName as string | undefined) ?? data.profile?.display_name ?? 'Familiar'
-  $: showPendingInvites = Boolean(
-    ($page.data.showPendingInvitations as boolean | undefined) ?? data.showPendingInvitations
-  )
-  $: pendingInvites = Number(
-    ($page.data.pendingInvitations as number | undefined) ?? data.pendingInvitations ?? 0
-  )
+  $: notifications = (($page.data.notifications as AppNotification[] | undefined) ??
+    data.notifications ??
+    []) as AppNotification[]
   $: signupNoticeCode = $page.url.searchParams.get('signup_notice')
   $: signupFamily = $page.url.searchParams.get('signup_family')
   $: signupRole = roleLabel($page.url.searchParams.get('signup_role'))
@@ -153,9 +153,9 @@
 
   function handleMenuToggle(
     activeMenu: HTMLDetailsElement | null,
-    otherMenu: HTMLDetailsElement | null
+    otherMenus: (HTMLDetailsElement | null)[]
   ) {
-    if (activeMenu?.open) closeDetails(otherMenu)
+    if (activeMenu?.open) otherMenus.forEach(closeDetails)
   }
 
   async function openMemberComposer() {
@@ -258,12 +258,17 @@
       if (quickActionMenu?.open && !quickActionMenu.contains(target)) {
         closeDetails(quickActionMenu)
       }
+
+      if (notificationMenu?.open && !notificationMenu.contains(target)) {
+        closeDetails(notificationMenu)
+      }
     }
 
     const handleEscapeClose = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       closeDetails(profileMenu)
       closeDetails(quickActionMenu)
+      closeDetails(notificationMenu)
     }
 
     document.addEventListener('pointerdown', handleDocumentPointerDown)
@@ -334,47 +339,44 @@
             </svg>
           </a>
         {:else}
-          <details
-            class="header-side-circle header-menu header-menu--profile"
-            bind:this={profileMenu}
-            on:toggle={() => handleMenuToggle(profileMenu, quickActionMenu)}
+          <HeaderMenu
+            menuClass="header-menu--profile"
+            ariaLabel="Abrir menú de perfil"
+            bind:detailsEl={profileMenu}
+            on:toggle={() => handleMenuToggle(profileMenu, [quickActionMenu, notificationMenu])}
           >
-            <summary aria-label="Abrir menú de perfil">
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M4 9.25h13a1.25 1.25 0 0 0 0-2.5H4a1.25 1.25 0 0 0 0 2.5z" />
-                <path d="M4 17.25h9a1.25 1.25 0 0 0 0-2.5H4a1.25 1.25 0 0 0 0 2.5z" />
-              </svg>
-            </summary>
-            <div class="header-dropdown" role="menu">
-              <a
-                href="/profile"
+            <svg slot="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M4 9.25h13a1.25 1.25 0 0 0 0-2.5H4a1.25 1.25 0 0 0 0 2.5z" />
+              <path d="M4 17.25h9a1.25 1.25 0 0 0 0-2.5H4a1.25 1.25 0 0 0 0 2.5z" />
+            </svg>
+            <a
+              href="/profile"
+              role="menuitem"
+              data-sveltekit-preload-data="tap"
+              data-sveltekit-preload-code="eager"
+              on:click={() => closeDetails(profileMenu)}
+            >
+              Mi cuenta
+            </a>
+            <a
+              href="/admin"
+              role="menuitem"
+              data-sveltekit-preload-data="tap"
+              on:click={() => closeDetails(profileMenu)}
+            >
+              Crear familia
+            </a>
+            <form method="POST" action="/profile?/logout">
+              <button
+                type="submit"
                 role="menuitem"
-                data-sveltekit-preload-data="tap"
-                data-sveltekit-preload-code="eager"
+                class="header-dropdown-danger"
                 on:click={() => closeDetails(profileMenu)}
               >
-                Mi cuenta
-              </a>
-              <a
-                href="/admin"
-                role="menuitem"
-                data-sveltekit-preload-data="tap"
-                on:click={() => closeDetails(profileMenu)}
-              >
-                Crear familia
-              </a>
-              <form method="POST" action="/profile?/logout">
-                <button
-                  type="submit"
-                  role="menuitem"
-                  class="header-dropdown-danger"
-                  on:click={() => closeDetails(profileMenu)}
-                >
-                  Cerrar sesión
-                </button>
-              </form>
-            </div>
-          </details>
+                Cerrar sesión
+              </button>
+            </form>
+          </HeaderMenu>
         {/if}
 
         <div class="header-main-pill">
@@ -412,44 +414,55 @@
 
         {#if isFamilyLevel}
           {#if canManageTree && activeFamilyId}
-            <details
-              class="header-side-circle header-menu header-menu--quick"
-              bind:this={quickActionMenu}
-              on:toggle={() => handleMenuToggle(quickActionMenu, profileMenu)}
+            <HeaderMenu
+              menuClass="header-menu--quick"
+              ariaLabel="Abrir acciones rápidas"
+              bind:detailsEl={quickActionMenu}
+              on:toggle={() => handleMenuToggle(quickActionMenu, [profileMenu, notificationMenu])}
             >
-              <summary aria-label="Abrir acciones rápidas">
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z" />
-                </svg>
-              </summary>
-              <div class="header-dropdown" role="menu">
-                <button type="button" role="menuitem" on:click={openMemberComposer}>
-                  Miembro
-                </button>
-                <button type="button" role="menuitem" on:click={() => openNoteComposer('news')}>
-                  Noticia
-                </button>
-              </div>
-            </details>
+              <svg slot="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z" />
+              </svg>
+              <button type="button" role="menuitem" on:click={openMemberComposer}> Miembro </button>
+              <button type="button" role="menuitem" on:click={() => openNoteComposer('news')}>
+                Noticia
+              </button>
+            </HeaderMenu>
           {:else}
             <span class="header-side-circle header-side-circle--ghost" aria-hidden="true"></span>
           {/if}
         {:else}
-          <a
-            class="header-side-circle header-notification-btn"
-            href="/admin"
-            aria-label="Ir a invitaciones"
-            data-sveltekit-preload-data="tap"
+          <HeaderMenu
+            menuClass="header-menu--notifications"
+            ariaLabel="Ver notificaciones"
+            badge={notifications.length}
+            bind:detailsEl={notificationMenu}
+            on:toggle={() => handleMenuToggle(notificationMenu, [profileMenu, quickActionMenu])}
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <svg slot="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path
                 d="M12 3a6 6 0 0 1 6 6v3.63l1.7 2.98A1 1 0 0 1 18.84 17H5.16a1 1 0 0 1-.86-1.39L6 12.63V9a6 6 0 0 1 6-6zm0 18a3 3 0 0 1-2.83-2h5.66A3 3 0 0 1 12 21z"
               />
             </svg>
-            {#if showPendingInvites && pendingInvites > 0}
-              <span class="header-badge">{pendingInvites}</span>
+            {#if notifications.length === 0}
+              <p class="header-dropdown-empty">No tienes notificaciones</p>
+            {:else}
+              {#each notifications as notification (notification.id)}
+                <a
+                  href={notification.href}
+                  role="menuitem"
+                  data-sveltekit-preload-data="tap"
+                  on:click={() => closeDetails(notificationMenu)}
+                >
+                  <span class="header-dropdown-notification-family">
+                    <span class="header-dropdown-notification-dot" aria-hidden="true"></span>
+                    {notification.familyName}
+                  </span>
+                  <span class="header-dropdown-notification-text">{notification.description}</span>
+                </a>
+              {/each}
             {/if}
-          </a>
+          </HeaderMenu>
         {/if}
       </div>
     </div>
@@ -1668,7 +1681,9 @@
     letter-spacing: 0.07em;
   }
 
-  .header-side-circle {
+  /* .header-side-circle/.header-menu/.header-dropdown/.header-badge now render inside
+     src/components/ui/headerMenu.svelte, so these must stay :global to keep matching. */
+  :global(.header-side-circle) {
     width: 52px;
     height: 52px;
     border-radius: var(--radius-pill);
@@ -1692,12 +1707,12 @@
       color var(--dur-base) var(--motion-standard);
   }
 
-  .header-side-circle:hover {
+  :global(.header-side-circle:hover) {
     transform: none;
     box-shadow: var(--neu-shadow-hover-strong);
   }
 
-  .header-side-circle svg {
+  :global(.header-side-circle svg) {
     width: 24px;
     height: 24px;
     fill: currentColor;
@@ -1705,20 +1720,20 @@
     transition: transform var(--dur-base) var(--motion-standard);
   }
 
-  .header-menu[open] {
+  :global(.header-menu[open]) {
     color: var(--text-warm-chip);
   }
 
-  .header-menu[open] summary {
+  :global(.header-menu[open] summary) {
     background: var(--app-glass-panel-bg-strong);
     box-shadow: var(--header-menu-open-shadow);
   }
 
-  .header-menu[open] summary svg {
+  :global(.header-menu[open] summary svg) {
     transform: scale(0.96);
   }
 
-  .header-menu--quick[open] summary svg {
+  :global(.header-menu--quick[open] summary svg) {
     transform: rotate(45deg) scale(0.96);
   }
 
@@ -1726,7 +1741,7 @@
     visibility: hidden;
   }
 
-  .header-badge {
+  :global(.header-badge) {
     position: absolute;
     top: -3px;
     right: -2px;
@@ -1744,7 +1759,7 @@
     box-shadow: var(--header-badge-shadow);
   }
 
-  .header-menu {
+  :global(.header-menu) {
     position: relative;
     background: transparent;
     backdrop-filter: none;
@@ -1753,7 +1768,7 @@
     overflow: visible;
   }
 
-  .header-menu summary {
+  :global(.header-menu summary) {
     list-style: none;
     width: 100%;
     height: 100%;
@@ -1774,23 +1789,23 @@
       color var(--dur-base) var(--motion-standard);
   }
 
-  .header-menu:hover summary {
+  :global(.header-menu:hover summary) {
     box-shadow: var(--neu-shadow-hover-strong);
   }
 
-  .header-menu[open].header-side-circle:hover {
+  :global(.header-menu[open].header-side-circle:hover) {
     box-shadow: none;
   }
 
-  .header-menu[open]:hover summary {
+  :global(.header-menu[open]:hover summary) {
     box-shadow: var(--header-menu-open-hover-shadow);
   }
 
-  .header-menu summary::-webkit-details-marker {
+  :global(.header-menu summary::-webkit-details-marker) {
     display: none;
   }
 
-  .header-dropdown {
+  :global(.header-dropdown) {
     position: absolute;
     top: calc(100% + var(--header-dropdown-offset-desktop));
     left: 0;
@@ -1814,18 +1829,26 @@
     transition: opacity var(--dur-ui) var(--motion-standard);
   }
 
-  .header-menu[open] .header-dropdown {
+  :global(.header-menu[open] .header-dropdown) {
     opacity: 1;
     pointer-events: auto;
   }
 
-  .header-menu--quick .header-dropdown {
+  :global(.header-menu--quick .header-dropdown),
+  :global(.header-menu--notifications .header-dropdown) {
     left: auto;
     right: 0;
   }
 
-  .header-dropdown a,
-  .header-dropdown button {
+  /* Notifications carry more text per item than the other menus, so give them extra room. */
+  :global(.header-menu--notifications .header-dropdown) {
+    min-width: 280px;
+    max-width: min(360px, calc(100vw - 24px));
+    gap: 2px;
+  }
+
+  :global(.header-dropdown) a,
+  :global(.header-dropdown) button {
     min-height: 42px;
     border: none;
     border-radius: var(--radius-control);
@@ -1846,32 +1869,78 @@
       box-shadow 0.18s var(--motion-standard);
   }
 
-  .header-dropdown a:hover,
-  .header-dropdown button:hover {
+  :global(.header-dropdown) a:hover,
+  :global(.header-dropdown) button:hover {
     background: var(--app-glass-menu-item-hover-bg);
     color: var(--app-glass-menu-item-hover-text);
     box-shadow: var(--app-glass-menu-item-hover-shadow);
   }
 
-  .header-dropdown a:active,
-  .header-dropdown button:active {
+  :global(.header-dropdown) a:active,
+  :global(.header-dropdown) button:active {
     background: var(--app-glass-menu-item-active-bg);
     box-shadow: var(--app-glass-menu-item-active-shadow);
   }
 
-  .header-dropdown .header-dropdown-danger {
+  :global(.header-dropdown) .header-dropdown-danger {
     color: #8a3232;
     background: var(--app-glass-menu-danger-bg);
   }
 
-  .header-dropdown .header-dropdown-danger:hover {
+  :global(.header-dropdown) .header-dropdown-danger:hover {
     background: var(--app-glass-menu-danger-hover-bg);
     color: #7a2222;
     box-shadow: var(--app-glass-menu-danger-hover-shadow);
   }
 
-  .header-dropdown form {
+  :global(.header-dropdown) form {
     margin: 0;
+  }
+
+  .header-dropdown-empty {
+    margin: 0;
+    padding: 10px 12px;
+    color: var(--text-soft);
+    font-size: var(--fs-sm);
+    text-align: center;
+  }
+
+  :global(.header-dropdown) a:has(.header-dropdown-notification-text) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    min-height: 0;
+    padding-block: 10px;
+  }
+
+  :global(.header-dropdown) a:has(.header-dropdown-notification-text):not(:first-child) {
+    border-top: 1px solid var(--header-dropdown-divider, rgba(154, 132, 109, 0.16));
+    border-radius: 0;
+  }
+
+  .header-dropdown-notification-family {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--text-soft);
+    font-size: var(--fs-2xs);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  .header-dropdown-notification-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent-clay);
+    flex-shrink: 0;
+  }
+
+  .header-dropdown-notification-text {
+    color: var(--text-main);
+    font-size: var(--fs-sm);
+    line-height: 1.4;
+    white-space: normal;
   }
 
   .header-compose-modal {
@@ -1966,21 +2035,27 @@
       padding-inline: 22px;
     }
 
-    .header-side-circle {
+    :global(.header-side-circle) {
       width: 46px;
       height: 46px;
     }
 
-    .header-side-circle svg {
+    :global(.header-side-circle svg) {
       width: 22px;
       height: 22px;
     }
 
-    .header-dropdown {
+    :global(.header-dropdown) {
       min-width: 172px;
       max-width: min(250px, calc(100vw - 22px));
       top: calc(100% + var(--header-dropdown-offset-mobile));
       gap: 7px;
+    }
+
+    :global(.header-menu--notifications .header-dropdown) {
+      min-width: 240px;
+      max-width: min(320px, calc(100vw - 22px));
+      gap: 2px;
     }
   }
 

@@ -1,4 +1,5 @@
 import type { Profile } from '$lib/types/auth'
+import type { AppNotification } from '$lib/types/notifications'
 import {
   ACTIVE_FAMILY_COOKIE,
   type FamilySummary,
@@ -6,6 +7,10 @@ import {
   resolveAndPersistActiveFamily
 } from '$lib/server/activeFamily'
 import { isMockFamilyMode } from '$lib/server/mockMode'
+import {
+  buildMockPendingInvitationNotifications,
+  loadPendingInvitationNotifications
+} from '$lib/server/notifications'
 import type { LayoutServerLoad } from './$types'
 
 // Admin-role stand-in so the mock mode exposes full management affordances
@@ -23,8 +28,7 @@ export const load: LayoutServerLoad = async ({ locals: { user, supabase }, cooki
   let activeFamilyId = cookies.get(ACTIVE_FAMILY_COOKIE) ?? null
   let availableFamilies: FamilySummary[] = []
   let displayName = 'Familiar'
-  let pendingInvitations = 0
-  let showPendingInvitations = false
+  let notifications: AppNotification[] = []
 
   if (user) {
     const [profileRes, families] = await Promise.all([
@@ -33,8 +37,6 @@ export const load: LayoutServerLoad = async ({ locals: { user, supabase }, cooki
     ])
 
     profile = profileRes.data
-    const role = profile?.role ?? 'viewer'
-    showPendingInvitations = role === 'admin' || role === 'editor'
     availableFamilies = families
     activeFamilyId = resolveAndPersistActiveFamily({
       families: availableFamilies,
@@ -70,26 +72,13 @@ export const load: LayoutServerLoad = async ({ locals: { user, supabase }, cooki
 
     displayName = profileDisplayName || linkedMemberName || user.email?.split('@')[0] || 'Familiar'
 
-    if (showPendingInvitations) {
-      const { data: invitations } = await supabase
-        .from('invitations')
-        .select('id, expires_at, revoked_at, uses_count, max_uses')
-        .is('revoked_at', null)
-
-      const now = Date.now()
-      pendingInvitations = (invitations ?? []).filter((invite) => {
-        if (invite.expires_at && new Date(invite.expires_at).getTime() <= now) return false
-        if (invite.max_uses !== null && invite.uses_count >= invite.max_uses) return false
-        return true
-      }).length
-    }
+    notifications = await loadPendingInvitationNotifications(supabase, availableFamilies)
   } else if (isMockFamilyMode()) {
     profile = mockProfile
     availableFamilies = [{ id: 'mock-family', name: 'Familia mock', role: 'admin', memberId: null }]
     activeFamilyId = activeFamilyId ?? 'mock-family'
     displayName = 'Modo mock'
-    showPendingInvitations = true
-    pendingInvitations = 0
+    notifications = buildMockPendingInvitationNotifications(availableFamilies)
   }
 
   return {
@@ -98,8 +87,7 @@ export const load: LayoutServerLoad = async ({ locals: { user, supabase }, cooki
     displayName,
     activeFamilyId,
     availableFamilies,
-    pendingInvitations,
-    showPendingInvitations,
+    notifications,
     cookies: cookies.getAll()
   }
 }

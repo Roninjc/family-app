@@ -12,9 +12,11 @@ import {
   toRowsFromFamilyData
 } from '$lib/server/familyGroups'
 import { isMockFamilyMode } from '$lib/server/mockMode'
+import {
+  buildMockPendingInvitationNotifications,
+  loadPendingInvitationNotifications
+} from '$lib/server/notifications'
 import type { Role } from '$lib/types/auth'
-
-const isManagerRole = (role: Role) => role === 'admin' || role === 'editor'
 
 const notesForFamily = (familyName: string, membersCount: number) => [
   {
@@ -143,8 +145,7 @@ export const loadDashboardPage = async (
       families,
       activeFamilyId,
       activeFamilyName: families.find((family) => family.id === activeFamilyId)?.name ?? null,
-      pendingInvitations: 0,
-      showPendingInvitations: true,
+      notifications: buildMockPendingInvitationNotifications(families),
       noFamilyRouteState
     }
   }
@@ -222,19 +223,7 @@ export const loadDashboardPage = async (
     treeHref: `/family/${encodeURIComponent(family.id)}`
   }))
 
-  let pendingInvitations = 0
-  if (isManagerRole(role)) {
-    const { data: invitations } = await supabase
-      .from('invitations')
-      .select('id, expires_at, revoked_at')
-      .is('revoked_at', null)
-
-    const now = Date.now()
-    pendingInvitations = (invitations ?? []).filter((invite) => {
-      if (!invite.expires_at) return true
-      return new Date(invite.expires_at).getTime() > now
-    }).length
-  }
+  const notifications = await loadPendingInvitationNotifications(supabase, userFamilies)
 
   const activeMembership = userFamilies.find((family) => family.id === activeFamilyId)
   const linkedMemberId =
@@ -251,8 +240,7 @@ export const loadDashboardPage = async (
     families,
     activeFamilyId,
     activeFamilyName: families.find((family) => family.id === activeFamilyId)?.name ?? null,
-    pendingInvitations,
-    showPendingInvitations: isManagerRole(role),
+    notifications,
     noFamilyRouteState
   }
 }

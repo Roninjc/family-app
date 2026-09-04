@@ -360,17 +360,17 @@
     showFamilySettingsModal = true
   }
 
-  const clearFamilySettingsQueryFlag = () => {
+  const clearQueryFlag = (flag: string) => {
     if (typeof window === 'undefined') return
     const nextUrl = new URL(window.location.href)
-    if (!nextUrl.searchParams.has('familySettings')) return
-    nextUrl.searchParams.delete('familySettings')
+    if (!nextUrl.searchParams.has(flag)) return
+    nextUrl.searchParams.delete(flag)
     window.history.replaceState(window.history.state, '', `${nextUrl.pathname}${nextUrl.search}`)
   }
 
   const closeFamilySettingsModal = () => {
     showFamilySettingsModal = false
-    clearFamilySettingsQueryFlag()
+    clearQueryFlag('familySettings')
   }
 
   $: shouldOpenFamilySettingsFromQuery =
@@ -379,7 +379,14 @@
 
   $: if (shouldOpenFamilySettingsFromQuery && activeFamily && activeFamily.role !== 'viewer') {
     openFamilySettingsModal(activeFamily)
-    clearFamilySettingsQueryFlag()
+    clearQueryFlag('familySettings')
+  }
+
+  $: shouldOpenInvitesFromQuery = $page.url.searchParams.get('openInvites') === '1'
+
+  $: if (shouldOpenInvitesFromQuery) {
+    openSection = 'invites'
+    clearQueryFlag('openInvites')
   }
 </script>
 
