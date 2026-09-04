@@ -18,7 +18,7 @@ export const GET: RequestHandler = async ({ url, locals: { supabase } }) => {
   const tokenHash = url.searchParams.get('token_hash')
   const type = url.searchParams.get('type') as EmailOtpType | null
   const code = url.searchParams.get('code')
-  const next = url.searchParams.get('next') ?? '/hub'
+  const next = url.searchParams.get('next') ?? '/dashboard'
 
   if (tokenHash && type) {
     const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type })

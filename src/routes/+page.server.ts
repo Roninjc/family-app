@@ -29,7 +29,7 @@ export const load: PageServerLoad = async (event) => {
     })
 
     if (!activeFamilyId) {
-      throw redirect(303, '/hub?state=no_family')
+      throw redirect(303, '/dashboard?state=no_family')
     }
 
     throw redirect(303, `/family/${encodeURIComponent(activeFamilyId)}`)
@@ -48,7 +48,7 @@ export const load: PageServerLoad = async (event) => {
   })
 
   if (!activeFamilyId) {
-    throw redirect(303, '/hub?state=no_family')
+    throw redirect(303, '/dashboard?state=no_family')
   }
 
   throw redirect(303, `/family/${encodeURIComponent(activeFamilyId)}`)

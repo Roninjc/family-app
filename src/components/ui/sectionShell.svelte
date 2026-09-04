@@ -46,6 +46,7 @@
     column-gap: var(--space-2);
     align-items: center;
     min-width: 0;
+    min-height: 40px;
   }
 
   .section-shell-side {

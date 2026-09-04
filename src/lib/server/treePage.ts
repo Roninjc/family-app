@@ -87,7 +87,7 @@ export const loadTreePage = async (
   })
 
   if (!selectedFamilyId) {
-    throw redirect(303, '/hub?state=no_family')
+    throw redirect(303, '/dashboard?state=no_family')
   }
 
   const activeFamilyName =

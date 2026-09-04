@@ -59,7 +59,7 @@ describe('admin canonical redirect', () => {
     expect(cookieWrites).toContainEqual({ name: 'active_family_id', value: 'f2' })
   })
 
-  it('redirects /admin to hub no-family state when user has no memberships', async () => {
+  it('redirects /admin to dashboard no-family state when user has no memberships', async () => {
     const supabase = {
       from: (table: string) => {
         if (table !== 'family_memberships') {
@@ -83,7 +83,7 @@ describe('admin canonical redirect', () => {
       })
     ).rejects.toMatchObject({
       status: 303,
-      location: '/hub?state=no_family'
+      location: '/dashboard?state=no_family'
     })
   })
 })

@@ -56,9 +56,10 @@
   }
 
   const isFamilyTreePath = (value: string) => /^\/family\/[^/]+$/.test(value)
-  const isFamilyHubPath = (value: string) => /^\/family\/[^/]+\/hub$/.test(value)
+  const isFamilyFeedPath = (value: string) => /^\/family\/[^/]+\/feed$/.test(value)
   const isFamilyAdminPath = (value: string) => /^\/family\/[^/]+\/admin$/.test(value)
   const isProfilePath = (value: string) => value === '/profile'
+  const isDashboardPath = (value: string) => value === '/dashboard'
 
   $: ({ supabase, user } = data)
   $: pathname = $page.url.pathname
@@ -84,11 +85,11 @@
   $: signupRole = roleLabel($page.url.searchParams.get('signup_role'))
   $: isNavigating = Boolean($navigating)
   $: isFamilyLevel =
-    isFamilyTreePath(pathname) || isFamilyHubPath(pathname) || isFamilyAdminPath(pathname)
+    isFamilyTreePath(pathname) || isFamilyFeedPath(pathname) || isFamilyAdminPath(pathname)
   $: isFamilyAdminLevel = isFamilyAdminPath(pathname)
   $: familyBasePath = activeFamilyId ? `/family/${encodeURIComponent(activeFamilyId)}` : null
-  $: familyTreeHref = familyBasePath ?? '/hub?state=no_family'
-  $: familyHubHref = familyBasePath ? `${familyBasePath}/hub` : '/hub?state=no_family'
+  $: familyTreeHref = familyBasePath ?? '/dashboard?state=no_family'
+  $: familyFeedHref = familyBasePath ? `${familyBasePath}/feed` : '/dashboard?state=no_family'
   $: canEditActiveFamily = Boolean(
     isFamilyAdminLevel && activeFamily && activeFamily.role !== 'viewer'
   )
@@ -99,19 +100,21 @@
   })()
   $: headerCrumb = isFamilyTreePath(pathname)
     ? 'Árbol'
-    : isFamilyHubPath(pathname)
-      ? 'Hub familiar'
+    : isFamilyFeedPath(pathname)
+      ? 'Novedades familiares'
       : isFamilyAdminPath(pathname)
         ? 'Administración'
         : isProfilePath(pathname)
           ? 'Cuenta'
-          : 'Nivel personal'
+          : isDashboardPath(pathname)
+            ? 'Panel personal'
+            : 'Panel personal'
   $: headerTitle = isFamilyLevel
     ? activeFamilyName ?? 'Sin familia'
     : isProfilePath(pathname)
       ? displayName
       : `Hola, ${displayName}`
-  $: composeAction = `${familyHubHref}?/createNote`
+  $: composeAction = `${familyFeedHref}?/createNote`
   $: composeModalTitle = composeType === 'news' ? 'Nueva noticia' : 'Nueva nota'
   $: signupNoticeMessage =
     signupNoticeCode === 'invitation_accepted'
@@ -321,8 +324,8 @@
         {#if isFamilyLevel}
           <a
             class="header-side-circle"
-            href="/hub"
-            aria-label="Volver al nivel personal"
+            href="/dashboard"
+            aria-label="Volver al panel personal"
             data-sveltekit-preload-data="tap"
             data-sveltekit-preload-code="eager"
           >
@@ -425,9 +428,6 @@
                 </button>
                 <button type="button" role="menuitem" on:click={() => openNoteComposer('news')}>
                   Noticia
-                </button>
-                <button type="button" role="menuitem" on:click={() => openNoteComposer('note')}>
-                  Nota
                 </button>
               </div>
             </details>

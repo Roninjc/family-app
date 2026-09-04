@@ -279,7 +279,7 @@
     align-items: center;
     list-style: none;
     margin: 0;
-    padding-block: var(--space-6) calc(var(--space-6) + var(--space-3));
+    padding-block: calc(var(--space-6) + var(--space-3));
     padding-inline: 0;
     gap: 0;
     overflow-x: auto;

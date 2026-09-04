@@ -90,7 +90,7 @@ const resolveManagerFamily = async (options: {
     }
 
     const activeFamily = families.find((family) => family.id === activeFamilyId) ?? null
-    if (!activeFamily) throw redirect(303, '/hub')
+    if (!activeFamily) throw redirect(303, '/dashboard')
 
     return {
       profile: {
@@ -121,7 +121,7 @@ const resolveManagerFamily = async (options: {
   })
 
   const activeFamily = families.find((family) => family.id === activeFamilyId) ?? null
-  if (!activeFamily) throw redirect(303, '/hub')
+  if (!activeFamily) throw redirect(303, '/dashboard')
 
   return {
     profile: (profileRes.data as Profile | null) ?? null,

@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { HubFamilySummary } from './types'
+  import type { DashboardFamilySummary } from './types'
 
   export let family: Pick<
-    HubFamilySummary,
+    DashboardFamilySummary,
     'id' | 'name' | 'membersCount' | 'linksCount' | 'previewMembers'
   >
 </script>

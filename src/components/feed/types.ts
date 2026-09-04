@@ -1,15 +1,15 @@
-export type HubNoteType = 'news' | 'note'
+export type DashboardNoteType = 'news' | 'note'
 
-export type HubNotesFilter = 'all' | 'news' | 'note'
+export type DashboardNotesFilter = 'all' | 'news' | 'note'
 
-export type HubNote = {
+export type DashboardNote = {
   id: string
   title: string
   body: string
-  noteType: HubNoteType
+  noteType: DashboardNoteType
 }
 
-export type HubFamilySummary = {
+export type DashboardFamilySummary = {
   id: string
   name: string
   role?: 'admin' | 'editor' | 'viewer'
@@ -17,11 +17,11 @@ export type HubFamilySummary = {
   linksCount: number
   previewMembers: string[]
   canManageNotes: boolean
-  notes: HubNote[]
+  notes: DashboardNote[]
   treeHref: string
 }
 
-export type HubActionFormState = {
+export type DashboardActionFormState = {
   noteCreated?: boolean
   noteUpdated?: boolean
   noteDeleted?: boolean
@@ -29,7 +29,7 @@ export type HubActionFormState = {
   familyId?: string
 }
 
-export type HubNotesStatusState = {
+export type DashboardNotesStatusState = {
   created?: boolean
   updated?: boolean
   deleted?: boolean

@@ -1,4 +1,4 @@
-import { createHubActions, loadHubPage } from '$lib/server/hubPage'
+import { createDashboardActions, loadDashboardPage } from '$lib/server/feedPage'
 import { ACTIVE_FAMILY_COOKIE } from '$lib/server/activeFamily'
 import type { Actions, PageServerLoad } from './$types'
 
@@ -9,14 +9,14 @@ export const load: PageServerLoad = async (event) => {
     sameSite: 'lax'
   })
 
-  return loadHubPage(event, {
+  return loadDashboardPage(event, {
     requestedFamilyId: event.params.familyId,
     noFamilyRouteState: false
   })
 }
 
 const scopedActionsForEvent = (event: Parameters<Actions['createNote']>[0]) =>
-  createHubActions({ forcedFamilyId: event.params.familyId })
+  createDashboardActions({ forcedFamilyId: event.params.familyId })
 
 export const actions: Actions = {
   createNote: (event) => scopedActionsForEvent(event).createNote(event),

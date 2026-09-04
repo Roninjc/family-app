@@ -373,7 +373,7 @@ describe('root route canonical redirect', () => {
     expect(cookieWrites).toContainEqual({ name: 'active_family_id', value: 'f2' })
   })
 
-  it('redirects to /hub?state=no_family when user has no families', async () => {
+  it('redirects to /dashboard?state=no_family when user has no families', async () => {
     const supabase = {
       from: (table: string) => {
         if (table !== 'family_memberships') {
@@ -397,7 +397,7 @@ describe('root route canonical redirect', () => {
       })
     ).rejects.toMatchObject({
       status: 303,
-      location: '/hub?state=no_family'
+      location: '/dashboard?state=no_family'
     })
   })
 })

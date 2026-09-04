@@ -250,7 +250,7 @@ const navigationFallback = async (request: Request, details: RecoveryDetails) =>
   const cachedPage = await caches.match(request)
   if (cachedPage) return cachedPage
 
-  const cachedHome = await caches.match('/hub')
+  const cachedHome = await caches.match('/dashboard')
   if (cachedHome) return cachedHome
 
   return new Response(recoveryHtml(details), {

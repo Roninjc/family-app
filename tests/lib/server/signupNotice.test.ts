@@ -100,10 +100,10 @@ describe('withSignupNotice', () => {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const next = await withSignupNotice(supabase as any, '/hub')
+    const next = await withSignupNotice(supabase as any, '/dashboard')
 
     expect(next).toBe(
-      '/hub?signup_notice=invitation_accepted&signup_role=editor&signup_family=Familia%20Norte'
+      '/dashboard?signup_notice=invitation_accepted&signup_role=editor&signup_family=Familia%20Norte'
     )
   })
 
@@ -153,10 +153,10 @@ describe('withSignupNotice', () => {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const next = await withSignupNotice(supabase as any, '/hub?x=1')
+    const next = await withSignupNotice(supabase as any, '/dashboard?x=1')
 
     expect(next).toBe(
-      '/hub?x=1&signup_notice=member_link_already_claimed&signup_role=viewer&signup_family=Familia%20Sur'
+      '/dashboard?x=1&signup_notice=member_link_already_claimed&signup_role=viewer&signup_family=Familia%20Sur'
     )
     expect(updates).toEqual([{ pending_notice: null }])
   })

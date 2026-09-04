@@ -1,11 +1,16 @@
 <script lang="ts">
   import ChipToggleGroup from '../ui/chipToggleGroup.svelte'
-  import type { HubFamilySummary, HubNote, HubNoteType, HubNotesFilter } from './types'
+  import type {
+    DashboardFamilySummary,
+    DashboardNote,
+    DashboardNoteType,
+    DashboardNotesFilter
+  } from './types'
 
-  export let family: Pick<HubFamilySummary, 'id' | 'name' | 'canManageNotes'>
+  export let family: Pick<DashboardFamilySummary, 'id' | 'name' | 'canManageNotes'>
 
-  export let notes: HubNote[] = []
-  export let filter: HubNotesFilter = 'all'
+  export let notes: DashboardNote[] = []
+  export let filter: DashboardNotesFilter = 'all'
   export let filterOptions: Array<{ value: string; label: string }> = []
 
   export let status: {
@@ -19,10 +24,10 @@
 
   export let titleDraft = ''
   export let bodyDraft = ''
-  export let typeDraft: HubNoteType = 'note'
+  export let typeDraft: DashboardNoteType = 'note'
 
   export let onFilterChange: (event: CustomEvent<string>) => void = () => {}
-  export let onEditStart: (note: HubNote) => void = () => {}
+  export let onEditStart: (note: DashboardNote) => void = () => {}
   export let onEditCancel: () => void = () => {}
 </script>
 

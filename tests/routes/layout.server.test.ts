@@ -52,7 +52,7 @@ describe('layout load displayName', () => {
         set: () => {},
         getAll: () => []
       },
-      url: new URL('http://localhost/hub?family=f1')
+      url: new URL('http://localhost/dashboard?family=f1')
     })
 
     expect(data.displayName).toBe('Pepe')
@@ -108,7 +108,7 @@ describe('layout load displayName', () => {
         set: () => {},
         getAll: () => []
       },
-      url: new URL('http://localhost/hub?family=f1')
+      url: new URL('http://localhost/dashboard?family=f1')
     })
 
     expect(data.displayName).toBe('Maria Castano')
@@ -162,7 +162,7 @@ describe('layout load displayName', () => {
         set: () => {},
         getAll: () => []
       },
-      url: new URL('http://localhost/hub?family=f1')
+      url: new URL('http://localhost/dashboard?family=f1')
     })
 
     expect(data.displayName).toBe('maria')

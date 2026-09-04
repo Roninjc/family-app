@@ -43,7 +43,7 @@ const notesForFamily = (familyName: string, membersCount: number) => [
   }
 ]
 
-type HubNote = {
+type DashboardNote = {
   id: string
   title: string
   body: string
@@ -51,7 +51,7 @@ type HubNote = {
   createdAt: string | null
 }
 
-const noteTypeRank = (noteType: HubNote['noteType']) => (noteType === 'news' ? 0 : 1)
+const noteTypeRank = (noteType: DashboardNote['noteType']) => (noteType === 'news' ? 0 : 1)
 
 const toMillis = (createdAt: string | null) => {
   if (!createdAt) return 0
@@ -59,7 +59,7 @@ const toMillis = (createdAt: string | null) => {
   return Number.isFinite(time) ? time : 0
 }
 
-const compareHubNotes = (left: HubNote, right: HubNote) => {
+const compareDashboardNotes = (left: DashboardNote, right: DashboardNote) => {
   const typeDiff = noteTypeRank(left.noteType) - noteTypeRank(right.noteType)
   if (typeDiff !== 0) return typeDiff
 
@@ -69,20 +69,20 @@ const compareHubNotes = (left: HubNote, right: HubNote) => {
   return left.title.localeCompare(right.title, 'es')
 }
 
-type HubLoadContext = {
+type DashboardLoadContext = {
   locals: Pick<App.Locals, 'supabase' | 'user'>
   cookies: Cookies
   url: URL
 }
 
-type HubActionFamilyOptions = {
+type DashboardActionFamilyOptions = {
   supabase: App.Locals['supabase']
   userId: string
   cookies: Cookies
   requestedFamilyId: string | null
 }
 
-const resolveFamilyForAction = async (options: HubActionFamilyOptions) => {
+const resolveFamilyForAction = async (options: DashboardActionFamilyOptions) => {
   const families = await loadUserFamilies(options.supabase, options.userId)
   const activeFamilyId = resolveAndPersistActiveFamily({
     families,
@@ -100,8 +100,8 @@ const resolveFamilyForAction = async (options: HubActionFamilyOptions) => {
   }
 }
 
-export const loadHubPage = async (
-  { locals: { supabase, user }, cookies, url }: HubLoadContext,
+export const loadDashboardPage = async (
+  { locals: { supabase, user }, cookies, url }: DashboardLoadContext,
   options?: { requestedFamilyId?: string | null; noFamilyRouteState?: boolean }
 ) => {
   const requestedFamilyId = options?.requestedFamilyId ?? url.searchParams.get('family')
@@ -191,7 +191,7 @@ export const loadHubPage = async (
     previewByFamily.set(member.family_id, preview)
   }
 
-  const notesByFamily = new Map<string, HubNote[]>()
+  const notesByFamily = new Map<string, DashboardNote[]>()
   for (const note of notesRes.data ?? []) {
     const collection = notesByFamily.get(note.family_id) ?? []
     collection.push({
@@ -205,7 +205,7 @@ export const loadHubPage = async (
   }
 
   for (const [familyId, notes] of notesByFamily) {
-    notesByFamily.set(familyId, [...notes].sort(compareHubNotes))
+    notesByFamily.set(familyId, [...notes].sort(compareDashboardNotes))
   }
 
   const families = userFamilies.map((family) => ({
@@ -257,14 +257,14 @@ export const loadHubPage = async (
   }
 }
 
-type HubActionContext = {
+type DashboardActionContext = {
   request: Request
   locals: Pick<App.Locals, 'supabase' | 'user'>
   cookies: Cookies
 }
 
-export const createHubActions = (options?: { forcedFamilyId?: string | null }) => ({
-  createNote: async ({ request, locals: { supabase, user }, cookies }: HubActionContext) => {
+export const createDashboardActions = (options?: { forcedFamilyId?: string | null }) => ({
+  createNote: async ({ request, locals: { supabase, user }, cookies }: DashboardActionContext) => {
     if (!user) throw redirect(303, '/login')
     if (isMockFamilyMode()) {
       return fail(400, {
@@ -318,7 +318,7 @@ export const createHubActions = (options?: { forcedFamilyId?: string | null }) =
     return { noteCreated: true, familyId: activeFamilyId }
   },
 
-  updateNote: async ({ request, locals: { supabase, user }, cookies }: HubActionContext) => {
+  updateNote: async ({ request, locals: { supabase, user }, cookies }: DashboardActionContext) => {
     if (!user) throw redirect(303, '/login')
     if (isMockFamilyMode()) {
       return fail(400, {
@@ -373,7 +373,7 @@ export const createHubActions = (options?: { forcedFamilyId?: string | null }) =
     return { noteUpdated: true, familyId: activeFamilyId }
   },
 
-  deleteNote: async ({ request, locals: { supabase, user }, cookies }: HubActionContext) => {
+  deleteNote: async ({ request, locals: { supabase, user }, cookies }: DashboardActionContext) => {
     if (!user) throw redirect(303, '/login')
     if (isMockFamilyMode()) {
       return fail(400, {

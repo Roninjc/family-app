@@ -2,22 +2,24 @@
   import { page } from '$app/stores'
 
   const treeRoutePattern = /^\/family\/[^/]+$/
-  const familyHubRoutePattern = /^\/family\/[^/]+\/hub$/
+  const familyFeedRoutePattern = /^\/family\/[^/]+\/feed$/
   const familyAdminRoutePattern = /^\/family\/[^/]+\/admin$/
+  const dashboardRoutePattern = /^\/dashboard$/
 
   $: pathname = $page.url.pathname
   $: activeFamilyId = $page.data.activeFamilyId ?? null
   $: familyBasePath = activeFamilyId ? `/family/${encodeURIComponent(activeFamilyId)}` : null
-  $: treeHref = familyBasePath ?? '/hub?state=no_family'
-  $: adminHref = familyBasePath ? `${familyBasePath}/admin` : '/hub?state=no_family'
-  $: familyHubHref = familyBasePath ? `${familyBasePath}/hub` : '/hub?state=no_family'
+  $: treeHref = familyBasePath ?? '/dashboard?state=no_family'
+  $: adminHref = familyBasePath ? `${familyBasePath}/admin` : '/dashboard?state=no_family'
+  $: familyFeedHref = familyBasePath ? `${familyBasePath}/feed` : '/dashboard?state=no_family'
   $: isFamilyLevel =
     treeRoutePattern.test(pathname) ||
-    familyHubRoutePattern.test(pathname) ||
+    familyFeedRoutePattern.test(pathname) ||
     familyAdminRoutePattern.test(pathname)
   $: isFamilyTreePath = treeRoutePattern.test(pathname)
-  $: isFamilyHubPath = familyHubRoutePattern.test(pathname)
+  $: isFamilyFeedPath = familyFeedRoutePattern.test(pathname)
   $: isFamilyAdminPath = familyAdminRoutePattern.test(pathname)
+  $: isDashboardPath = dashboardRoutePattern.test(pathname)
 </script>
 
 <footer class="app-footer-nav" aria-label="Navegación principal fija">
@@ -41,17 +43,17 @@
           </a>
           <a
             class="app-bottom-nav-link"
-            aria-current={isFamilyHubPath ? 'page' : undefined}
-            href={familyHubHref}
+            aria-current={isFamilyFeedPath ? 'page' : undefined}
+            href={familyFeedHref}
             data-sveltekit-preload-data="tap"
-            aria-label="Ir al hub familiar"
+            aria-label="Ir a novedades familiares"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="M12 3a9 9 0 0 1 0 18v-2.2a6.8 6.8 0 1 0-6.8-6.8H3A9 9 0 0 1 12 3z" />
               <path d="M12 7a5 5 0 0 1 0 10v-2.1a2.9 2.9 0 1 0-2.9-2.9H7A5 5 0 0 1 12 7z" />
               <path d="M12 10.55a1.45 1.45 0 1 1 0 2.9 1.45 1.45 0 0 1 0-2.9z" />
             </svg>
-            <span class="sr-only">Hub familiar</span>
+            <span class="sr-only">Novedades</span>
           </a>
           <a
             class="app-bottom-nav-link"
@@ -70,8 +72,8 @@
         {:else}
           <a
             class="app-bottom-nav-link"
-            aria-current={pathname === '/hub' ? 'page' : undefined}
-            href="/hub"
+            aria-current={isDashboardPath ? 'page' : undefined}
+            href="/dashboard"
             data-sveltekit-preload-data="tap"
             aria-label="Ir al panel personal"
           >

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { loadTreePage } from '../../src/lib/server/treePage'
 import { load as familyTreeLoad } from '../../src/routes/family/[familyId]/+page.server'
-import { load as familyHubLoad } from '../../src/routes/family/[familyId]/hub/+page.server'
+import { load as familyFeedLoad } from '../../src/routes/family/[familyId]/feed/+page.server'
 import { load as familyAdminLoad } from '../../src/routes/family/[familyId]/admin/+page.server'
 
 const baseEvent = {
@@ -24,14 +24,14 @@ describe('family route wrappers', () => {
     })
   })
 
-  it('keeps auth guard behavior in /family/:id/hub', async () => {
+  it('keeps auth guard behavior in /family/:id/feed', async () => {
     await expect(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      familyHubLoad({
+      familyFeedLoad({
         ...baseEvent,
         params: { familyId: 'f1' },
-        url: new URL('http://localhost/family/f1/hub')
-      } as unknown as Parameters<typeof familyHubLoad>[0])
+        url: new URL('http://localhost/family/f1/feed')
+      } as unknown as Parameters<typeof familyFeedLoad>[0])
     ).rejects.toMatchObject({
       status: 303,
       location: '/login'
