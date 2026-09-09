@@ -29,17 +29,27 @@
   // the member-node), so the result is independent of scroll and subtree widths.
   onMount(() => {
     const memberElement = document.getElementById(memberId)
-    const wrapperRect = memberElement?.parentElement?.getBoundingClientRect()
+    const wrapperElement = memberElement?.parentElement
+    const wrapperRect = wrapperElement?.getBoundingClientRect()
 
-    if (!memberElement || !wrapperRect) return
+    if (!memberElement || !wrapperElement || !wrapperRect) return
+
+    // getBoundingClientRect() reflects the tree camera's current CSS
+    // transform (translate+scale), but the left/top/width/height we assign
+    // below become raw CSS px on freshly-inserted elements - which the same
+    // ambient transform will scale again. Undo the current scale (derived
+    // from the DOM, so it works regardless of which ancestor holds the
+    // transform) so the specs stay correct at any zoom level.
+    const ambientScale =
+      wrapperElement.offsetWidth > 0 ? wrapperRect.width / wrapperElement.offsetWidth : 1
 
     const toMemberBox = (rect: DOMRect): MemberBox => ({
       center: {
-        x: rect.left + rect.width / 2 - wrapperRect.left,
-        y: rect.top + rect.height / 2 - wrapperRect.top
+        x: (rect.left + rect.width / 2 - wrapperRect.left) / ambientScale,
+        y: (rect.top + rect.height / 2 - wrapperRect.top) / ambientScale
       },
-      top: rect.top - wrapperRect.top,
-      bottom: rect.bottom - wrapperRect.top
+      top: (rect.top - wrapperRect.top) / ambientScale,
+      bottom: (rect.bottom - wrapperRect.top) / ambientScale
     })
     // Measure the badge (first child of the #id div), not .member-node itself:
     // that div stretches vertically (flex align-items: stretch) when sharing a

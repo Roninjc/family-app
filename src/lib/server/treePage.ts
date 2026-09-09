@@ -72,7 +72,9 @@ export const loadTreePage = async (
     return {
       familyData: rowsToFamilyData(selectedMembers, selectedRelationships),
       activeFamilyId: selectedGroup.id,
-      activeFamilyName: selectedGroup.name
+      activeFamilyName: selectedGroup.name,
+      // No real profile/family_memberships binding in mock mode.
+      linkedMemberId: null
     }
   }
 
@@ -90,8 +92,9 @@ export const loadTreePage = async (
     throw redirect(303, '/dashboard?state=no_family')
   }
 
-  const activeFamilyName =
-    userFamilies.find((family) => family.id === selectedFamilyId)?.name ?? null
+  const activeFamily = userFamilies.find((family) => family.id === selectedFamilyId)
+  const activeFamilyName = activeFamily?.name ?? null
+  const linkedMemberId = activeFamily?.memberId ?? null
 
   const { data: membersData, error: membersError } = await supabase
     .from('members')
@@ -123,7 +126,8 @@ export const loadTreePage = async (
   return {
     familyData: rowsToFamilyData(membersData ?? [], selectedRelationships),
     activeFamilyId: selectedFamilyId,
-    activeFamilyName
+    activeFamilyName,
+    linkedMemberId
   }
 }
 

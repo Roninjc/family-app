@@ -86,6 +86,10 @@
   $: isNavigating = Boolean($navigating)
   $: isFamilyLevel =
     isFamilyTreePath(pathname) || isFamilyFeedPath(pathname) || isFamilyAdminPath(pathname)
+  // Tree content can pan up/down behind the header/bottom nav (see +page.svelte's
+  // camera) - keep the edge fades always active there and blocking clicks,
+  // instead of only reacting to native page scroll like other routes.
+  $: onTreeRoute = isFamilyTreePath(pathname)
   $: isFamilyAdminLevel = isFamilyAdminPath(pathname)
   $: familyBasePath = activeFamilyId ? `/family/${encodeURIComponent(activeFamilyId)}` : null
   $: familyTreeHref = familyBasePath ?? '/dashboard?state=no_family'
@@ -525,8 +529,17 @@
   </ModalShell>
 {/if}
 
-<div class="viewport-fade viewport-fade-top" class:active={showTopFade} aria-hidden="true"></div>
-<div class="viewport-fade viewport-fade-bottom" aria-hidden="true"></div>
+<div
+  class="viewport-fade viewport-fade-top"
+  class:active={showTopFade || onTreeRoute}
+  class:blocking={onTreeRoute}
+  aria-hidden="true"
+></div>
+<div
+  class="viewport-fade viewport-fade-bottom"
+  class:blocking={onTreeRoute}
+  aria-hidden="true"
+></div>
 {#if user || data.profile}
   <BottomNav />
 {/if}
@@ -1478,9 +1491,13 @@
     overflow: hidden;
   }
 
+  .viewport-fade.blocking {
+    pointer-events: auto;
+  }
+
   .viewport-fade-top {
     top: 0;
-    height: max(86px, calc(env(safe-area-inset-top) + 68px));
+    height: max(96px, calc(env(safe-area-inset-top) + 84px));
     opacity: 0;
     transform: translateY(-4px);
     transition:
