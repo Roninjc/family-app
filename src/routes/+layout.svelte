@@ -26,6 +26,12 @@
   let displayedHeaderTitle = ''
   let headerTextVisible = true
   let headerTextSwapTimer: ReturnType<typeof setTimeout> | null = null
+  let displayedLeftSideKey = ''
+  let leftSideVisible = true
+  let leftSideSwapTimer: ReturnType<typeof setTimeout> | null = null
+  let displayedRightSideKey = ''
+  let rightSideVisible = true
+  let rightSideSwapTimer: ReturnType<typeof setTimeout> | null = null
   let showBootOverlay = true
   let bootOverlayFadingOut = false
   let routeContentVisible = false
@@ -154,6 +160,36 @@
   $: if (!displayedHeaderCrumb && !displayedHeaderTitle && headerTitle) {
     displayedHeaderCrumb = headerCrumb
     displayedHeaderTitle = headerTitle
+  }
+
+  $: leftSideKey = isFamilyLevel ? 'family-back' : 'profile-menu'
+  $: rightSideKey = isFamilyLevel
+    ? canManageTree && activeFamilyId
+      ? 'quick-actions'
+      : 'none'
+    : 'notifications'
+
+  $: if (!displayedLeftSideKey) displayedLeftSideKey = leftSideKey
+  $: if (!displayedRightSideKey) displayedRightSideKey = rightSideKey
+
+  $: if (displayedLeftSideKey && leftSideKey !== displayedLeftSideKey) {
+    if (leftSideSwapTimer) clearTimeout(leftSideSwapTimer)
+    leftSideVisible = false
+    leftSideSwapTimer = setTimeout(() => {
+      displayedLeftSideKey = leftSideKey
+      leftSideVisible = true
+      leftSideSwapTimer = null
+    }, HEADER_TEXT_FADE_OUT_MS)
+  }
+
+  $: if (displayedRightSideKey && rightSideKey !== displayedRightSideKey) {
+    if (rightSideSwapTimer) clearTimeout(rightSideSwapTimer)
+    rightSideVisible = false
+    rightSideSwapTimer = setTimeout(() => {
+      displayedRightSideKey = rightSideKey
+      rightSideVisible = true
+      rightSideSwapTimer = null
+    }, HEADER_TEXT_FADE_OUT_MS)
   }
 
   $: {
@@ -353,58 +389,60 @@
   <header class="app-route-header" aria-label="Cabecera principal">
     <div class="app-route-header-shell">
       <div class="app-route-header-layout">
-        {#if isFamilyLevel}
-          <a
-            class="header-side-circle"
-            href="/dashboard"
-            aria-label="Volver al panel personal"
-            data-sveltekit-preload-data="tap"
-            data-sveltekit-preload-code="eager"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="m15.4 4.6 1.4 1.4L10.21 12l6.59 6-1.4 1.4L7.2 12l8.2-7.4z" />
-            </svg>
-          </a>
-        {:else}
-          <HeaderMenu
-            menuClass="header-menu--profile"
-            ariaLabel="Abrir menú de perfil"
-            bind:detailsEl={profileMenu}
-            on:toggle={() => handleMenuToggle(profileMenu, [quickActionMenu, notificationMenu])}
-          >
-            <svg slot="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M4 9.25h13a1.25 1.25 0 0 0 0-2.5H4a1.25 1.25 0 0 0 0 2.5z" />
-              <path d="M4 17.25h9a1.25 1.25 0 0 0 0-2.5H4a1.25 1.25 0 0 0 0 2.5z" />
-            </svg>
+        <div class="header-side-slot" class:visible={leftSideVisible}>
+          {#if displayedLeftSideKey === 'family-back'}
             <a
-              href="/profile"
-              role="menuitem"
+              class="header-side-circle"
+              href="/dashboard"
+              aria-label="Volver al panel personal"
               data-sveltekit-preload-data="tap"
               data-sveltekit-preload-code="eager"
-              on:click={() => closeDetails(profileMenu)}
             >
-              Mi cuenta
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="m15.4 4.6 1.4 1.4L10.21 12l6.59 6-1.4 1.4L7.2 12l8.2-7.4z" />
+              </svg>
             </a>
-            <a
-              href="/admin"
-              role="menuitem"
-              data-sveltekit-preload-data="tap"
-              on:click={() => closeDetails(profileMenu)}
+          {:else}
+            <HeaderMenu
+              menuClass="header-menu--profile"
+              ariaLabel="Abrir menú de perfil"
+              bind:detailsEl={profileMenu}
+              on:toggle={() => handleMenuToggle(profileMenu, [quickActionMenu, notificationMenu])}
             >
-              Crear familia
-            </a>
-            <form method="POST" action="/profile?/logout">
-              <button
-                type="submit"
+              <svg slot="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4 9.25h13a1.25 1.25 0 0 0 0-2.5H4a1.25 1.25 0 0 0 0 2.5z" />
+                <path d="M4 17.25h9a1.25 1.25 0 0 0 0-2.5H4a1.25 1.25 0 0 0 0 2.5z" />
+              </svg>
+              <a
+                href="/profile"
                 role="menuitem"
-                class="header-dropdown-danger"
+                data-sveltekit-preload-data="tap"
+                data-sveltekit-preload-code="eager"
                 on:click={() => closeDetails(profileMenu)}
               >
-                Cerrar sesión
-              </button>
-            </form>
-          </HeaderMenu>
-        {/if}
+                Mi cuenta
+              </a>
+              <a
+                href="/admin"
+                role="menuitem"
+                data-sveltekit-preload-data="tap"
+                on:click={() => closeDetails(profileMenu)}
+              >
+                Crear familia
+              </a>
+              <form method="POST" action="/profile?/logout">
+                <button
+                  type="submit"
+                  role="menuitem"
+                  class="header-dropdown-danger"
+                  on:click={() => closeDetails(profileMenu)}
+                >
+                  Cerrar sesión
+                </button>
+              </form>
+            </HeaderMenu>
+          {/if}
+        </div>
 
         <div class="header-main-pill">
           <div class="header-main-copy" class:visible={headerTextVisible}>
@@ -431,8 +469,8 @@
           </div>
         </div>
 
-        {#if isFamilyLevel}
-          {#if canManageTree && activeFamilyId}
+        <div class="header-side-slot header-side-slot--trailing" class:visible={rightSideVisible}>
+          {#if displayedRightSideKey === 'quick-actions'}
             <HeaderMenu
               menuClass="header-menu--quick"
               ariaLabel="Abrir acciones rápidas"
@@ -447,42 +485,44 @@
                 Noticia
               </button>
             </HeaderMenu>
+          {:else if displayedRightSideKey === 'notifications'}
+            <HeaderMenu
+              menuClass="header-menu--notifications"
+              ariaLabel="Ver notificaciones"
+              badge={notifications.length}
+              bind:detailsEl={notificationMenu}
+              on:toggle={() => handleMenuToggle(notificationMenu, [profileMenu, quickActionMenu])}
+            >
+              <svg slot="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path
+                  d="M12 3a6 6 0 0 1 6 6v3.63l1.7 2.98A1 1 0 0 1 18.84 17H5.16a1 1 0 0 1-.86-1.39L6 12.63V9a6 6 0 0 1 6-6zm0 18a3 3 0 0 1-2.83-2h5.66A3 3 0 0 1 12 21z"
+                />
+              </svg>
+              {#if notifications.length === 0}
+                <p class="header-dropdown-empty">No tienes notificaciones</p>
+              {:else}
+                {#each notifications as notification (notification.id)}
+                  <a
+                    href={notification.href}
+                    role="menuitem"
+                    data-sveltekit-preload-data="tap"
+                    on:click={() => closeDetails(notificationMenu)}
+                  >
+                    <span class="header-dropdown-notification-family">
+                      <span class="header-dropdown-notification-dot" aria-hidden="true"></span>
+                      {notification.familyName}
+                    </span>
+                    <span class="header-dropdown-notification-text">
+                      {notification.description}
+                    </span>
+                  </a>
+                {/each}
+              {/if}
+            </HeaderMenu>
           {:else}
             <span class="header-side-circle header-side-circle--ghost" aria-hidden="true"></span>
           {/if}
-        {:else}
-          <HeaderMenu
-            menuClass="header-menu--notifications"
-            ariaLabel="Ver notificaciones"
-            badge={notifications.length}
-            bind:detailsEl={notificationMenu}
-            on:toggle={() => handleMenuToggle(notificationMenu, [profileMenu, quickActionMenu])}
-          >
-            <svg slot="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path
-                d="M12 3a6 6 0 0 1 6 6v3.63l1.7 2.98A1 1 0 0 1 18.84 17H5.16a1 1 0 0 1-.86-1.39L6 12.63V9a6 6 0 0 1 6-6zm0 18a3 3 0 0 1-2.83-2h5.66A3 3 0 0 1 12 21z"
-              />
-            </svg>
-            {#if notifications.length === 0}
-              <p class="header-dropdown-empty">No tienes notificaciones</p>
-            {:else}
-              {#each notifications as notification (notification.id)}
-                <a
-                  href={notification.href}
-                  role="menuitem"
-                  data-sveltekit-preload-data="tap"
-                  on:click={() => closeDetails(notificationMenu)}
-                >
-                  <span class="header-dropdown-notification-family">
-                    <span class="header-dropdown-notification-dot" aria-hidden="true"></span>
-                    {notification.familyName}
-                  </span>
-                  <span class="header-dropdown-notification-text">{notification.description}</span>
-                </a>
-              {/each}
-            {/if}
-          </HeaderMenu>
-        {/if}
+        </div>
       </div>
     </div>
   </header>
@@ -1689,6 +1729,23 @@
   }
 
   .header-main-copy.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .header-side-slot {
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms var(--motion-standard);
+  }
+
+  .header-side-slot--trailing {
+    justify-content: flex-end;
+  }
+
+  .header-side-slot.visible {
     opacity: 1;
     pointer-events: auto;
   }
