@@ -274,7 +274,6 @@
     position: relative;
     z-index: 2;
     opacity: 0;
-    transform: translateY(8px) scale(0.98);
 
     &.revealed {
       animation: node-reveal 0.4s var(--motion-standard) forwards;
@@ -295,12 +294,10 @@
   @keyframes node-reveal {
     from {
       opacity: 0;
-      transform: translateY(8px) scale(0.98);
     }
 
     to {
       opacity: 1;
-      transform: translateY(0) scale(1);
     }
   }
 </style>

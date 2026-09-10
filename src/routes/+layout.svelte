@@ -1,10 +1,9 @@
 <script lang="ts">
   import { base } from '$app/paths'
-  import { dev } from '$app/environment'
+  import { browser, dev } from '$app/environment'
   import { goto, invalidate } from '$app/navigation'
   import { navigating, page } from '$app/stores'
   import { onMount } from 'svelte'
-  import { fade } from 'svelte/transition'
   import { canEdit } from '$lib/types/auth'
   import { showAddMemberModal } from '../stores/modals'
   import BottomNav from '../components/bottomNav.svelte'
@@ -29,6 +28,11 @@
   let headerTextSwapTimer: ReturnType<typeof setTimeout> | null = null
   let showBootOverlay = true
   let bootOverlayFadingOut = false
+  let routeContentVisible = false
+  let routeDepthReady = false
+  let routeRevealPath = ''
+  let routeRevealTimer: ReturnType<typeof setTimeout> | null = null
+  let routeDepthTimer: ReturnType<typeof setTimeout> | null = null
 
   const HEADER_TEXT_FADE_OUT_MS = 120
   const NEUMO_READY_ATTRIBUTE = 'data-neumo'
@@ -43,6 +47,8 @@
   )
   const NEUMO_SHADOW_ACTIVATION_OVERLAP_MS = 180
   const NEUMO_OVERLAY_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
+  const ROUTE_REVEAL_DELAY_MS = 20
+  const ROUTE_DEPTH_DELAY_MS = 180
 
   const roleLabel = (role: string | null) => {
     if (role === 'admin') return 'administrador'
@@ -66,6 +72,21 @@
 
   $: ({ supabase, user } = data)
   $: pathname = $page.url.pathname
+  $: if (browser && pathname !== routeRevealPath) {
+    routeRevealPath = pathname
+    routeContentVisible = false
+    routeDepthReady = false
+    if (routeRevealTimer) clearTimeout(routeRevealTimer)
+    if (routeDepthTimer) clearTimeout(routeDepthTimer)
+    routeRevealTimer = setTimeout(() => {
+      routeContentVisible = true
+      routeRevealTimer = null
+    }, ROUTE_REVEAL_DELAY_MS)
+    routeDepthTimer = setTimeout(() => {
+      routeDepthReady = true
+      routeDepthTimer = null
+    }, ROUTE_DEPTH_DELAY_MS)
+  }
   $: isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/auth')
   $: showPersistentHeader = Boolean(user || data.profile) && !isAuthRoute
   $: canManageTree = canEdit($page.data.profile ?? data.profile)
@@ -288,6 +309,8 @@
       document.removeEventListener('pointerdown', handleDocumentPointerDown)
       document.removeEventListener('keydown', handleEscapeClose)
       if (headerTextSwapTimer) clearTimeout(headerTextSwapTimer)
+      if (routeRevealTimer) clearTimeout(routeRevealTimer)
+      if (routeDepthTimer) clearTimeout(routeDepthTimer)
     }
   })
 </script>
@@ -384,36 +407,28 @@
         {/if}
 
         <div class="header-main-pill">
-          {#if headerTextVisible}
-            <div class="header-main-copy">
-              <p class="header-crumb" in:fade={{ duration: 80 }} out:fade={{ duration: 70 }}>
-                {displayedHeaderCrumb}
-              </p>
-              <div
-                class="header-title-row"
-                in:fade={{ duration: 120, delay: 30 }}
-                out:fade={{ duration: 90, delay: 20 }}
-              >
-                <h1>{displayedHeaderTitle}</h1>
-                {#if canEditActiveFamily}
-                  <a
-                    class="header-title-edit"
-                    href={familySettingsHref}
-                    aria-label={`Editar familia ${displayedHeaderTitle}`}
-                    title="Editar familia"
-                    data-sveltekit-preload-data="tap"
-                    data-sveltekit-preload-code="eager"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                      <path
-                        d="M4 16.86V20h3.14l9.27-9.27-3.14-3.14L4 16.86zm14.71-8.37a1 1 0 0 0 0-1.41l-1.79-1.79a1 1 0 0 0-1.41 0l-1.4 1.4 3.14 3.14 1.46-1.34z"
-                      />
-                    </svg>
-                  </a>
-                {/if}
-              </div>
+          <div class="header-main-copy" class:visible={headerTextVisible}>
+            <p class="header-crumb">{displayedHeaderCrumb}</p>
+            <div class="header-title-row">
+              <h1>{displayedHeaderTitle}</h1>
+              {#if canEditActiveFamily}
+                <a
+                  class="header-title-edit"
+                  href={familySettingsHref}
+                  aria-label={`Editar familia ${displayedHeaderTitle}`}
+                  title="Editar familia"
+                  data-sveltekit-preload-data="tap"
+                  data-sveltekit-preload-code="eager"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path
+                      d="M4 16.86V20h3.14l9.27-9.27-3.14-3.14L4 16.86zm14.71-8.37a1 1 0 0 0 0-1.41l-1.79-1.79a1 1 0 0 0-1.41 0l-1.4 1.4 3.14 3.14 1.46-1.34z"
+                    />
+                  </svg>
+                </a>
+              {/if}
             </div>
-          {/if}
+          </div>
         </div>
 
         {#if isFamilyLevel}
@@ -473,7 +488,13 @@
   </header>
 {/if}
 
-<slot />
+<div
+  class="app-route-content"
+  class:route-visible={routeContentVisible}
+  class:depth-ready={routeDepthReady}
+>
+  <slot />
+</div>
 
 {#if showPersistentHeader && activeFamilyId}
   <ModalShell
@@ -1405,7 +1426,6 @@
 
   :global(.reveal-fade-up) {
     opacity: 1;
-    transform: translateY(0);
     animation: none;
   }
 
@@ -1433,16 +1453,53 @@
     box-shadow: var(--neu-shadow-hover-strong);
   }
 
-  @keyframes reveal-fade-up {
-    from {
-      opacity: 0.96;
-      transform: translateY(3px);
-    }
+  .app-route-content {
+    --neumo-shadow-transition-ease: cubic-bezier(0.16, 0.84, 0.26, 1);
+    --glass-shadow: none;
+    --app-glass-panel-shadow: none;
+    --app-glass-panel-shadow-soft: none;
+    --neu-shadow-out: none;
+    --neu-shadow-out-soft: none;
+    --neu-shadow-hover-strong: none;
+    --neu-shadow-hover-soft: none;
+    --neu-shadow-inset: none;
+    --app-btn-active-shadow: none;
+    --app-btn-disabled-shadow: none;
+    --app-card-soft-shadow: none;
+    --app-card-soft-raised-shadow: none;
+    --app-chip-interactive-shadow: none;
+    --app-chip-interactive-active-shadow: none;
+    --app-stat-item-shadow: none;
+    --app-settings-trigger-shadow: none;
+    --app-settings-trigger-active-shadow: none;
+    --tree-node-shadow: none;
+    opacity: 0;
+  }
 
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  .app-route-content.route-visible {
+    opacity: 1;
+    transition: opacity 0.28s var(--motion-standard);
+  }
+
+  .app-route-content.depth-ready {
+    --glass-shadow: var(--glass-shadow-active);
+    --app-glass-panel-shadow: var(--app-glass-panel-shadow-active);
+    --app-glass-panel-shadow-soft: var(--app-glass-panel-shadow-soft-active);
+    --neu-shadow-out: var(--neu-shadow-out-active);
+    --neu-shadow-out-soft: var(--neu-shadow-out-soft-active);
+    --neu-shadow-hover-strong: var(--neu-shadow-hover-strong-active);
+    --neu-shadow-hover-soft: var(--neu-shadow-hover-soft-active);
+    --neu-shadow-inset: var(--neu-shadow-inset-active);
+    --app-btn-active-shadow: var(--app-btn-active-shadow-active);
+    --app-btn-disabled-shadow: var(--app-btn-disabled-shadow-active);
+    --app-card-soft-shadow: var(--app-card-soft-shadow-active);
+    --app-card-soft-raised-shadow: var(--app-card-soft-raised-shadow-active);
+    --app-chip-interactive-shadow: var(--app-chip-interactive-shadow-active);
+    --app-chip-interactive-active-shadow: var(--app-chip-interactive-active-shadow-active);
+    --app-stat-item-shadow: var(--app-stat-item-shadow-active);
+    --app-settings-trigger-shadow: var(--app-settings-trigger-shadow-active);
+    --app-settings-trigger-active-shadow: var(--app-settings-trigger-active-shadow-active);
+    --tree-node-shadow: var(--tree-node-shadow-active);
   }
 
   :global(.floating-input-wrapper .modern-input:user-invalid:not(:focus) + label.label-active) {
@@ -1499,10 +1556,7 @@
     top: 0;
     height: max(96px, calc(env(safe-area-inset-top) + 84px));
     opacity: 0;
-    transform: translateY(-4px);
-    transition:
-      opacity 0.24s var(--motion-standard),
-      transform 0.24s var(--motion-standard);
+    transition: opacity 0.24s var(--motion-standard);
     background: linear-gradient(
       to bottom,
       rgba(241, 236, 228, 0.54) 0%,
@@ -1528,7 +1582,6 @@
 
   .viewport-fade-top.active {
     opacity: 1;
-    transform: translateY(0);
   }
 
   .viewport-fade-bottom {
@@ -1630,6 +1683,14 @@
     flex-direction: column;
     justify-content: center;
     gap: 4px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms var(--motion-standard);
+  }
+
+  .header-main-copy.visible {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .header-main-pill h1 {

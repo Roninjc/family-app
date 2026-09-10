@@ -11,6 +11,8 @@
   }
 
   export let data: FamilyFeedData
+  export let params: Record<string, string> = {}
+  $: routeParamsCount = Object.keys(params).length
 
   let newsItems: Array<{ id: string; title: string; body: string }> = []
 
@@ -199,7 +201,7 @@
   <title>Novedades familiares — Orikara</title>
 </svelte:head>
 
-<main class="family-feed-page page-shell">
+<main class="family-feed-page page-shell" data-route-params-count={routeParamsCount}>
   {#if !activeFamily}
     <section class="family-feed-empty app-card-soft" aria-label="Estado sin familia activa">
       <h2>No hay una familia activa</h2>
