@@ -3,9 +3,9 @@ import { loadPendingInvitationNotifications } from '../../../src/lib/server/noti
 import type { FamilySummary } from '../../../src/lib/server/activeFamily'
 
 const families: FamilySummary[] = [
-  { id: 'f1', name: 'Familia Castaño', role: 'admin', memberId: null },
-  { id: 'f2', name: 'Familia Luna', role: 'editor', memberId: null },
-  { id: 'f3', name: 'Familia Viewer', role: 'viewer', memberId: null }
+  { id: 'f1', name: 'Familia Castaño', role: 'admin', memberId: null, introStartMemberId: null },
+  { id: 'f2', name: 'Familia Luna', role: 'editor', memberId: null, introStartMemberId: null },
+  { id: 'f3', name: 'Familia Viewer', role: 'viewer', memberId: null, introStartMemberId: null }
 ]
 
 const makeSupabase = (invitations: unknown[]) => ({

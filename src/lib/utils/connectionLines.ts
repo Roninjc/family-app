@@ -149,7 +149,10 @@ export const previousPartnerHeights = (
 
 // A previous partner's family, in two strokes: solid from the member to
 // their children (parenthood does not expire) and dashed only from the
-// intersection to the previous partner (past relationship).
+// intersection to the previous partner (past relationship). Also returns
+// the raw join geometry (memberExit/coupleY/dropX/busY) so callers can
+// build an equivalent growth-sequenced version of `memberToChildren`
+// without recomputing this layout (see src/lib/utils/lineGrowth.ts).
 export const previousPartnerFamilySpecs = (
   member: MemberBox,
   previousPartner: MemberBox,
@@ -160,7 +163,11 @@ export const previousPartnerFamilySpecs = (
   // Horizontal offset of the exit on the badge (see memberExitOffsets)
   memberStubOffset = 0,
   badgeOverlap = 4
-): { memberToChildren: LineSpec; toPreviousPartner: LineSpec } => {
+): {
+  memberToChildren: LineSpec
+  toPreviousPartner: LineSpec
+  joinGeometry: { memberExit: Point; coupleY: number; dropX: number; busY: number }
+} => {
   const { coupleY, busY } = previousPartnerHeights(
     Math.max(member.bottom, previousPartner.bottom),
     childrenTopY,
@@ -195,6 +202,7 @@ export const previousPartnerFamilySpecs = (
         from: { x: previousPartnerX, y: coupleY },
         to: { x: previousPartnerX, y: previousPartnerJoinY }
       }
-    ])
+    ]),
+    joinGeometry: { memberExit: { x: memberX, y: memberJoinY }, coupleY, dropX, busY }
   }
 }

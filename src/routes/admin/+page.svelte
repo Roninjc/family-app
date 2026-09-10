@@ -83,6 +83,7 @@
   let showFamilySettingsModal = false
   let familySettingsFamilyId = ''
   let familyNameDraft = ''
+  let introStartMemberDraft = ''
 
   const inviteMatchesFilter = (invite: AdminInviteSummary, filter: AdminInviteFilter) => {
     const status = inviteStatusLabel(invite)
@@ -357,6 +358,7 @@
     if (!family || family.role === 'viewer') return
     familySettingsFamilyId = family.id
     familyNameDraft = family.name
+    introStartMemberDraft = family.introStartMemberId ?? ''
     showFamilySettingsModal = true
   }
 
@@ -543,6 +545,8 @@
     onClose={closeFamilySettingsModal}
     {familySettingsFamilyId}
     bind:familyNameDraft
+    bind:introStartMemberDraft
+    introStartOptions={data.introStartOptions}
     successMessage={form?.familySettingsSuccess &&
     form?.familySettingsFamilyId === familySettingsFamilyId
       ? form.familySettingsSuccess

@@ -69,6 +69,7 @@ const buildData = (membersCount: number) => ({
       id: 'family-1',
       name: 'Familia Test',
       role: 'admin',
+      introStartMemberId: null,
       metrics: {
         membersCount,
         usersCount: 1,
@@ -82,6 +83,7 @@ const buildData = (membersCount: number) => ({
     id: 'family-1',
     name: 'Familia Test',
     role: 'admin',
+    introStartMemberId: null,
     metrics: {
       membersCount,
       usersCount: 1,
@@ -103,6 +105,7 @@ const buildData = (membersCount: number) => ({
   ],
   invites: [],
   members: buildMembers(membersCount),
+  introStartOptions: [],
   currentUserId: 'u-1'
 })
 

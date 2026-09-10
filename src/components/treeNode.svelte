@@ -1,11 +1,26 @@
 <script lang="ts">
   import type { ParentsChildren, Relationship } from '$lib/types/familyTypes'
   import { get } from 'svelte/store'
-  import { familyTree, parentsChildrenArray, stack, visitedMembers } from '../stores/tree'
+  import {
+    familyTree,
+    generations,
+    parentsChildrenArray,
+    stack,
+    visitedMembers
+  } from '../stores/tree'
+  import { introActive, revealedGeneration } from '../stores/treeCamera'
   import MemberBadge from './memberBadge.svelte'
   import ConnectionLines from './connectionLines.svelte'
 
   export let memberId: string
+
+  const generationOf = (id: string) =>
+    generations?.find((entry) => entry.nodeId === id)?.generation ?? 1
+
+  // During the cinematic entrance, a badge only reveals once its generation
+  // has been reached; outside the intro (or once it ends) everything is
+  // revealed immediately, matching the pre-intro behavior.
+  $: isRevealed = (id: string) => !$introActive || $revealedGeneration >= generationOf(id)
 
   // Line props for one row member (ConnectionLines' prop contract)
   interface RowMemberLines {
@@ -214,7 +229,11 @@
             previousPartnersChildren={rowMember.previousPartnersChildren}
           />
         {/if}
-        <div id={rowMember.memberId} class="member-node">
+        <div
+          id={rowMember.memberId}
+          class="member-node"
+          class:revealed={isRevealed(rowMember.memberId)}
+        >
           <MemberBadge memberId={rowMember.memberId} />
         </div>
       {/each}
@@ -254,7 +273,23 @@
   .member-node {
     position: relative;
     z-index: 2;
-    animation: node-reveal 0.4s var(--motion-standard) both;
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+
+    &.revealed {
+      animation: node-reveal 0.4s var(--motion-standard) forwards;
+    }
+
+    // Card fades in flat first; its neumorphic shadow settles in a beat
+    // later (same two-step reveal already used elsewhere in the app).
+    :global(.member-badge) {
+      transition: box-shadow var(--neumo-shadow-transition-duration)
+        var(--neumo-shadow-transition-ease);
+    }
+
+    &:not(.revealed) :global(.member-badge) {
+      box-shadow: none;
+    }
   }
 
   @keyframes node-reveal {

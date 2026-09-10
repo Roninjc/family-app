@@ -45,7 +45,13 @@ export type AdminFamilySummary = {
   id: string
   name: string
   role: AdminRole | string
+  introStartMemberId: string | null
   metrics: AdminFamilyMetrics
+}
+
+export type AdminIntroStartOption = {
+  id: string
+  label: string
 }
 
 export type AdminPageData = {
@@ -55,6 +61,7 @@ export type AdminPageData = {
   profiles: Array<AdminUserProfile & { member_id: string | null; created_at: string }>
   invites: AdminInviteSummary[]
   members: AdminMemberOption[]
+  introStartOptions: AdminIntroStartOption[]
   currentUserId?: string | null
   manager?: { id?: string | null } | null
 }

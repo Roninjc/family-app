@@ -122,7 +122,7 @@ export const loadDashboardPage = async (
       previewMembers: group.previewMembers,
       canManageNotes: true,
       notes: notesForFamily(group.name, group.membersCount),
-      treeHref: `/family/${encodeURIComponent(group.id)}`
+      treeHref: `/family/${encodeURIComponent(group.id)}?intro=1`
     }))
 
     const activeFamilyId = resolveActiveFamilyId(
@@ -220,7 +220,7 @@ export const loadDashboardPage = async (
     notes:
       notesByFamily.get(family.id)?.map(({ createdAt: _createdAt, ...note }) => note) ??
       notesForFamily(family.name, countByFamily.get(family.id) ?? 0),
-    treeHref: `/family/${encodeURIComponent(family.id)}`
+    treeHref: `/family/${encodeURIComponent(family.id)}?intro=1`
   }))
 
   const notifications = await loadPendingInvitationNotifications(supabase, userFamilies)

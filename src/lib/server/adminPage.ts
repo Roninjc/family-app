@@ -11,6 +11,8 @@ import {
   resolveActiveFamilyId,
   toRowsFromFamilyData
 } from '$lib/server/familyGroups'
+import { rowsToFamilyData } from '$lib/server/familyAdapter'
+import { computeIntroStartOptions } from '$lib/server/introStartOptions'
 import { isMockFamilyMode } from '$lib/server/mockMode'
 import type { Cookies, RequestEvent } from '@sveltejs/kit'
 
@@ -71,7 +73,8 @@ const resolveManagerFamily = async (options: {
     const families = groups.map((group, index) => ({
       id: group.id,
       name: group.name,
-      role: MOCK_FAMILY_ROLE_ROTATION[index % MOCK_FAMILY_ROLE_ROTATION.length]
+      role: MOCK_FAMILY_ROLE_ROTATION[index % MOCK_FAMILY_ROLE_ROTATION.length],
+      introStartMemberId: null as string | null
     }))
 
     const cookieFamilyId = options.cookies.get(ACTIVE_FAMILY_COOKIE) ?? null
@@ -178,6 +181,15 @@ export const loadAdminPage = async (
         name: member.name,
         family_name: member.family_name
       }))
+    const activeRelationships = rows.relationships.filter(
+      (rel) => activeMemberIds.has(rel.member_a) && activeMemberIds.has(rel.member_b)
+    )
+    const introStartOptions = computeIntroStartOptions(
+      rowsToFamilyData(
+        rows.members.filter((member) => activeMemberIds.has(member.id)),
+        activeRelationships
+      )
+    )
 
     const roleByFamily = new Map(managerContext.families.map((family) => [family.id, family.role]))
     const buildMockProfilesForFamily = (familyId: string, memberIds: string[]): Profile[] => {
@@ -265,6 +277,7 @@ export const loadAdminPage = async (
       profiles,
       invites: [],
       members,
+      introStartOptions,
       mockSummary: {
         linkedCount,
         managersCount
@@ -276,37 +289,44 @@ export const loadAdminPage = async (
 
   const membersRes = await locals.supabase
     .from('members')
-    .select('id, name, family_name')
+    .select('id, name, family_name, birth_date, photo_url')
     .eq('family_id', managerContext.activeFamily.id)
     .order('created_at', { ascending: true })
 
-  const [membershipsRes, invitesRes, allMembersRes, allMembershipsRes, allInvitesRes] =
-    await Promise.all([
-      locals.supabase
-        .from('family_memberships')
-        .select('profile_id, role, member_id, profiles!inner(id, email, display_name, created_at)')
-        .eq('family_id', managerContext.activeFamily.id),
-      locals.supabase
-        .from('invitations')
-        .select('*')
-        .eq('family_id', managerContext.activeFamily.id)
-        .order('created_at', { ascending: false }),
-      familyIds.length > 0
-        ? locals.supabase.from('members').select('id, family_id').in('family_id', familyIds)
-        : Promise.resolve({ data: [], error: null }),
-      familyIds.length > 0
-        ? locals.supabase
-            .from('family_memberships')
-            .select('family_id, profile_id, role, member_id')
-            .in('family_id', familyIds)
-        : Promise.resolve({ data: [], error: null }),
-      familyIds.length > 0
-        ? locals.supabase
-            .from('invitations')
-            .select('family_id, revoked_at, expires_at, uses_count, max_uses')
-            .in('family_id', familyIds)
-        : Promise.resolve({ data: [], error: null })
-    ])
+  const [
+    membershipsRes,
+    invitesRes,
+    allMembersRes,
+    allMembershipsRes,
+    allInvitesRes,
+    relationshipsRes
+  ] = await Promise.all([
+    locals.supabase
+      .from('family_memberships')
+      .select('profile_id, role, member_id, profiles!inner(id, email, display_name, created_at)')
+      .eq('family_id', managerContext.activeFamily.id),
+    locals.supabase
+      .from('invitations')
+      .select('*')
+      .eq('family_id', managerContext.activeFamily.id)
+      .order('created_at', { ascending: false }),
+    familyIds.length > 0
+      ? locals.supabase.from('members').select('id, family_id').in('family_id', familyIds)
+      : Promise.resolve({ data: [], error: null }),
+    familyIds.length > 0
+      ? locals.supabase
+          .from('family_memberships')
+          .select('family_id, profile_id, role, member_id')
+          .in('family_id', familyIds)
+      : Promise.resolve({ data: [], error: null }),
+    familyIds.length > 0
+      ? locals.supabase
+          .from('invitations')
+          .select('family_id, revoked_at, expires_at, uses_count, max_uses')
+          .in('family_id', familyIds)
+      : Promise.resolve({ data: [], error: null }),
+    locals.supabase.from('relationships').select('member_a, member_b, type')
+  ])
 
   const membersCountByFamily = new Map<string, number>()
   for (const member of allMembersRes.data ?? []) {
@@ -383,6 +403,14 @@ export const loadAdminPage = async (
     } as Profile
   })
 
+  const activeMemberIds = new Set((membersRes.data ?? []).map((member) => member.id))
+  const activeRelationships = (relationshipsRes.data ?? []).filter(
+    (rel) => activeMemberIds.has(rel.member_a) && activeMemberIds.has(rel.member_b)
+  )
+  const introStartOptions = computeIntroStartOptions(
+    rowsToFamilyData(membersRes.data ?? [], activeRelationships)
+  )
+
   return {
     manager: managerContext.profile,
     currentUserId: locals.user?.id ?? managerContext.profile?.id ?? null,
@@ -396,7 +424,8 @@ export const loadAdminPage = async (
       managerContext.activeFamily.role === 'admin' || managerContext.activeFamily.role === 'editor',
     profiles,
     invites: invitesRes.data ?? [],
-    members: membersRes.data ?? []
+    members: membersRes.data ?? [],
+    introStartOptions
   }
 }
 
@@ -409,6 +438,7 @@ export const createAdminActions = (options?: { forcedFamilyId?: string | null })
     const form = await request.formData()
     const requestedFamilyId = resolveRequestedFamilyIdFromForm(form, options?.forcedFamilyId)
     const familyName = String(form.get('familyName') ?? '').trim()
+    const introStartMemberId = String(form.get('introStartMemberId') ?? '').trim() || null
     const managerContext = await resolveManagerFamily({ locals, cookies, requestedFamilyId })
     const cookieFamilyId = cookies.get(ACTIVE_FAMILY_COOKIE) ?? null
 
@@ -436,9 +466,24 @@ export const createAdminActions = (options?: { forcedFamilyId?: string | null })
       })
     }
 
+    if (introStartMemberId) {
+      const { data: memberRow, error: memberError } = await locals.supabase
+        .from('members')
+        .select('id')
+        .eq('id', introStartMemberId)
+        .eq('family_id', managerContext.activeFamily.id)
+        .maybeSingle()
+
+      if (memberError || !memberRow) {
+        return fail(400, {
+          familySettingsError: 'El miembro inicial elegido no pertenece a esta familia.'
+        })
+      }
+    }
+
     const { error } = await locals.supabase
       .from('families')
-      .update({ name: familyName })
+      .update({ name: familyName, intro_start_member_id: introStartMemberId })
       .eq('id', managerContext.activeFamily.id)
 
     if (error) {

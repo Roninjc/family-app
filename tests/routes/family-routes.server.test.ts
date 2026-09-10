@@ -113,6 +113,10 @@ describe('family route wrappers', () => {
           }
         }
 
+        if (table === 'relationships') {
+          return { select: () => Promise.resolve({ data: [], error: null }) }
+        }
+
         throw new Error(`Unexpected table: ${table}`)
       }
     }

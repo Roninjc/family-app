@@ -18,7 +18,8 @@ export const load: PageServerLoad = async (event) => {
       id: group.id,
       name: group.name,
       role: 'admin' as const,
-      memberId: null
+      memberId: null,
+      introStartMemberId: null
     }))
 
     const activeFamilyId = resolveAndPersistActiveFamily({

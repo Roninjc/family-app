@@ -2,11 +2,14 @@
   import { enhance } from '$app/forms'
   import { fade } from 'svelte/transition'
   import ModalShell from '../ui/modalShell.svelte'
+  import type { AdminIntroStartOption } from './types'
 
   export let open = false
   export let onClose: () => void = () => {}
   export let familySettingsFamilyId = ''
   export let familyNameDraft = ''
+  export let introStartMemberDraft = ''
+  export let introStartOptions: AdminIntroStartOption[] = []
   export let successMessage = ''
   export let errorMessage = ''
 </script>
@@ -39,6 +42,20 @@
         <label for="familySettingsName" class:label-active={familyNameDraft.length > 0}>
           Nombre de la familia
         </label>
+      </div>
+
+      <div class="input-wrapper family-settings-field">
+        <label for="familySettingsIntroStart">Inicio de la animación</label>
+        <select
+          id="familySettingsIntroStart"
+          name="introStartMemberId"
+          bind:value={introStartMemberDraft}
+        >
+          <option value="">Automático</option>
+          {#each introStartOptions as option (option.id)}
+            <option value={option.id}>{option.label}</option>
+          {/each}
+        </select>
       </div>
 
       {#if successMessage}
@@ -80,6 +97,34 @@
 
   .family-settings-field {
     margin: 0 0 1.5rem;
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: var(--fs-xs);
+      color: var(--text-muted);
+    }
+
+    select {
+      width: 100%;
+      min-height: 44px;
+      border: none;
+      border-radius: var(--radius-control);
+      background: var(--control-bg);
+      color: var(--text-main);
+      padding: 0.4rem 0.6rem;
+      font-size: var(--fs-sm);
+      box-shadow: var(--neu-shadow-inset);
+      transition:
+        box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
+        background-color var(--dur-base) var(--motion-standard);
+
+      &:focus {
+        outline: none;
+        background: var(--control-bg-focus);
+        box-shadow: var(--neu-shadow-inset), var(--focus-ring-soft);
+      }
+    }
   }
 
   .users-confirm-actions {

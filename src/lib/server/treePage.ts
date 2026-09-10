@@ -17,6 +17,15 @@ import { isMockFamilyMode } from '$lib/server/mockMode'
 const RELATION_KINDS = ['parent', 'child', 'sibling', 'partner', 'previous_partner'] as const
 export type RelationKind = (typeof RELATION_KINDS)[number]
 
+// Mock mode has no real profile/family_memberships binding, so there's no
+// natural "linked member" - hardcode one per family here so the intro's
+// final zoom-to-own-card step (see +page.svelte) can be previewed with
+// `yarn dev:mock`. Keyed by family id (the group's first/root member id,
+// see buildFamilyGroups).
+const MOCK_LINKED_MEMBER_BY_FAMILY: Record<string, string> = {
+  tomas: 'aitana' // Familia Roble's youngest generation
+}
+
 // Maps (member, other, kind-from-the-member) to the normalized table row:
 // 'parent' is directed member_a→member_b and the rest are stored once with
 // member_a < member_b (string order matches Postgres uuid order for
@@ -73,8 +82,10 @@ export const loadTreePage = async (
       familyData: rowsToFamilyData(selectedMembers, selectedRelationships),
       activeFamilyId: selectedGroup.id,
       activeFamilyName: selectedGroup.name,
-      // No real profile/family_memberships binding in mock mode.
-      linkedMemberId: null
+      // No real profile/family_memberships binding in mock mode, and no
+      // families table to persist an intro-start-member preference in.
+      linkedMemberId: MOCK_LINKED_MEMBER_BY_FAMILY[selectedGroup.id] ?? null,
+      introStartMemberId: null
     }
   }
 
@@ -95,6 +106,7 @@ export const loadTreePage = async (
   const activeFamily = userFamilies.find((family) => family.id === selectedFamilyId)
   const activeFamilyName = activeFamily?.name ?? null
   const linkedMemberId = activeFamily?.memberId ?? null
+  const introStartMemberId = activeFamily?.introStartMemberId ?? null
 
   const { data: membersData, error: membersError } = await supabase
     .from('members')
@@ -127,7 +139,8 @@ export const loadTreePage = async (
     familyData: rowsToFamilyData(membersData ?? [], selectedRelationships),
     activeFamilyId: selectedFamilyId,
     activeFamilyName,
-    linkedMemberId
+    linkedMemberId,
+    introStartMemberId
   }
 }
 

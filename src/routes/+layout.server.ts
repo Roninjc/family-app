@@ -75,7 +75,15 @@ export const load: LayoutServerLoad = async ({ locals: { user, supabase }, cooki
     notifications = await loadPendingInvitationNotifications(supabase, availableFamilies)
   } else if (isMockFamilyMode()) {
     profile = mockProfile
-    availableFamilies = [{ id: 'mock-family', name: 'Familia mock', role: 'admin', memberId: null }]
+    availableFamilies = [
+      {
+        id: 'mock-family',
+        name: 'Familia mock',
+        role: 'admin',
+        memberId: null,
+        introStartMemberId: null
+      }
+    ]
     activeFamilyId = activeFamilyId ?? 'mock-family'
     displayName = 'Modo mock'
     notifications = buildMockPendingInvitationNotifications(availableFamilies)
