@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores'
+  import { navigating, page } from '$app/stores'
   import { browser } from '$app/environment'
   import { onDestroy, tick } from 'svelte'
 
@@ -9,8 +9,8 @@
   const dashboardRoutePattern = /^\/dashboard$/
 
   // Matches the header copy swap timing so both persistent shells feel the same.
-  const NAV_FADE_MS = 120
-  const NAV_RESIZE_MS = 280
+  const NAV_FADE_MS = 200
+  const NAV_RESIZE_MS = 360
 
   let pillEl: HTMLDivElement | null = null
   let displayedLevel: 'family' | 'personal' | null = null
@@ -20,6 +20,8 @@
   let destroyed = false
 
   $: pathname = $page.url.pathname
+  // Highlight the pending destination right away instead of waiting for its data.
+  $: markedPathname = $navigating?.to?.url.pathname ?? pathname
   $: activeFamilyId = $page.data.activeFamilyId ?? null
   $: familyBasePath = activeFamilyId ? `/family/${encodeURIComponent(activeFamilyId)}` : null
   $: treeHref = familyBasePath ?? '/dashboard?state=no_family'
@@ -29,10 +31,11 @@
     treeRoutePattern.test(pathname) ||
     familyFeedRoutePattern.test(pathname) ||
     familyAdminRoutePattern.test(pathname)
-  $: isFamilyTreePath = treeRoutePattern.test(pathname)
-  $: isFamilyFeedPath = familyFeedRoutePattern.test(pathname)
-  $: isFamilyAdminPath = familyAdminRoutePattern.test(pathname)
-  $: isDashboardPath = dashboardRoutePattern.test(pathname)
+  $: isFamilyTreePath = treeRoutePattern.test(markedPathname)
+  $: isFamilyFeedPath = familyFeedRoutePattern.test(markedPathname)
+  $: isFamilyAdminPath = familyAdminRoutePattern.test(markedPathname)
+  $: isDashboardPath = dashboardRoutePattern.test(markedPathname)
+  $: isProfilePath = markedPathname === '/profile'
   $: level = (isFamilyLevel ? 'family' : 'personal') as 'family' | 'personal'
 
   $: if (displayedLevel === null) displayedLevel = level
@@ -156,7 +159,7 @@
             </a>
             <a
               class="app-bottom-nav-link"
-              aria-current={pathname === '/profile' ? 'page' : undefined}
+              aria-current={isProfilePath ? 'page' : undefined}
               href="/profile"
               data-sveltekit-preload-data="tap"
               aria-label="Ir a cuenta y perfil"
@@ -216,7 +219,7 @@
     transition:
       box-shadow var(--neumo-shadow-transition-duration) var(--neumo-shadow-transition-ease),
       background-color 0.22s var(--motion-standard),
-      width 280ms var(--motion-standard);
+      width 360ms var(--motion-standard);
   }
 
   .app-bottom-nav-items {
@@ -226,7 +229,7 @@
     gap: 16px;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 120ms var(--motion-standard);
+    transition: opacity 200ms var(--motion-standard);
   }
 
   .app-bottom-nav-items.visible {

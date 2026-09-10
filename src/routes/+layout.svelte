@@ -1,7 +1,7 @@
 <script lang="ts">
   import { base } from '$app/paths'
   import { browser, dev } from '$app/environment'
-  import { goto, invalidate } from '$app/navigation'
+  import { goto, invalidate, onNavigate } from '$app/navigation'
   import { navigating, page } from '$app/stores'
   import { onMount } from 'svelte'
   import { canEdit } from '$lib/types/auth'
@@ -39,8 +39,11 @@
   let routeRevealPath = ''
   let routeRevealTimer: ReturnType<typeof setTimeout> | null = null
   let routeDepthTimer: ReturnType<typeof setTimeout> | null = null
+  let routeExitTimer: ReturnType<typeof setTimeout> | null = null
+  let routeExitPath: string | null = null
+  let routeExitStartedAt = 0
 
-  const HEADER_TEXT_FADE_OUT_MS = 120
+  const HEADER_TEXT_FADE_OUT_MS = 200
   const NEUMO_READY_ATTRIBUTE = 'data-neumo'
   const NEUMO_BOOT_VALUE = 'boot'
   const NEUMO_READY_VALUE = 'ready'
@@ -54,7 +57,11 @@
   const NEUMO_SHADOW_ACTIVATION_OVERLAP_MS = 180
   const NEUMO_OVERLAY_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
   const ROUTE_REVEAL_DELAY_MS = 20
-  const ROUTE_DEPTH_DELAY_MS = 180
+  const ROUTE_DEPTH_DELAY_MS = 240
+  // Exit mirrors the entrance in reverse: shadows leave first, then the content fades.
+  const ROUTE_EXIT_DEPTH_LEAD_MS = 200
+  const ROUTE_EXIT_FADE_MS = 300
+  const ROUTE_MIN_EXIT_MS = ROUTE_EXIT_DEPTH_LEAD_MS + ROUTE_EXIT_FADE_MS
 
   const roleLabel = (role: string | null) => {
     if (role === 'admin') return 'administrador'
@@ -80,10 +87,15 @@
   $: pathname = $page.url.pathname
   $: if (browser && pathname !== routeRevealPath) {
     routeRevealPath = pathname
+    routeExitPath = null
     routeContentVisible = false
     routeDepthReady = false
     if (routeRevealTimer) clearTimeout(routeRevealTimer)
     if (routeDepthTimer) clearTimeout(routeDepthTimer)
+    if (routeExitTimer) {
+      clearTimeout(routeExitTimer)
+      routeExitTimer = null
+    }
     routeRevealTimer = setTimeout(() => {
       routeContentVisible = true
       routeRevealTimer = null
@@ -93,6 +105,9 @@
       routeDepthTimer = null
     }, ROUTE_DEPTH_DELAY_MS)
   }
+
+  // Starts as soon as the navigation is requested, without waiting for its data.
+  $: if (browser) startRouteExit($navigating?.to?.url.pathname ?? null)
   $: isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/auth')
   $: showPersistentHeader = Boolean(user || data.profile) && !isAuthRoute
   $: canManageTree = canEdit($page.data.profile ?? data.profile)
@@ -172,6 +187,10 @@
   $: if (!displayedLeftSideKey) displayedLeftSideKey = leftSideKey
   $: if (!displayedRightSideKey) displayedRightSideKey = rightSideKey
 
+  // Swapping between two real buttons only fades their content; the circle itself
+  // is only faded when the button appears or disappears entirely.
+  $: rightSideFadesChrome = rightSideKey === 'none' || displayedRightSideKey === 'none'
+
   $: if (displayedLeftSideKey && leftSideKey !== displayedLeftSideKey) {
     if (leftSideSwapTimer) clearTimeout(leftSideSwapTimer)
     leftSideVisible = false
@@ -207,6 +226,42 @@
       }, HEADER_TEXT_FADE_OUT_MS)
     }
   }
+
+  function startRouteExit(targetPath: string | null) {
+    if (!targetPath || targetPath === pathname || targetPath === routeExitPath) return
+
+    routeExitPath = targetPath
+    routeExitStartedAt = Date.now()
+
+    if (routeRevealTimer) {
+      clearTimeout(routeRevealTimer)
+      routeRevealTimer = null
+    }
+    if (routeDepthTimer) {
+      clearTimeout(routeDepthTimer)
+      routeDepthTimer = null
+    }
+    if (routeExitTimer) clearTimeout(routeExitTimer)
+
+    routeDepthReady = false
+    routeExitTimer = setTimeout(() => {
+      routeContentVisible = false
+      routeExitTimer = null
+    }, ROUTE_EXIT_DEPTH_LEAD_MS)
+  }
+
+  // Delays the DOM swap only by the time the exit animation still needs, so fast
+  // navigations still show it while slow ones are not held back any further.
+  onNavigate((navigation) => {
+    const targetPath = navigation.to?.url.pathname ?? null
+    if (!targetPath || targetPath === navigation.from?.url.pathname) return
+
+    startRouteExit(targetPath)
+    const remaining = ROUTE_MIN_EXIT_MS - (Date.now() - routeExitStartedAt)
+    if (remaining <= 0) return
+
+    return new Promise<void>((resolve) => setTimeout(resolve, remaining))
+  })
 
   function closeDetails(menu: HTMLDetailsElement | null) {
     if (menu) menu.open = false
@@ -469,7 +524,11 @@
           </div>
         </div>
 
-        <div class="header-side-slot header-side-slot--trailing" class:visible={rightSideVisible}>
+        <div
+          class="header-side-slot header-side-slot--trailing"
+          class:fade-chrome={rightSideFadesChrome}
+          class:visible={rightSideVisible}
+        >
           {#if displayedRightSideKey === 'quick-actions'}
             <HeaderMenu
               menuClass="header-menu--quick"
@@ -703,6 +762,22 @@
     --app-bottom-nav-current-shadow: none;
     --app-bottom-nav-current-shadow-active: inset 3px 3px 7px rgba(154, 132, 109, 0.22),
       inset -3px -3px 7px rgba(255, 255, 255, 0.76);
+    --admin-section-shadow: none;
+    --admin-section-shadow-active: 5px 5px 12px rgba(149, 121, 95, 0.14),
+      -5px -5px 12px rgba(255, 255, 255, 0.74);
+    --admin-section-open-shadow: none;
+    --admin-section-open-shadow-active: 7px 7px 15px rgba(149, 121, 95, 0.18),
+      -6px -6px 15px rgba(255, 255, 255, 0.8);
+    --admin-section-toggle-state-shadow: none;
+    --admin-section-toggle-state-shadow-active: inset 2px 2px 5px rgba(149, 121, 95, 0.16),
+      inset -2px -2px 5px rgba(255, 255, 255, 0.74);
+    --admin-section-toggle-state-open-shadow: none;
+    --admin-section-toggle-state-open-shadow-active: inset 2px 2px 5px rgba(149, 121, 95, 0.22),
+      inset -2px -2px 5px rgba(255, 255, 255, 0.72);
+    --family-crowd-shadow: none;
+    --family-crowd-shadow-active: 10px 10px 26px rgba(140, 109, 83, 0.18),
+      -10px -10px 26px rgba(255, 255, 255, 0.82), inset 7px 7px 14px rgba(149, 121, 95, 0.14),
+      inset -7px -7px 14px rgba(255, 255, 255, 0.82);
     /* Semantic: text, accents, controls and warm surfaces */
     --text-main: #2e2823;
     --text-muted: #544b43;
@@ -840,6 +915,11 @@
     --app-settings-trigger-shadow: var(--app-settings-trigger-shadow-active);
     --app-settings-trigger-active-shadow: var(--app-settings-trigger-active-shadow-active);
     --app-bottom-nav-current-shadow: var(--app-bottom-nav-current-shadow-active);
+    --admin-section-shadow: var(--admin-section-shadow-active);
+    --admin-section-open-shadow: var(--admin-section-open-shadow-active);
+    --admin-section-toggle-state-shadow: var(--admin-section-toggle-state-shadow-active);
+    --admin-section-toggle-state-open-shadow: var(--admin-section-toggle-state-open-shadow-active);
+    --family-crowd-shadow: var(--family-crowd-shadow-active);
     --nav-dock-shadow: var(--nav-dock-shadow-active);
     --tree-node-shadow: var(--tree-node-shadow-active);
     --app-glass-panel-shadow: var(--app-glass-panel-shadow-active);
@@ -1302,6 +1382,7 @@
   :global(.header-dropdown),
   :global(.surface-wrapper),
   :global(.admin-section),
+  :global(.family-crowd-canvas),
   :global(.preview-card),
   :global(.notes-card),
   :global(.notes-card li),
@@ -1333,6 +1414,7 @@
   :global(html[data-neumo='boot'] .header-dropdown),
   :global(html[data-neumo='boot'] .surface-wrapper),
   :global(html[data-neumo='boot'] .admin-section),
+  :global(html[data-neumo='boot'] .family-crowd-canvas),
   :global(html[data-neumo='boot'] .preview-card),
   :global(html[data-neumo='boot'] .notes-card),
   :global(html[data-neumo='boot'] .notes-card li),
@@ -1512,13 +1594,19 @@
     --app-stat-item-shadow: none;
     --app-settings-trigger-shadow: none;
     --app-settings-trigger-active-shadow: none;
+    --admin-section-shadow: none;
+    --admin-section-open-shadow: none;
+    --admin-section-toggle-state-shadow: none;
+    --admin-section-toggle-state-open-shadow: none;
+    --family-crowd-shadow: none;
     --tree-node-shadow: none;
     opacity: 0;
+    transition: opacity 0.3s var(--motion-standard);
   }
 
   .app-route-content.route-visible {
     opacity: 1;
-    transition: opacity 0.28s var(--motion-standard);
+    transition-duration: 0.42s;
   }
 
   .app-route-content.depth-ready {
@@ -1539,6 +1627,11 @@
     --app-stat-item-shadow: var(--app-stat-item-shadow-active);
     --app-settings-trigger-shadow: var(--app-settings-trigger-shadow-active);
     --app-settings-trigger-active-shadow: var(--app-settings-trigger-active-shadow-active);
+    --admin-section-shadow: var(--admin-section-shadow-active);
+    --admin-section-open-shadow: var(--admin-section-open-shadow-active);
+    --admin-section-toggle-state-shadow: var(--admin-section-toggle-state-shadow-active);
+    --admin-section-toggle-state-open-shadow: var(--admin-section-toggle-state-open-shadow-active);
+    --family-crowd-shadow: var(--family-crowd-shadow-active);
     --tree-node-shadow: var(--tree-node-shadow-active);
   }
 
@@ -1725,7 +1818,7 @@
     gap: 4px;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 120ms var(--motion-standard);
+    transition: opacity 200ms var(--motion-standard);
   }
 
   .header-main-copy.visible {
@@ -1736,18 +1829,36 @@
   .header-side-slot {
     display: flex;
     align-items: center;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 120ms var(--motion-standard);
   }
 
   .header-side-slot--trailing {
     justify-content: flex-end;
   }
 
-  .header-side-slot.visible {
+  .header-side-slot:not(.visible) {
+    pointer-events: none;
+  }
+
+  .header-side-slot :global(.header-side-circle > svg),
+  .header-side-slot :global(.header-side-circle > summary > *) {
+    opacity: 0;
+    transition:
+      opacity 200ms var(--motion-standard),
+      transform var(--dur-base) var(--motion-standard);
+  }
+
+  .header-side-slot.visible :global(.header-side-circle > svg),
+  .header-side-slot.visible :global(.header-side-circle > summary > *) {
     opacity: 1;
-    pointer-events: auto;
+  }
+
+  .header-side-slot.fade-chrome {
+    opacity: 0;
+    transition: opacity 200ms var(--motion-standard);
+  }
+
+  .header-side-slot.fade-chrome.visible {
+    opacity: 1;
   }
 
   .header-main-pill h1 {

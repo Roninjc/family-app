@@ -973,11 +973,7 @@
       rgba(255, 253, 250, 0.98),
       rgba(236, 225, 211, 0.8)
     );
-    box-shadow:
-      10px 10px 26px rgba(140, 109, 83, 0.18),
-      -10px -10px 26px rgba(255, 255, 255, 0.82),
-      inset 7px 7px 14px rgba(149, 121, 95, 0.14),
-      inset -7px -7px 14px rgba(255, 255, 255, 0.82);
+    box-shadow: var(--family-crowd-shadow);
     overflow: clip;
   }
 

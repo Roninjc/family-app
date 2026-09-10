@@ -72,7 +72,7 @@ describe('shared layout header', () => {
     expect(copy.textContent).toContain('Árbol')
     expect(copy.parentElement).toBe(pill)
 
-    await vi.advanceTimersByTimeAsync(120)
+    await vi.advanceTimersByTimeAsync(200)
     await tick()
 
     expect(document.querySelector('.header-main-copy')).toBe(copy)
