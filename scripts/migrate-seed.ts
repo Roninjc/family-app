@@ -2,7 +2,7 @@
 // Converts the bidirectional relation arrays into single deduplicated edges.
 //
 // Usage: npx tsx scripts/migrate-seed.ts
-// Requires PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (read from .env).
+// Requires PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY (read from .env).
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -27,10 +27,10 @@ const loadEnv = () => {
 loadEnv()
 
 const supabaseUrl = process.env.PUBLIC_SUPABASE_URL
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const serviceRoleKey = process.env.SUPABASE_SECRET_KEY
 
 if (!supabaseUrl || !serviceRoleKey) {
-  console.error('Missing PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY (set them in .env)')
+  console.error('Missing PUBLIC_SUPABASE_URL or SUPABASE_SECRET_KEY (set them in .env)')
   process.exit(1)
 }
 

@@ -35,7 +35,7 @@ jobs:
           tags: ghcr.io/${{ env.IMAGE_NAME }}:latest
           build-args: |
             PUBLIC_SUPABASE_URL=${{ secrets.PUBLIC_SUPABASE_URL }}
-            PUBLIC_SUPABASE_ANON_KEY=${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+            PUBLIC_SUPABASE_PUBLISHABLE_KEY=${{ secrets.PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v3

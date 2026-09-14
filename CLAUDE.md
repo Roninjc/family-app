@@ -17,7 +17,7 @@ Uses yarn (yarn.lock is present).
 
 ## Backend (Supabase)
 
-Family tree web app for the Castaño family, backed by a Supabase cloud project (Postgres + Auth). Requires a `.env` (see `.env.example`): `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, plus server-only `SUPABASE_SERVICE_ROLE_KEY` (scripts) and `SUPABASE_DB_PASSWORD` (migrations). Never print these.
+Family tree web app for the Castaño family, backed by a Supabase cloud project (Postgres + Auth). Requires a `.env` (see `.env.example`): `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_PUBLISHABLE_KEY`, plus server-only `SUPABASE_SECRET_KEY` (scripts) and `SUPABASE_DB_PASSWORD` (migrations). Never print these.
 
 - Schema lives in `supabase/migrations/*.sql`. Apply with `supabase db push --db-url "postgresql://postgres.<ref>:<url-encoded SUPABASE_DB_PASSWORD>@aws-0-eu-west-1.pooler.supabase.com:5432/postgres"` — the session pooler must be used because the direct DB host is IPv6-only.
 - Tables: `members`, `relationships` (one row per edge; `parent` is directed member_a→member_b, all other types stored once normalized member_a < member_b), `profiles` (role admin/editor/viewer, optional `member_id` linking an account to a tree node), `invited_emails`.
