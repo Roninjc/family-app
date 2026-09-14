@@ -25,6 +25,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Validate build-time configuration
+        env:
+          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
+          PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          missing=0
+          if [ -z "$PUBLIC_SUPABASE_URL" ]; then
+            echo 'Missing required secret: PUBLIC_SUPABASE_URL'
+            missing=1
+          fi
+          if [ -z "$PUBLIC_SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo 'Missing required secret: PUBLIC_SUPABASE_PUBLISHABLE_KEY'
+            missing=1
+          fi
+          exit "$missing"
+
       # PUBLIC_ vars are inlined into the client bundle at build time
       # ($env/static/public), so they must be provided as build args.
       - name: Build and push Docker image
